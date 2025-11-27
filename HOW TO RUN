@@ -1,0 +1,108 @@
+Here’s the full playbook. This assumes you’re starting from scratch each time.
+
+---
+
+## Part 1 — Run the app locally (web + iOS/Android)
+
+1. **Open a terminal in the project folder**
+   ```bash
+   cd /Users/ramjhawar/Downloads/OSKI_LIFTS/OSKILIFTS
+   ```
+
+2. **(Only if you changed UI code)** rebuild the static web bundle:
+   ```bash
+   npm run web:build
+   ```
+
+3. **Start the combined API + web server** (serves `http://localhost:4000`):
+   ```bash
+   npm run server
+   ```
+   - Leave this terminal running.
+   - Visit `http://localhost:4000` in a browser for the production web build.
+
+4. **IMPORTANT: Keep the server from step 3 running!** The API server must stay running for Expo to work.
+
+5. **Open a second terminal** (same folder) and start Expo:
+   ```bash
+   npx expo start --web
+   ```
+   - This will open the web app in your browser
+   - The Expo web app will call `http://localhost:4000` for API requests
+   - **Make sure `npm run server` is still running in the first terminal!**
+   
+   Alternative: If you want iOS/Android support:
+   ```bash
+   npx expo start --lan
+   ```
+   - DevTools appear at `http://localhost:8081`
+   - From there:
+     - Press `w` to open the dev web build
+     - Press `i` to launch the iOS simulator
+     - Scan the QR code with Expo Go (same Wi-Fi) to run on your phone
+
+6. **If you use Expo Go / physical device**, set `.env` first:
+   ```
+   EXPO_PUBLIC_OSKILIFTS_API_URL=http://<your-mac-ip>:4000
+   ```
+   Then restart Expo so the env var takes effect.
+
+7. **Troubleshooting:**
+   - If Expo web app shows "Request timed out", make sure `npm run server` is running!
+   - Test the API directly: Open `http://localhost:4000/api/health` in your browser - you should see `{"ok":true,"time":"..."}`
+   - Check the server terminal - you should see logs like `[API] GET /api/weightroom - Request received from: ...`
+   - If you see CORS errors in browser console, the server CORS config should handle it (restart the server after code changes)
+
+8. **Stop everything when finished:**
+   ```bash
+   pkill -f "expo start"
+   pkill -f "node server/index.js"
+   ```
+
+---
+
+## Part 2 — Share a temporary public website (ngrok)
+
+Use the same static server from step 3 and expose it.
+
+1. **Make sure `npm run server` is running** (step 3 above). The static build and API must be live on `http://localhost:4000`.
+
+2. **In a third terminal** (any directory), start an ngrok tunnel:
+   ```bash
+   ngrok http 4000
+   ```
+   - The first time, ngrok may ask for your authtoken. You already have one; run:
+     ```bash
+     ngrok config add-authtoken 35fmOZqbulI0HX6i5fQOznIKIvP_4YqqtNYuVP8CJvcZPaAq7
+     ngrok http 4000
+     ```
+   - It prints a URL like `https://something.ngrok-free.app`
+   
+3. **When opening the ngrok URL in your browser:**
+   - You'll see an ngrok warning page (this is normal for free tier)
+   - Click the **"Visit Site"** or **"Continue"** button to proceed
+   - If you see `ERR_SSL_PROTOCOL_ERROR`, try using `http://` instead of `https://` in the URL
+   - Or try opening in an incognito/private window
+
+3. **Share that ngrok URL** — it serves both the web UI and the `/api/*` endpoints since they’re on the same port.
+
+4. **Keep all three processes running**:
+   - `npm run server`
+   - `npx expo start --lan` (only needed if you’re testing on iOS/Android)
+   - `ngrok http 4000`
+   When you stop ngrok or shut your computer, the public link stops working.
+
+5. **If you restart ngrok**, the URL changes. Update `.env` + `npm run web:build` only if you want the production web bundle itself to call the new URL. Otherwise, as long as `npm run server` routes everything through `localhost:4000`, the bundled site doesn’t need to know about ngrok.
+
+---
+
+## Recap / Quick checklist
+
+- `npm run web:build` (when the UI changes)
+- `npm run server` (always)
+- `npx expo start --lan` (for simulator/phone testing)
+- `ngrok http 4000` (for sharing with friends)
+- Share the ngrok URL while everything is running
+- Stop processes with `pkill ...` commands when done
+
+Let me know if you want a script that automates these steps or a permanent deployment (Railway/Vercel) so you don’t need ngrok.

@@ -1,3 +1,5 @@
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const {
@@ -5,22 +7,61 @@ const {
   fetchGroupFitnessSchedule,
   getPacificISODate,
 } = require('./rsfService');
+const {
+  checkIn,
+  checkOut,
+  getActiveCount,
+  getCrowdednessStatus,
+  cleanupExpired,
+  isCheckedIn,
+} = require('./hoopersService');
 require('dotenv').config();
 
 const PORT = process.env.PORT || 4000;
+const STATIC_DIR = path.join(__dirname, '..', 'dist');
+const HAS_WEB_BUILD = fs.existsSync(STATIC_DIR);
 const app = express();
 
-app.use(cors());
+// CORS configuration - allow requests from Expo dev server and localhost
+// In development, allow all localhost and local network origins
+const isDevelopment = process.env.NODE_ENV !== 'production';
+app.use(cors({
+  origin: isDevelopment ? true : [
+    'http://localhost:4000',  // Production server
+    'http://localhost:8081',  // Expo web dev server
+    'http://localhost:19006',  // Expo web dev server alternative
+    /^http:\/\/localhost:\d+$/,  // Any localhost port
+    /^http:\/\/127\.0\.0\.1:\d+$/,  // Any 127.0.0.1 port
+    /^http:\/\/192\.168\.\d+\.\d+:\d+$/,  // Local network IPs (192.168.x.x)
+    /^http:\/\/172\.\d+\.\d+\.\d+:\d+$/,  // Local network IPs (172.x.x.x)
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.use(express.json());
 
-app.get('/api/health', (_req, res) => {
+// Middleware to ensure API routes always return JSON
+app.use('/api', (req, res, next) => {
+  // Set JSON content type for all API routes
+  res.setHeader('Content-Type', 'application/json');
+  console.log(`[API Middleware] ${req.method} ${req.path} - Content-Type set to application/json`);
+  next();
+});
+
+app.get('/api/health', (req, res) => {
+  console.log(`[API] Health check from: ${req.headers.origin || 'unknown'} (${req.ip})`);
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
-app.get('/api/weightroom', async (_req, res) => {
+app.get('/api/weightroom', async (req, res) => {
+  console.log(`[API] GET /api/weightroom - Request received from: ${req.headers.origin || 'unknown'} (${req.ip})`);
   try {
     const data = await fetchWeightRoomStatus();
+    console.log(`[API] GET /api/weightroom - Success, returning data`);
     res.json(data);
   } catch (error) {
+    console.error('[API] Error fetching weight room status:', error);
     res.status(error.status || 500).json({
       error: 'Failed to fetch weight room data',
       details: error.message,
@@ -34,6 +75,7 @@ app.get('/api/classes', async (req, res) => {
     const data = await fetchGroupFitnessSchedule(startDate);
     res.json(data);
   } catch (error) {
+    console.error('Error fetching class schedule:', error);
     res.status(error.status || 500).json({
       error: 'Failed to fetch class schedule',
       details: error.message,
@@ -41,7 +83,150 @@ app.get('/api/classes', async (req, res) => {
   }
 });
 
+// HOOPERS API endpoints
+app.get('/api/hoopers', (_req, res) => {
+  try {
+    cleanupExpired();
+    const count = getActiveCount();
+    const status = getCrowdednessStatus(count);
+    res.json({ count, status });
+  } catch (error) {
+    console.error('Error fetching hoopers status:', error);
+    res.status(500).json({
+      error: 'Failed to fetch hoopers status',
+      details: error.message,
+    });
+  }
+});
+
+app.post('/api/hoopers/checkin', (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+    
+    const result = checkIn(userId);
+    const count = getActiveCount();
+    const status = getCrowdednessStatus(count);
+    
+    res.json({
+      success: true,
+      userId: result.userId,
+      checkedInAt: result.checkedInAt,
+      count,
+      status,
+    });
+  } catch (error) {
+    console.error('Error checking in:', error);
+    res.status(500).json({
+      error: 'Failed to check in',
+      details: error.message,
+    });
+  }
+});
+
+app.post('/api/hoopers/checkout', (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+    
+    const wasCheckedIn = checkOut(userId);
+    const count = getActiveCount();
+    const status = getCrowdednessStatus(count);
+    
+    res.json({
+      success: true,
+      wasCheckedIn,
+      count,
+      status,
+    });
+  } catch (error) {
+    console.error('Error checking out:', error);
+    res.status(500).json({
+      error: 'Failed to check out',
+      details: error.message,
+    });
+  }
+});
+
+app.get('/api/hoopers/status/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const checkedIn = isCheckedIn(userId);
+    res.json({ checkedIn });
+  } catch (error) {
+    console.error('Error checking status:', error);
+    res.status(500).json({
+      error: 'Failed to check status',
+      details: error.message,
+    });
+  }
+});
+
+// 404 handler for API routes - must come after all API route handlers
+app.use('/api', (req, res) => {
+  console.log(`[API] 404 - Endpoint not found: ${req.method} ${req.path}`);
+  res.status(404).json({
+    error: 'API endpoint not found',
+    path: req.path,
+  });
+});
+
+if (HAS_WEB_BUILD) {
+  console.log(`Serving static web build from ${STATIC_DIR}`);
+  // Serve static files ONLY for non-API routes
+  app.use((req, res, next) => {
+    // Explicitly skip API routes - don't even try to serve static files
+    if (req.path.startsWith('/api')) {
+      console.log(`[Static] Skipping static file serving for API route: ${req.path}`);
+      return next();
+    }
+    // Use express.static middleware for non-API routes only
+    const staticMiddleware = express.static(STATIC_DIR, { index: false });
+    staticMiddleware(req, res, (err) => {
+      // If static file not found, continue to next middleware
+      if (err && err.status === 404) {
+        return next();
+      }
+      next(err);
+    });
+  });
+  // Catch-all handler for non-API routes - serve index.html for SPA routing
+  app.get(/^(?!\/api).*/, (_req, res) => {
+    res.sendFile(path.join(STATIC_DIR, 'index.html'));
+  });
+} else {
+  console.warn('No web build detected. Run `npm run web:build` to generate one.');
+}
+
+// Global error handler to ensure JSON responses
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  // Only send JSON for API routes
+  if (req.path.startsWith('/api')) {
+    res.status(err.status || 500).json({
+      error: 'Internal server error',
+      details: err.message,
+    });
+  } else {
+    next(err);
+  }
+});
+
+// Cleanup expired check-ins every 5 minutes
+setInterval(() => {
+  cleanupExpired();
+}, 5 * 60 * 1000);
+
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`OSKILIFTS API listening on http://0.0.0.0:${PORT}`);
+  console.log(`OSKILIFTS server listening on http://0.0.0.0:${PORT}`);
+  if (HAS_WEB_BUILD) {
+    console.log(`Web app available at http://0.0.0.0:${PORT}`);
+  } else {
+    console.log('API ready at /api. Static web build not found.');
+  }
 });
 

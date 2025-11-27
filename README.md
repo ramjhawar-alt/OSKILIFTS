@@ -27,6 +27,10 @@ OSKILIFTS is an Expo + React Native app that surfaces RSF weight room capacity (
    The server exposes:
    - `GET /api/weightroom` – live capacity snapshot
    - `GET /api/classes?startDate=YYYY-MM-DD` – 7-day class schedule window
+   - Static web build (if present in `dist/`) is also served from the same port. Build it via:
+     ```bash
+     npm run web:build
+     ```
 
 4. In a second terminal, run the Expo app:
    ```bash
@@ -216,19 +220,23 @@ For iOS/Android apps that don't require Expo Go:
 
 **Fastest way to share right now:**
 
-1. Deploy API to Railway (5 minutes):
-   - Push code to GitHub
-   - Connect to Railway
-   - Get your API URL
-
-2. Update `.env` with Railway URL
-
-3. Deploy web app to Vercel (2 minutes):
+1. Build the static web app (uses `dist/`):
    ```bash
-   vercel
+   npm run web:build
    ```
 
-4. Share the Vercel URL with friends!
+2. Serve both API + web from the same Express server:
+   ```bash
+   npm run server
+   ```
+   This automatically serves the SPA and proxies `/api/*`.
+
+3. Expose the server with ngrok (or deploy anywhere):
+   ```bash
+   ngrok http 4000
+   ```
+
+4. Share the ngrok URL (or deploy to Railway/Render for a permanent link).
 
 **For local testing with friends:**
 - Use ngrok (Option 1) - works immediately but URL changes
