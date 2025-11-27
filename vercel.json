@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run web",
+  "buildCommand": "npm run web:build",
   "outputDirectory": ".expo/web",
   "devCommand": "npm start",
   "installCommand": "npm install",

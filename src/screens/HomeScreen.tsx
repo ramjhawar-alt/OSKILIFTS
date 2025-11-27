@@ -6,14 +6,24 @@ import {
   StyleSheet,
   Text,
   View,
+  TouchableOpacity,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { RootStackParamList } from '../types/navigation';
 import { fetchWeightRoomStatus } from '../services/api';
+import { getPeakHours } from '../services/peakHoursService';
+import { OskiBear } from '../components/OskiBear';
+import { calculateWorkoutStreak } from '../services/bearStreakService';
+import { getWorkouts } from '../services/workoutStorage';
 import type { WeightRoomHours, WeightRoomStatus } from '../types/api';
+import type { Workout } from '../types/workout';
+
+const DEBUG_STREAK_KEY = '@oskilifts:debugStreak';
+const DEBUG_TOTAL_WORKOUTS_KEY = '@oskilifts:debugTotalWorkouts';
 
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -28,6 +38,9 @@ export const HomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [streak, setStreak] = useState(0);
+  const [totalWorkouts, setTotalWorkouts] = useState(0);
 
   const loadData = useCallback(async () => {
     try {
@@ -43,15 +56,46 @@ export const HomeScreen = () => {
     }
   }, []);
 
+  const loadWorkoutData = useCallback(async () => {
+    try {
+      // Check for debug override first
+      const debugStreak = await AsyncStorage.getItem(DEBUG_STREAK_KEY);
+      const debugTotalWorkouts = await AsyncStorage.getItem(DEBUG_TOTAL_WORKOUTS_KEY);
+      
+      if (debugStreak !== null) {
+        // Use debug values
+        setStreak(parseInt(debugStreak, 10));
+        setTotalWorkouts(parseInt(debugTotalWorkouts || '10', 10));
+      } else {
+        // Use real workout data
+        const allWorkouts = await getWorkouts();
+        setWorkouts(allWorkouts);
+        const currentStreak = calculateWorkoutStreak(allWorkouts);
+        setStreak(currentStreak);
+        setTotalWorkouts(allWorkouts.length);
+      }
+    } catch (error) {
+      console.error('Error loading workouts for bear:', error);
+    }
+  }, []);
+
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    loadWorkoutData();
+  }, [loadData, loadWorkoutData]);
+
+  // Reload workout data when screen comes into focus (e.g., after saving a workout)
+  useFocusEffect(
+    useCallback(() => {
+      loadWorkoutData();
+    }, [loadWorkoutData])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadData();
+    await Promise.all([loadData(), loadWorkoutData()]);
     setRefreshing(false);
-  }, [loadData]);
+  }, [loadData, loadWorkoutData]);
 
   const statusColor = useMemo(() => {
     const label = status?.status?.toLowerCase() || '';
@@ -83,6 +127,7 @@ export const HomeScreen = () => {
   return (
     <ScreenContainer>
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -91,9 +136,6 @@ export const HomeScreen = () => {
         <View style={styles.header}>
           <Text style={styles.eyebrow}>UC Berkeley</Text>
           <Text style={styles.title}>RSF Weight Room</Text>
-          <Text style={styles.subtitle}>
-            Live Density data plus up-to-date class listings.
-          </Text>
         </View>
 
         <View style={styles.card}>
@@ -120,9 +162,6 @@ export const HomeScreen = () => {
                 {status?.capacity ? ` / ${status.capacity}` : ''}
               </Text>
               <Text style={styles.percentValue}>{percentText} full</Text>
-              {status?.message ? (
-                <Text style={styles.cardHint}>{status.message}</Text>
-              ) : null}
             </>
           )}
         </View>
@@ -137,20 +176,42 @@ export const HomeScreen = () => {
           </View>
         ) : null}
 
-        <Text
-          style={styles.link}
-          onPress={() => navigation.navigate('Classes')}
+        <TouchableOpacity
+          onLongPress={() => navigation.navigate('BearDebug')}
+          activeOpacity={1}
         >
-          View RSF classes →
-        </Text>
+          <OskiBear streak={streak} totalWorkouts={totalWorkouts || workouts.length} />
+        </TouchableOpacity>
+
+        <View style={styles.peakHoursCard}>
+          <Text style={styles.peakHoursTitle}>Peak Hours</Text>
+          {getPeakHours().hasData ? (
+            <>
+              <Text style={styles.peakHoursText}>
+                Usually busiest: {getPeakHours().busiest}
+              </Text>
+              <Text style={styles.peakHoursText}>
+                Best time to go: {getPeakHours().bestTime}
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.peakHoursPlaceholder}>
+              {getPeakHours().message}
+            </Text>
+          )}
+        </View>
       </ScrollView>
     </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 48,
   },
   header: {
     gap: 4,
@@ -172,7 +233,7 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
   card: {
-    marginTop: 24,
+    marginTop: 20,
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
@@ -229,7 +290,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   closedNotice: {
-    marginTop: 20,
+    marginTop: 16,
     backgroundColor: '#fef2f2',
     borderRadius: 16,
     padding: 16,
@@ -268,6 +329,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#2563eb',
     fontWeight: '600',
+  },
+  peakHoursCard: {
+    marginTop: 16,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  peakHoursTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 12,
+  },
+  peakHoursText: {
+    fontSize: 14,
+    color: '#475569',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  peakHoursPlaceholder: {
+    fontSize: 14,
+    color: '#64748b',
+    lineHeight: 20,
+    fontStyle: 'italic',
   },
 });
 
