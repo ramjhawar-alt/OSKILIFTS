@@ -38,9 +38,24 @@ export const ClassesScreen = () => {
     }
   }, []);
 
+  // Load cached data immediately on mount
   useEffect(() => {
-    // Load cached data immediately (no loading spinner), then refresh in background
-    loadSchedule(false); // Don't show loading spinner for cached data
+    // Try to load cached data first (instant display)
+    const loadCachedData = async () => {
+      try {
+        const { getCached, CACHE_KEYS } = await import('../services/cache');
+        const cached = await getCached(CACHE_KEYS.CLASSES);
+        if (cached) {
+          setSchedule(cached);
+        }
+      } catch (error) {
+        // Ignore cache errors
+      }
+    };
+    loadCachedData();
+    
+    // Then load fresh data (and refresh cache)
+    loadSchedule(false); // Don't show loading spinner
   }, [loadSchedule]);
 
   const onRefresh = useCallback(async () => {
