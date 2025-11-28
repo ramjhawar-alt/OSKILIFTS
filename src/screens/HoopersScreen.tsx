@@ -22,7 +22,7 @@ import type { HoopersData } from '../types/hoopers';
 
 export const HoopersScreen = () => {
   const [status, setStatus] = useState<HoopersData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start as false since we'll load cached data immediately
   const [refreshing, setRefreshing] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkedIn, setCheckedIn] = useState(false);
@@ -40,10 +40,13 @@ export const HoopersScreen = () => {
     }
   }, []);
 
-  const loadStatus = useCallback(async () => {
+  const loadStatus = useCallback(async (showLoading: boolean = true) => {
     try {
-      setError(null);
-      const data = await getHoopersStatus();
+      if (showLoading) {
+        setError(null);
+      }
+      // This will return cached data immediately if available, then fetch fresh data in background
+      const data = await getHoopersStatus(true);
       setStatus(data);
     } catch (error: any) {
       console.error('Error loading hoopers status:', error);
@@ -65,9 +68,10 @@ export const HoopersScreen = () => {
     setLoading(true);
     const id = await loadUserId();
     if (id) {
-      await Promise.all([loadStatus(), loadCheckInStatus(id)]);
+      // Load cached data immediately, then refresh in background
+      await Promise.all([loadStatus(false), loadCheckInStatus(id)]);
     } else {
-      await loadStatus();
+      await loadStatus(false);
     }
     setLoading(false);
   }, [loadUserId, loadStatus, loadCheckInStatus]);

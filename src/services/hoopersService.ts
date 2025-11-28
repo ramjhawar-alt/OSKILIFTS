@@ -6,6 +6,7 @@ import type {
   CheckOutResponse,
   CheckInStatusResponse,
 } from '../types/hoopers';
+import { getCached, setCached, CACHE_KEYS, CACHE_EXPIRY } from './cache';
 
 const normalizeBaseUrl = (value?: string | null) => {
   if (!value) {
@@ -102,8 +103,22 @@ export async function getOrCreateUserId(): Promise<string> {
 /**
  * Get current hoopers status (count and crowdedness level)
  */
-export async function getHoopersStatus(): Promise<HoopersData> {
+export async function getHoopersStatus(useCache: boolean = true): Promise<HoopersData> {
   const url = `${API_BASE_URL}/api/hoopers`;
+  
+  // Try to get cached data first (instant load)
+  if (useCache) {
+    const cached = await getCached<HoopersData>(CACHE_KEYS.HOOPERS);
+    if (cached) {
+      console.log(`[Hoopers API] Using cached hoopers status`);
+      // Fetch fresh data in background (don't wait for it)
+      getHoopersStatus(false).catch(() => {
+        // Silently fail background refresh
+      });
+      return cached;
+    }
+  }
+  
   console.log(`[Hoopers API] Fetching hoopers status from: ${url}`);
   try {
     const controller = new AbortController();
@@ -112,7 +127,12 @@ export async function getHoopersStatus(): Promise<HoopersData> {
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    return handleResponse<HoopersData>(response, url);
+    const data = await handleResponse<HoopersData>(response, url);
+    
+    // Cache the fresh data
+    await setCached(CACHE_KEYS.HOOPERS, data, CACHE_EXPIRY.HOOPERS);
+    
+    return data;
   } catch (error) {
     console.error(`[Hoopers API] Fetch error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {

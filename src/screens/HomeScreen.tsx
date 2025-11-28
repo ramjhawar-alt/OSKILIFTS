@@ -42,10 +42,13 @@ export const HomeScreen = () => {
   const [streak, setStreak] = useState(0);
   const [totalWorkouts, setTotalWorkouts] = useState(0);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (showLoading: boolean = true) => {
     try {
-      setError(null);
-      const data = await fetchWeightRoomStatus();
+      if (showLoading) {
+        setError(null);
+      }
+      // This will return cached data immediately if available, then fetch fresh data in background
+      const data = await fetchWeightRoomStatus(true);
       setStatus(data);
     } catch (err) {
       setError(
@@ -80,7 +83,8 @@ export const HomeScreen = () => {
   }, []);
 
   useEffect(() => {
-    loadData();
+    // Load cached data immediately (no loading spinner), then refresh in background
+    loadData(false); // Don't show loading spinner for cached data
     loadWorkoutData();
   }, [loadData, loadWorkoutData]);
 
