@@ -35,7 +35,7 @@ const STATUS_COLORS = {
 export const HomeScreen = () => {
   const navigation = useNavigation<HomeNavigationProp>();
   const [status, setStatus] = useState<WeightRoomStatus | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start as false - cached data loads instantly
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
