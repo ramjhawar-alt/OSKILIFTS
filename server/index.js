@@ -42,6 +42,7 @@ const corsOptions = {
     // - All localhost origins
     // - All Vercel domains (including preview URLs)
     // - Render domains
+    // - Custom domains (any https domain)
     const allowedPatterns = [
       /^http:\/\/localhost(:\d+)?$/,  // localhost with optional port
       /^http:\/\/127\.0\.0\.1(:\d+)?$/,  // 127.0.0.1 with optional port
@@ -50,6 +51,7 @@ const corsOptions = {
       /^https:\/\/.*\.vercel\.app$/,  // All Vercel app domains (including preview)
       /^https:\/\/.*\.vercel\.dev$/,  // Vercel development deployments
       /^https:\/\/.*\.onrender\.com$/, // Render deployments
+      /^https:\/\/.*$/,  // Allow any HTTPS domain (for custom domains)
     ];
     
     const isAllowed = allowedPatterns.some(pattern => pattern.test(origin));
