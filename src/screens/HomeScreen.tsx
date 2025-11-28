@@ -82,9 +82,24 @@ export const HomeScreen = () => {
     }
   }, []);
 
+  // Load cached data immediately on mount
   useEffect(() => {
-    // Load cached data immediately (no loading spinner), then refresh in background
-    loadData(false); // Don't show loading spinner for cached data
+    // Try to load cached data first (instant display)
+    const loadCachedData = async () => {
+      try {
+        const { getCached, CACHE_KEYS } = await import('../services/cache');
+        const cached = await getCached(CACHE_KEYS.WEIGHT_ROOM);
+        if (cached) {
+          setStatus(cached);
+        }
+      } catch (error) {
+        // Ignore cache errors
+      }
+    };
+    loadCachedData();
+    
+    // Then load fresh data (and refresh cache)
+    loadData(false); // Don't show loading spinner
     loadWorkoutData();
   }, [loadData, loadWorkoutData]);
 
