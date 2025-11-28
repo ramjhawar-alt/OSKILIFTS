@@ -1,9 +1,20 @@
 {
   "buildCommand": "npm run web:build",
-  "outputDirectory": ".expo/web",
+  "outputDirectory": "dist",
   "devCommand": "npm start",
   "installCommand": "npm install",
   "framework": null,
+  "headers": [
+    {
+      "source": "/_expo/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
