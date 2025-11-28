@@ -22,22 +22,21 @@ const envBaseUrl = normalizeBaseUrl(
 // For other platforms, use env variable or default to 127.0.0.1
 const getBaseUrl = () => {
   if (Platform.OS === 'web') {
-    // In production builds (deployed to Vercel), use the env var
-    // In development (Expo dev server), use localhost
+    // For web: always use localhost in development (Expo web dev server)
+    // Only use env var in production builds (deployed to Vercel)
     const isProduction = typeof window !== 'undefined' && 
       (window.location.hostname !== 'localhost' && 
        window.location.hostname !== '127.0.0.1' &&
        !window.location.hostname.includes('192.168.') &&
        !window.location.hostname.includes('172.16.'));
     
+    // In production (Vercel), use env var if set
     if (isProduction && envBaseUrl) {
-      // Production build: use env var (set in Vercel)
       return envBaseUrl;
     }
     
-    // Development: use localhost since Expo web dev server and API server run on same machine
-    // The network IP (like 172.16.224.18) is only needed for physical devices, not web browser
-    // Using localhost avoids firewall/network connectivity issues
+    // In development (Expo web), ALWAYS use localhost regardless of env var
+    // The network IP is only for physical devices, not web browser
     return 'http://localhost:4000';
   }
   // iOS simulator needs 127.0.0.1 (more reliable than localhost)
@@ -48,6 +47,7 @@ const getBaseUrl = () => {
   if (Platform.OS === 'ios' && envBaseUrl?.includes('localhost')) {
     return envBaseUrl.replace('localhost', '127.0.0.1');
   }
+  // For native platforms, use env var if set, otherwise default to 127.0.0.1
   return envBaseUrl ?? 'http://127.0.0.1:4000';
 };
 
