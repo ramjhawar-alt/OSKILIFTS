@@ -30,9 +30,14 @@ const getBaseUrl = () => {
        !window.location.hostname.includes('192.168.') &&
        !window.location.hostname.includes('172.16.'));
     
-    // In production (Vercel), use env var if set
-    if (isProduction && envBaseUrl) {
-      return envBaseUrl;
+    // In production (Vercel), use env var if set, otherwise fallback to Render URL
+    if (isProduction) {
+      // Always use env var in production if it's set
+      if (envBaseUrl) {
+        return envBaseUrl;
+      }
+      // If no env var, try to use Render URL (fallback)
+      return 'https://oskilifts.onrender.com';
     }
     
     // In development (Expo web), ALWAYS use localhost regardless of env var
