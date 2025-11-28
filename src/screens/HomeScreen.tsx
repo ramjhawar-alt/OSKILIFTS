@@ -195,12 +195,7 @@ export const HomeScreen = () => {
           </View>
         ) : null}
 
-        <TouchableOpacity
-          onLongPress={() => navigation.navigate('BearDebug')}
-          activeOpacity={1}
-        >
-          <OskiBear streak={streak} totalWorkouts={totalWorkouts || workouts.length} />
-        </TouchableOpacity>
+        <OskiBear streak={streak} totalWorkouts={totalWorkouts || workouts.length} />
 
         <View style={styles.peakHoursCard}>
           <Text style={styles.peakHoursTitle}>Peak Hours</Text>
