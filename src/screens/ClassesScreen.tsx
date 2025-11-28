@@ -16,15 +16,18 @@ const ALL_FILTER = 'All';
 
 export const ClassesScreen = () => {
   const [schedule, setSchedule] = useState<ClassScheduleResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start as false since we'll load cached data immediately
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_FILTER);
   const [error, setError] = useState<string | null>(null);
 
-  const loadSchedule = useCallback(async () => {
+  const loadSchedule = useCallback(async (showLoading: boolean = true) => {
     try {
-      setError(null);
-      const data = await fetchClassSchedule();
+      if (showLoading) {
+        setError(null);
+      }
+      // This will return cached data immediately if available, then fetch fresh data in background
+      const data = await fetchClassSchedule(undefined, true);
       setSchedule(data);
     } catch (err) {
       setError(
@@ -36,7 +39,8 @@ export const ClassesScreen = () => {
   }, []);
 
   useEffect(() => {
-    loadSchedule();
+    // Load cached data immediately (no loading spinner), then refresh in background
+    loadSchedule(false); // Don't show loading spinner for cached data
   }, [loadSchedule]);
 
   const onRefresh = useCallback(async () => {

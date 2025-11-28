@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import type { WeightRoomStatus, ClassScheduleResponse } from '../types/api';
+import { getCached, setCached, CACHE_KEYS, CACHE_EXPIRY } from './cache';
 
 const normalizeBaseUrl = (value?: string | null) => {
   if (!value) {
@@ -76,8 +77,24 @@ async function handleResponse<T>(response: Response, url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export async function fetchWeightRoomStatus(): Promise<WeightRoomStatus> {
+export async function fetchWeightRoomStatus(
+  useCache: boolean = true,
+): Promise<WeightRoomStatus> {
   const url = `${API_BASE_URL}/api/weightroom`;
+  
+  // Try to get cached data first (instant load)
+  if (useCache) {
+    const cached = await getCached<WeightRoomStatus>(CACHE_KEYS.WEIGHT_ROOM);
+    if (cached) {
+      console.log(`[API] Using cached weight room status`);
+      // Fetch fresh data in background (don't wait for it)
+      fetchWeightRoomStatus(false).catch(() => {
+        // Silently fail background refresh
+      });
+      return cached;
+    }
+  }
+  
   console.log(`[API] Fetching weight room status from: ${url}`);
   try {
     const controller = new AbortController();
@@ -86,7 +103,12 @@ export async function fetchWeightRoomStatus(): Promise<WeightRoomStatus> {
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    return handleResponse<WeightRoomStatus>(response, url);
+    const data = await handleResponse<WeightRoomStatus>(response, url);
+    
+    // Cache the fresh data
+    await setCached(CACHE_KEYS.WEIGHT_ROOM, data, CACHE_EXPIRY.WEIGHT_ROOM);
+    
+    return data;
   } catch (error) {
     console.error(`[API] Fetch error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {
@@ -98,12 +120,32 @@ export async function fetchWeightRoomStatus(): Promise<WeightRoomStatus> {
 
 export async function fetchClassSchedule(
   startDate?: string,
+  useCache: boolean = true,
 ): Promise<ClassScheduleResponse> {
   let url = `${API_BASE_URL}/api/classes`;
   if (startDate) {
     const separator = url.includes('?') ? '&' : '?';
     url = `${url}${separator}startDate=${encodeURIComponent(startDate)}`;
   }
+  
+  // Create cache key that includes startDate if provided
+  const cacheKey = startDate 
+    ? `${CACHE_KEYS.CLASSES}:${startDate}`
+    : CACHE_KEYS.CLASSES;
+  
+  // Try to get cached data first (instant load)
+  if (useCache) {
+    const cached = await getCached<ClassScheduleResponse>(cacheKey);
+    if (cached) {
+      console.log(`[API] Using cached class schedule`);
+      // Fetch fresh data in background (don't wait for it)
+      fetchClassSchedule(startDate, false).catch(() => {
+        // Silently fail background refresh
+      });
+      return cached;
+    }
+  }
+  
   console.log(`[API] Fetching class schedule from: ${url}`);
   try {
     const controller = new AbortController();
@@ -112,7 +154,12 @@ export async function fetchClassSchedule(
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    return handleResponse<ClassScheduleResponse>(response, url);
+    const data = await handleResponse<ClassScheduleResponse>(response, url);
+    
+    // Cache the fresh data
+    await setCached(cacheKey, data, CACHE_EXPIRY.CLASSES);
+    
+    return data;
   } catch (error) {
     console.error(`[API] Fetch error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {

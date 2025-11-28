@@ -89,6 +89,8 @@ app.get('/api/weightroom', async (req, res) => {
   try {
     const data = await fetchWeightRoomStatus();
     console.log(`[API] GET /api/weightroom - Success, returning data`);
+    // Add cache headers for client-side caching
+    res.setHeader('Cache-Control', 'public, max-age=120'); // Cache for 2 minutes
     res.json(data);
   } catch (error) {
     console.error('[API] Error fetching weight room status:', error);
@@ -103,6 +105,8 @@ app.get('/api/classes', async (req, res) => {
   try {
     const startDate = req.query.startDate || getPacificISODate();
     const data = await fetchGroupFitnessSchedule(startDate);
+    // Add cache headers for client-side caching
+    res.setHeader('Cache-Control', 'public, max-age=1800'); // Cache for 30 minutes
     res.json(data);
   } catch (error) {
     console.error('Error fetching class schedule:', error);
@@ -119,6 +123,8 @@ app.get('/api/hoopers', (_req, res) => {
     cleanupExpired();
     const count = getActiveCount();
     const status = getCrowdednessStatus(count);
+    // Add cache headers for client-side caching (short cache since this changes frequently)
+    res.setHeader('Cache-Control', 'public, max-age=30'); // Cache for 30 seconds
     res.json({ count, status });
   } catch (error) {
     console.error('Error fetching hoopers status:', error);
