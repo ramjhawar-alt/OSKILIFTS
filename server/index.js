@@ -23,26 +23,50 @@ const HAS_WEB_BUILD = fs.existsSync(STATIC_DIR);
 const app = express();
 
 // CORS configuration - allow requests from Expo dev server, localhost, and Vercel
-// In development, allow all localhost and local network origins
+// In development, allow all origins
 // In production, allow Vercel domains and Render domains
 const isDevelopment = process.env.NODE_ENV !== 'production';
-app.use(cors({
-  origin: isDevelopment ? true : [
-    'http://localhost:4000',  // Production server
-    'http://localhost:8081',  // Expo web dev server
-    'http://localhost:19006',  // Expo web dev server alternative
-    /^http:\/\/localhost:\d+$/,  // Any localhost port
-    /^http:\/\/127\.0\.0\.1:\d+$/,  // Any 127.0.0.1 port
-    /^http:\/\/192\.168\.\d+\.\d+:\d+$/,  // Local network IPs (192.168.x.x)
-    /^http:\/\/172\.\d+\.\d+\.\d+:\d+$/,  // Local network IPs (172.x.x.x)
-    /^https:\/\/.*\.vercel\.app$/,  // Vercel preview and production deployments
-    /^https:\/\/.*\.vercel\.dev$/,  // Vercel development deployments
-    /^https:\/\/.*\.onrender\.com$/, // Render deployments
-  ],
+
+// More permissive CORS - allow all Vercel domains (including preview deployments)
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // In development, allow all origins
+    if (isDevelopment) {
+      return callback(null, true);
+    }
+    
+    // In production, allow:
+    // - All localhost origins
+    // - All Vercel domains (including preview URLs)
+    // - Render domains
+    const allowedPatterns = [
+      /^http:\/\/localhost(:\d+)?$/,  // localhost with optional port
+      /^http:\/\/127\.0\.0\.1(:\d+)?$/,  // 127.0.0.1 with optional port
+      /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/,  // Local network IPs (192.168.x.x)
+      /^http:\/\/172\.\d+\.\d+\.\d+(:\d+)?$/,  // Local network IPs (172.x.x.x)
+      /^https:\/\/.*\.vercel\.app$/,  // All Vercel app domains (including preview)
+      /^https:\/\/.*\.vercel\.dev$/,  // Vercel development deployments
+      /^https:\/\/.*\.onrender\.com$/, // Render deployments
+    ];
+    
+    const isAllowed = allowedPatterns.some(pattern => pattern.test(origin));
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log(`[CORS] Blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Middleware to ensure API routes always return JSON
