@@ -22,8 +22,9 @@ const STATIC_DIR = path.join(__dirname, '..', 'dist');
 const HAS_WEB_BUILD = fs.existsSync(STATIC_DIR);
 const app = express();
 
-// CORS configuration - allow requests from Expo dev server and localhost
+// CORS configuration - allow requests from Expo dev server, localhost, and Vercel
 // In development, allow all localhost and local network origins
+// In production, allow Vercel domains and Render domains
 const isDevelopment = process.env.NODE_ENV !== 'production';
 app.use(cors({
   origin: isDevelopment ? true : [
@@ -34,6 +35,9 @@ app.use(cors({
     /^http:\/\/127\.0\.0\.1:\d+$/,  // Any 127.0.0.1 port
     /^http:\/\/192\.168\.\d+\.\d+:\d+$/,  // Local network IPs (192.168.x.x)
     /^http:\/\/172\.\d+\.\d+\.\d+:\d+$/,  // Local network IPs (172.x.x.x)
+    /^https:\/\/.*\.vercel\.app$/,  // Vercel preview and production deployments
+    /^https:\/\/.*\.vercel\.dev$/,  // Vercel development deployments
+    /^https:\/\/.*\.onrender\.com$/, // Render deployments
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
