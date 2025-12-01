@@ -75,15 +75,21 @@ const getBaseUrl = () => {
   }
 
   // For native platforms (iOS/Android)
-  // Check if we're in a simulator/emulator (hostUri will be localhost/127.0.0.1)
+  // Check if we're in a simulator/emulator by checking hostUri
   const networkIP = getNetworkIP();
-  const isSimulator = !networkIP || 
-    networkIP === '127.0.0.1' || 
-    networkIP === 'localhost' ||
+  const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.hostUri || '';
+  
+  // Simulator detection: hostUri will be localhost/127.0.0.1 or empty in simulator
+  // Physical device: hostUri will have a real network IP
+  const isSimulator = !hostUri || 
+    hostUri.includes('127.0.0.1') || 
+    hostUri.includes('localhost') ||
+    (!networkIP && !envBaseUrl) || // No network IP and no env var = likely simulator
     Constants.executionEnvironment === 'storeClient'; // Production builds
 
   if (isSimulator) {
     // Simulator/emulator: ALWAYS use localhost (ignore env var)
+    console.log(`[API] Detected simulator, using localhost`);
     return 'http://127.0.0.1:4000';
   }
 
