@@ -41,11 +41,15 @@ Here’s the full playbook. This assumes you’re starting from scratch each tim
      - Press `i` to launch the iOS simulator
      - Scan the QR code with Expo Go (same Wi-Fi) to run on your phone
 
-6. **If you use Expo Go / physical device**, set `.env` first:
-   ```
-   EXPO_PUBLIC_OSKILIFTS_API_URL=http://<your-mac-ip>:4000
-   ```
-   Then restart Expo so the env var takes effect.
+6. **If you use Expo Go / physical device**:
+   - The app will try to auto-detect your computer's IP address
+   - If you get "Request timed out" errors, manually set the IP in `.env`:
+     ```
+     EXPO_PUBLIC_OSKILIFTS_API_URL=http://<your-mac-ip>:4000
+     ```
+   - Find your IP: Run `ifconfig | grep "inet " | grep -v 127.0.0.1` in terminal
+     - Look for an IP like `10.42.x.x` or `192.168.x.x` (not `172.16.x.x` which might be VPN)
+   - Then restart Expo: Stop it (Ctrl+C) and run `npx expo start --lan` again
 
 7. **Troubleshooting:**
    - If Expo web app shows "Request timed out", make sure `npm run server` is running!

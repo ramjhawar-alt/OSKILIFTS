@@ -24,16 +24,36 @@ const envBaseUrl = normalizeBaseUrl(
 const getNetworkIP = (): string | null => {
   try {
     // Try to get IP from Expo Constants
-    const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.hostUri;
+    // Check both expoConfig (newer) and manifest (older) for hostUri
+    const hostUri = Constants.expoConfig?.hostUri || 
+                    Constants.manifest?.hostUri ||
+                    Constants.expoConfig?.extra?.hostUri;
+    
     if (hostUri) {
-      // hostUri format: "192.168.1.100:8081" or "exp://192.168.1.100:8081"
+      // hostUri format: "192.168.1.100:8081" or "exp://192.168.1.100:8081" or "192.168.1.100"
       const match = hostUri.match(/(\d+\.\d+\.\d+\.\d+)/);
       if (match) {
-        return match[1];
+        const ip = match[1];
+        // Filter out localhost and common non-routable IPs
+        if (ip !== '127.0.0.1' && ip !== '0.0.0.0' && !ip.startsWith('169.254.')) {
+          return ip;
+        }
+      }
+    }
+    
+    // Fallback: Try to get IP from debuggerHost (Expo's debugger URL)
+    const debuggerHost = Constants.expoConfig?.debuggerHost || Constants.manifest?.debuggerHost;
+    if (debuggerHost) {
+      const match = debuggerHost.match(/(\d+\.\d+\.\d+\.\d+)/);
+      if (match) {
+        const ip = match[1];
+        if (ip !== '127.0.0.1' && ip !== '0.0.0.0' && !ip.startsWith('169.254.')) {
+          return ip;
+        }
       }
     }
   } catch (error) {
-    // Ignore errors
+    console.warn('[Hoopers API] Error detecting network IP:', error);
   }
   return null;
 };

@@ -18,16 +18,36 @@ const envBaseUrl = normalizeBaseUrl(
 const getNetworkIP = (): string | null => {
   try {
     // Try to get IP from Expo Constants
-    const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.hostUri;
+    // Check both expoConfig (newer) and manifest (older) for hostUri
+    const hostUri = Constants.expoConfig?.hostUri || 
+                    Constants.manifest?.hostUri ||
+                    Constants.expoConfig?.extra?.hostUri;
+    
     if (hostUri) {
-      // hostUri format: "192.168.1.100:8081" or "exp://192.168.1.100:8081"
+      // hostUri format: "192.168.1.100:8081" or "exp://192.168.1.100:8081" or "192.168.1.100"
       const match = hostUri.match(/(\d+\.\d+\.\d+\.\d+)/);
       if (match) {
-        return match[1];
+        const ip = match[1];
+        // Filter out localhost and common non-routable IPs
+        if (ip !== '127.0.0.1' && ip !== '0.0.0.0' && !ip.startsWith('169.254.')) {
+          return ip;
+        }
+      }
+    }
+    
+    // Fallback: Try to get IP from debuggerHost (Expo's debugger URL)
+    const debuggerHost = Constants.expoConfig?.debuggerHost || Constants.manifest?.debuggerHost;
+    if (debuggerHost) {
+      const match = debuggerHost.match(/(\d+\.\d+\.\d+\.\d+)/);
+      if (match) {
+        const ip = match[1];
+        if (ip !== '127.0.0.1' && ip !== '0.0.0.0' && !ip.startsWith('169.254.')) {
+          return ip;
+        }
       }
     }
   } catch (error) {
-    // Ignore errors
+    console.warn('[API] Error detecting network IP:', error);
   }
   return null;
 };
@@ -74,7 +94,9 @@ const getBaseUrl = () => {
 
   // Physical device: use network IP from Expo dev server
   if (networkIP) {
-    return `http://${networkIP}:4000`;
+    const url = `http://${networkIP}:4000`;
+    console.log(`[API] Using network IP for physical device: ${url}`);
+    return url;
   }
 
   // Fallback: try localhost (shouldn't happen, but just in case)
@@ -131,9 +153,13 @@ export async function fetchWeightRoomStatus(
   console.log(`[API] Fetching weight room status from: ${url}`);
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout (increased for network latency)
     const response = await fetch(url, {
       signal: controller.signal,
+      // Add headers to help with debugging
+      headers: {
+        'Accept': 'application/json',
+      },
     });
     clearTimeout(timeoutId);
     const data = await handleResponse<WeightRoomStatus>(response, url);
@@ -145,7 +171,15 @@ export async function fetchWeightRoomStatus(
   } catch (error) {
     console.error(`[API] Fetch error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out. Is the server running at ' + url + '?');
+      const networkIP = getNetworkIP();
+      const errorMsg = `Request timed out connecting to ${url}.\n\n` +
+        `Troubleshooting:\n` +
+        `1. Make sure "npm run server" is running in a terminal\n` +
+        `2. Ensure your phone and computer are on the same WiFi network\n` +
+        `3. Detected network IP: ${networkIP || 'none'}\n` +
+        `4. If auto-detection fails, set EXPO_PUBLIC_OSKILIFTS_API_URL=http://YOUR_COMPUTER_IP:4000 in .env\n` +
+        `   Find your IP: ifconfig | grep "inet " | grep -v 127.0.0.1`;
+      throw new Error(errorMsg);
     }
     throw error;
   }
@@ -196,7 +230,15 @@ export async function fetchClassSchedule(
   } catch (error) {
     console.error(`[API] Fetch error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out. Is the server running at ' + url + '?');
+      const networkIP = getNetworkIP();
+      const errorMsg = `Request timed out connecting to ${url}.\n\n` +
+        `Troubleshooting:\n` +
+        `1. Make sure "npm run server" is running in a terminal\n` +
+        `2. Ensure your phone and computer are on the same WiFi network\n` +
+        `3. Detected network IP: ${networkIP || 'none'}\n` +
+        `4. If auto-detection fails, set EXPO_PUBLIC_OSKILIFTS_API_URL=http://YOUR_COMPUTER_IP:4000 in .env\n` +
+        `   Find your IP: ifconfig | grep "inet " | grep -v 127.0.0.1`;
+      throw new Error(errorMsg);
     }
     throw error;
   }
