@@ -86,26 +86,24 @@ const getBaseUrl = () => {
   }
 
   // For native platforms (iOS/Android)
-  // Check if we're in a simulator/emulator by checking hostUri
   const networkIP = getNetworkIP();
   const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.hostUri || '';
+  const debuggerHost = Constants.expoConfig?.debuggerHost || Constants.manifest?.debuggerHost || '';
   
-  // Simulator detection: hostUri will be localhost/127.0.0.1 or empty in simulator
-  // Physical device: hostUri will have a real network IP
-  const isSimulator = !hostUri || 
-    hostUri.includes('127.0.0.1') || 
-    hostUri.includes('localhost') ||
-    (!networkIP && !envBaseUrl) || // No network IP and no env var = likely simulator
-    Constants.executionEnvironment === 'storeClient'; // Production builds
-
-  if (isSimulator) {
-    // Simulator/emulator: ALWAYS use localhost (ignore env var)
-    return 'http://127.0.0.1:4000';
-  }
-
-  // Physical device: Priority 1 = env var, Priority 2 = auto-detected network IP
+  // If env var is set, assume it's for a physical device and use it
   if (envBaseUrl) {
     return envBaseUrl;
+  }
+  
+  // Simulator detection
+  const isSimulator = 
+    (hostUri && (hostUri.includes('127.0.0.1') || hostUri.includes('localhost'))) ||
+    (debuggerHost && (debuggerHost.includes('127.0.0.1') || debuggerHost.includes('localhost'))) ||
+    (!hostUri && !debuggerHost && !networkIP) ||
+    Constants.executionEnvironment === 'storeClient';
+
+  if (isSimulator) {
+    return 'http://127.0.0.1:4000';
   }
 
   // Physical device: use network IP from Expo dev server
@@ -113,7 +111,7 @@ const getBaseUrl = () => {
     return `http://${networkIP}:4000`;
   }
 
-  // Fallback: try localhost (shouldn't happen, but just in case)
+  // Fallback
   console.warn('[PeakHours API] Could not determine network IP, falling back to localhost. Set EXPO_PUBLIC_OSKILIFTS_API_URL env var if this fails.');
   return 'http://127.0.0.1:4000';
 };
