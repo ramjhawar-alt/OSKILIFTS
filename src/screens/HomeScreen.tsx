@@ -15,7 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { RootStackParamList } from '../types/navigation';
 import { fetchWeightRoomStatus } from '../services/api';
-import { getPeakHours } from '../services/peakHoursService';
+import { getPeakHours, type PeakHoursData } from '../services/peakHoursService';
 import { OskiBear } from '../components/OskiBear';
 import { calculateWorkoutStreak } from '../services/bearStreakService';
 import { getWorkouts } from '../services/workoutStorage';
@@ -41,6 +41,10 @@ export const HomeScreen = () => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [streak, setStreak] = useState(0);
   const [totalWorkouts, setTotalWorkouts] = useState(0);
+  const [peakHours, setPeakHours] = useState<PeakHoursData>({
+    hasData: false,
+    message: "Loading peak hours data...",
+  });
 
   const loadData = useCallback(async (showLoading: boolean = true) => {
     try {
@@ -56,6 +60,19 @@ export const HomeScreen = () => {
       );
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const loadPeakHours = useCallback(async () => {
+    try {
+      const data = await getPeakHours();
+      setPeakHours(data);
+    } catch (error) {
+      console.error('Error loading peak hours:', error);
+      setPeakHours({
+        hasData: false,
+        message: "Unable to load peak hours data.",
+      });
     }
   }, []);
 
@@ -101,7 +118,8 @@ export const HomeScreen = () => {
     // Then load fresh data (and refresh cache)
     loadData(false); // Don't show loading spinner
     loadWorkoutData();
-  }, [loadData, loadWorkoutData]);
+    loadPeakHours();
+  }, [loadData, loadWorkoutData, loadPeakHours]);
 
   // Reload workout data when screen comes into focus (e.g., after saving a workout)
   useFocusEffect(
@@ -199,18 +217,28 @@ export const HomeScreen = () => {
 
         <View style={styles.peakHoursCard}>
           <Text style={styles.peakHoursTitle}>Peak Hours</Text>
-          {getPeakHours().hasData ? (
+          {peakHours.hasData ? (
             <>
               <Text style={styles.peakHoursText}>
-                Usually busiest: {getPeakHours().busiest}
+                Usually busiest: {peakHours.busiest}
               </Text>
               <Text style={styles.peakHoursText}>
-                Best time to go: {getPeakHours().bestTime}
+                Best time to go: {peakHours.bestTime}
               </Text>
+              {peakHours.busiestDay && (
+                <Text style={styles.peakHoursText}>
+                  Busiest day: {peakHours.busiestDay}
+                </Text>
+              )}
+              {peakHours.totalSamples && peakHours.totalSamples > 0 && (
+                <Text style={styles.peakHoursSubtext}>
+                  Based on {peakHours.totalSamples.toLocaleString()} data points
+                </Text>
+              )}
             </>
           ) : (
             <Text style={styles.peakHoursPlaceholder}>
-              {getPeakHours().message}
+              {peakHours.message}
             </Text>
           )}
         </View>
@@ -367,6 +395,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 20,
   },
+  peakHoursSubtext: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
   peakHoursPlaceholder: {
     fontSize: 14,
     color: '#64748b',
@@ -374,4 +408,5 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 });
+
 
