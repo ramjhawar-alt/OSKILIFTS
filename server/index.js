@@ -15,6 +15,8 @@ const {
   cleanupExpired,
   isCheckedIn,
 } = require('./hoopersService');
+const { storeCapacitySnapshot } = require('./dataCollectionService');
+const { analyzePeakHours } = require('./peakHoursAnalytics');
 require('dotenv').config();
 
 const PORT = process.env.PORT || 4000;
@@ -89,6 +91,15 @@ app.get('/api/weightroom', async (req, res) => {
   try {
     const data = await fetchWeightRoomStatus();
     console.log(`[API] GET /api/weightroom - Success, returning data`);
+    
+    // Store capacity snapshot for peak hours analysis (non-blocking)
+    try {
+      storeCapacitySnapshot(data);
+    } catch (collectionError) {
+      // Don't fail the request if data collection fails
+      console.warn('[DataCollection] Failed to store snapshot:', collectionError);
+    }
+    
     // Add cache headers for client-side caching
     res.setHeader('Cache-Control', 'public, max-age=120'); // Cache for 2 minutes
     res.json(data);
@@ -197,6 +208,22 @@ app.get('/api/hoopers/status/:userId', (req, res) => {
     console.error('Error checking status:', error);
     res.status(500).json({
       error: 'Failed to check status',
+      details: error.message,
+    });
+  }
+});
+
+// Peak hours analytics endpoint
+app.get('/api/peak-hours', (_req, res) => {
+  try {
+    const analysis = analyzePeakHours();
+    // Cache for 1 hour since this doesn't change frequently
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.json(analysis);
+  } catch (error) {
+    console.error('Error analyzing peak hours:', error);
+    res.status(500).json({
+      error: 'Failed to analyze peak hours',
       details: error.message,
     });
   }
