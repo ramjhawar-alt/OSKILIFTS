@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import type { WeightRoomStatus, ClassScheduleResponse } from '../types/api';
 import { getCached, setCached, CACHE_KEYS, CACHE_EXPIRY } from './cache';
 
@@ -13,9 +14,33 @@ const envBaseUrl = normalizeBaseUrl(
   process.env.EXPO_PUBLIC_OSKILIFTS_API_URL ?? null,
 );
 
+// Helper to extract IP from Expo dev server URL
+const getNetworkIP = (): string | null => {
+  try {
+    // Try to get IP from Expo Constants
+    const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.hostUri;
+    if (hostUri) {
+      // hostUri format: "192.168.1.100:8081" or "exp://192.168.1.100:8081"
+      const match = hostUri.match(/(\d+\.\d+\.\d+\.\d+)/);
+      if (match) {
+        return match[1];
+      }
+    }
+  } catch (error) {
+    // Ignore errors
+  }
+  return null;
+};
+
 // For iOS simulator, always use 127.0.0.1 (more reliable than localhost)
-// For other platforms, use env variable or default to 127.0.0.1
+// For physical devices, use network IP from Expo dev server
+// For web, use localhost in dev, env var in production
 const getBaseUrl = () => {
+  // Priority 1: Use env var if set (highest priority)
+  if (envBaseUrl) {
+    return envBaseUrl;
+  }
+
   if (Platform.OS === 'web') {
     // For web: always use localhost in development (Expo web dev server)
     // Only use env var in production builds (deployed to Vercel)
@@ -25,35 +50,43 @@ const getBaseUrl = () => {
        !window.location.hostname.includes('192.168.') &&
        !window.location.hostname.includes('172.16.'));
     
-    // In production (Vercel), use env var if set, otherwise fallback to localhost
+    // In production (Vercel), use env var if set, otherwise fallback to Render URL
     if (isProduction) {
-      // Always use env var in production if it's set
-      if (envBaseUrl) {
-        return envBaseUrl;
-      }
-      // If no env var, try to use Render URL (fallback)
       return 'https://oskilifts.onrender.com';
     }
     
-    // In development (Expo web), ALWAYS use localhost regardless of env var
-    // The network IP is only for physical devices, not web browser
+    // In development (Expo web), ALWAYS use localhost
     return 'http://localhost:4000';
   }
-  // iOS simulator needs 127.0.0.1 (more reliable than localhost)
-  if (Platform.OS === 'ios' && !envBaseUrl?.includes('localhost') && !envBaseUrl?.includes('127.0.0.1')) {
+
+  // For native platforms (iOS/Android)
+  // Check if we're in a simulator/emulator (hostUri will be localhost/127.0.0.1)
+  const networkIP = getNetworkIP();
+  const isSimulator = !networkIP || 
+    networkIP === '127.0.0.1' || 
+    networkIP === 'localhost' ||
+    Constants.executionEnvironment === 'storeClient'; // Production builds
+
+  if (isSimulator) {
+    // Simulator/emulator: use localhost
     return 'http://127.0.0.1:4000';
   }
-  // If env has localhost, convert to 127.0.0.1 for iOS
-  if (Platform.OS === 'ios' && envBaseUrl?.includes('localhost')) {
-    return envBaseUrl.replace('localhost', '127.0.0.1');
+
+  // Physical device: use network IP from Expo dev server
+  if (networkIP) {
+    return `http://${networkIP}:4000`;
   }
-  // For native platforms, use env var if set, otherwise default to 127.0.0.1
-  return envBaseUrl ?? 'http://127.0.0.1:4000';
+
+  // Fallback: try localhost (shouldn't happen, but just in case)
+  console.warn('[API] Could not determine network IP, falling back to localhost. Set EXPO_PUBLIC_OSKILIFTS_API_URL env var if this fails.');
+  return 'http://127.0.0.1:4000';
 };
 
 const API_BASE_URL = getBaseUrl();
 
-console.log(`[API] Base URL: ${API_BASE_URL} (Platform: ${Platform.OS}, Env: ${envBaseUrl || 'not set'})`);
+// Log for debugging
+const networkIP = getNetworkIP();
+console.log(`[API] Base URL: ${API_BASE_URL} (Platform: ${Platform.OS}, Network IP: ${networkIP || 'not detected'}, Env: ${envBaseUrl || 'not set'})`);
 
 async function handleResponse<T>(response: Response, url: string): Promise<T> {
   if (!response.ok) {
