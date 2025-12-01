@@ -75,28 +75,32 @@ const getBaseUrl = () => {
   }
 
   // For native platforms (iOS/Android)
-  // Check if we're in a simulator/emulator by checking hostUri
   const networkIP = getNetworkIP();
   const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.hostUri || '';
+  const debuggerHost = Constants.expoConfig?.debuggerHost || Constants.manifest?.debuggerHost || '';
   
-  // Simulator detection: hostUri will be localhost/127.0.0.1 or empty in simulator
-  // Physical device: hostUri will have a real network IP
-  const isSimulator = !hostUri || 
-    hostUri.includes('127.0.0.1') || 
-    hostUri.includes('localhost') ||
-    (!networkIP && !envBaseUrl) || // No network IP and no env var = likely simulator
+  // Log for debugging
+  console.log(`[API] hostUri: ${hostUri}, debuggerHost: ${debuggerHost}, networkIP: ${networkIP}, envBaseUrl: ${envBaseUrl}`);
+  
+  // If env var is set, assume it's for a physical device and use it
+  // (env var should only be set when testing on physical devices)
+  if (envBaseUrl) {
+    console.log(`[API] Using env var (physical device): ${envBaseUrl}`);
+    return envBaseUrl;
+  }
+  
+  // Simulator detection: hostUri/debuggerHost will be localhost/127.0.0.1 in simulator
+  // Physical device: hostUri/debuggerHost will have a real network IP
+  const isSimulator = 
+    (hostUri && (hostUri.includes('127.0.0.1') || hostUri.includes('localhost'))) ||
+    (debuggerHost && (debuggerHost.includes('127.0.0.1') || debuggerHost.includes('localhost'))) ||
+    (!hostUri && !debuggerHost && !networkIP) || // No network info at all = likely simulator
     Constants.executionEnvironment === 'storeClient'; // Production builds
 
   if (isSimulator) {
-    // Simulator/emulator: ALWAYS use localhost (ignore env var)
+    // Simulator/emulator: use localhost
     console.log(`[API] Detected simulator, using localhost`);
     return 'http://127.0.0.1:4000';
-  }
-
-  // Physical device: Priority 1 = env var, Priority 2 = auto-detected network IP
-  if (envBaseUrl) {
-    console.log(`[API] Using env var for physical device: ${envBaseUrl}`);
-    return envBaseUrl;
   }
 
   // Physical device: use network IP from Expo dev server
