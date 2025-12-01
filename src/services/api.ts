@@ -53,14 +53,9 @@ const getNetworkIP = (): string | null => {
 };
 
 // For iOS simulator, always use 127.0.0.1 (more reliable than localhost)
-// For physical devices, use network IP from Expo dev server
+// For physical devices, use network IP from Expo dev server or env var
 // For web, use localhost in dev, env var in production
 const getBaseUrl = () => {
-  // Priority 1: Use env var if set (highest priority)
-  if (envBaseUrl) {
-    return envBaseUrl;
-  }
-
   if (Platform.OS === 'web') {
     // For web: always use localhost in development (Expo web dev server)
     // Only use env var in production builds (deployed to Vercel)
@@ -72,10 +67,10 @@ const getBaseUrl = () => {
     
     // In production (Vercel), use env var if set, otherwise fallback to Render URL
     if (isProduction) {
-      return 'https://oskilifts.onrender.com';
+      return envBaseUrl || 'https://oskilifts.onrender.com';
     }
     
-    // In development (Expo web), ALWAYS use localhost
+    // In development (Expo web), ALWAYS use localhost (ignore env var)
     return 'http://localhost:4000';
   }
 
@@ -88,14 +83,20 @@ const getBaseUrl = () => {
     Constants.executionEnvironment === 'storeClient'; // Production builds
 
   if (isSimulator) {
-    // Simulator/emulator: use localhost
+    // Simulator/emulator: ALWAYS use localhost (ignore env var)
     return 'http://127.0.0.1:4000';
+  }
+
+  // Physical device: Priority 1 = env var, Priority 2 = auto-detected network IP
+  if (envBaseUrl) {
+    console.log(`[API] Using env var for physical device: ${envBaseUrl}`);
+    return envBaseUrl;
   }
 
   // Physical device: use network IP from Expo dev server
   if (networkIP) {
     const url = `http://${networkIP}:4000`;
-    console.log(`[API] Using network IP for physical device: ${url}`);
+    console.log(`[API] Using auto-detected network IP for physical device: ${url}`);
     return url;
   }
 
