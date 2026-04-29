@@ -14,11 +14,11 @@ OSKILIFTS turns those fragmented sources into a single, fast, mobile-first exper
 
 ## Core Features
 
-- Live RSF occupancy status with current count, capacity, and crowd signal.
-- Group fitness schedule endpoint with date-scoped queries.
-- Hoopers check-in/check-out system for lightweight court demand tracking.
-- Peak-hours analytics generated from continuously collected capacity snapshots.
-- Shared backend contract used by Expo clients and deployed web frontend.
+- Check RSF weight room crowd levels in real time before heading over.
+- Browse upcoming group fitness classes without jumping between multiple sites.
+- Log workouts and keep a running history of your training sessions.
+- Track workout consistency over time, tied to Oski Bear progression and level-ups.
+- Use Hoopers check-in/check-out to see how busy the courts are right now.
 
 ## Engineering Highlights
 
@@ -39,8 +39,15 @@ OSKILIFTS turns those fragmented sources into a single, fast, mobile-first exper
 
 - **Frontend:** React Native, Expo, TypeScript, React Navigation
 - **Backend:** Node.js, Express
+- **Analytics storage:** Supabase (Postgres) for peak-hours snapshots (survives deploys)
 - **Data integration:** Public Density and Mindbody widget endpoints
 - **Infra:** Vercel (web), Render (API)
+
+### Peak hours / Supabase
+
+Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` on the Render service (and in `.env` locally). Run the SQL in [`server/migrations/001_capacity_snapshots.sql`](server/migrations/001_capacity_snapshots.sql) once in the Supabase SQL editor. Without these variables, the API still runs but snapshots are not persisted.
+
+**Render free tier:** instances sleep after ~15 minutes of no traffic, which pauses the 5‑minute snapshot job. For steadier coverage, use an external uptime ping (e.g. cron-job.org or UptimeRobot) every ~10 minutes against `GET /api/health`.
 
 ## API Surface (Selected)
 

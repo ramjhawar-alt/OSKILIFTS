@@ -15,7 +15,7 @@ const {
   cleanupExpired,
   isCheckedIn,
 } = require('./hoopersService');
-const { storeCapacitySnapshot } = require('./dataCollectionService');
+const { storeCapacitySnapshot, getRecentCapacityRows } = require('./dataCollectionService');
 const { analyzePeakHours } = require('./peakHoursAnalytics');
 require('dotenv').config();
 
@@ -147,14 +147,6 @@ app.get('/api/weightroom', async (req, res) => {
     const data = await fetchWeightRoomStatus();
     console.log(`[API] GET /api/weightroom - Success, returning data`);
     
-    // Store capacity snapshot for peak hours analysis (non-blocking)
-    try {
-      storeCapacitySnapshot(data);
-    } catch (collectionError) {
-      // Don't fail the request if data collection fails
-      console.warn('[DataCollection] Failed to store snapshot:', collectionError);
-    }
-    
     // Add cache headers for client-side caching
     res.setHeader('Cache-Control', 'public, max-age=120'); // Cache for 2 minutes
     res.json(data);
@@ -269,9 +261,9 @@ app.get('/api/hoopers/status/:userId', (req, res) => {
 });
 
 // Peak hours analytics endpoint
-app.get('/api/peak-hours', (_req, res) => {
+app.get('/api/peak-hours', async (_req, res) => {
   try {
-    const analysis = analyzePeakHours();
+    const analysis = await analyzePeakHours();
     // Cache for 1 hour since this doesn't change frequently
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.json(analysis);
@@ -279,6 +271,27 @@ app.get('/api/peak-hours', (_req, res) => {
     console.error('Error analyzing peak hours:', error);
     res.status(500).json({
       error: 'Failed to analyze peak hours',
+      details: error.message,
+    });
+  }
+});
+
+// Raw capacity data endpoint (for analysis/debugging)
+app.get('/api/capacity-data', async (_req, res) => {
+  try {
+    const rows = await getRecentCapacityRows(100);
+    res.json({
+      totalSamples: rows.length,
+      data: rows,
+      summary: {
+        oldest: rows.length > 0 ? rows[rows.length - 1]?.recorded_at : null,
+        newest: rows.length > 0 ? rows[0]?.recorded_at : null,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching capacity data:', error);
+    res.status(500).json({
+      error: 'Failed to fetch capacity data',
       details: error.message,
     });
   }
@@ -338,6 +351,32 @@ app.use((err, req, res, next) => {
 setInterval(() => {
   cleanupExpired();
 }, 5 * 60 * 1000);
+
+// Scheduled capacity data collection for peak hours analysis
+// Collects data every 5 minutes to track RSF weight room crowdedness patterns
+async function collectCapacitySnapshot() {
+  try {
+    const data = await fetchWeightRoomStatus();
+    // Transform to match expected format for data collection
+    const snapshotData = {
+      currentCount: data.occupancy || 0,
+      maxCapacity: data.capacity || 100,
+      isOpen: data.isOpen !== false,
+    };
+    await storeCapacitySnapshot(snapshotData);
+    console.log(`[DataCollection] Collected capacity snapshot: ${snapshotData.currentCount}/${snapshotData.maxCapacity} (${data.status})`);
+  } catch (error) {
+    console.error('[DataCollection] Failed to collect capacity snapshot:', error.message);
+  }
+}
+
+// Collect capacity data every 5 minutes
+setInterval(() => {
+  collectCapacitySnapshot();
+}, 5 * 60 * 1000);
+
+// Collect initial snapshot on server start
+collectCapacitySnapshot();
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`OSKILIFTS server listening on http://0.0.0.0:${PORT}`);
