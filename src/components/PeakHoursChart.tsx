@@ -114,6 +114,34 @@ export function PeakHoursChart({ data, loading }: Props) {
     );
   }
 
+  const chartUnlocked =
+    data.peakHoursReady === true ||
+    (data.peakHoursReady === undefined && data.hasEnoughData);
+
+  if (!chartUnlocked) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.title}>Peak hours</Text>
+        <Text style={styles.comingSoonHeadline}>Peak hours coming soon</Text>
+        <Text style={styles.placeholder}>
+          {data.message ??
+            "We're logging traffic for each day of the week. Once we have at least one snapshot on every weekday, the full chart appears here automatically."}
+        </Text>
+        {data.totalSamples != null ? (
+          <Text style={styles.footer}>
+            {data.totalSamples.toLocaleString()} snapshot
+            {data.totalSamples === 1 ? '' : 's'} collected so far.
+          </Text>
+        ) : null}
+        {data.daysCovered != null && data.daysCovered < 7 ? (
+          <Text style={styles.footerMuted}>
+            Weekday coverage: {data.daysCovered}/7
+          </Text>
+        ) : null}
+      </View>
+    );
+  }
+
   const rec = data.recommendation;
   const vs = verdictStyles(rec?.verdict);
 
@@ -358,6 +386,12 @@ const styles = StyleSheet.create({
     color: '#64748b',
     lineHeight: 20,
     fontStyle: 'italic',
+  },
+  comingSoonHeadline: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 8,
   },
   skeletonLine: {
     height: 14,

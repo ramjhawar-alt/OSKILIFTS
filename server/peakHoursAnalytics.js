@@ -46,6 +46,20 @@ const MIN_TOTAL_SAMPLES = 20;
 const MIN_CELL_SAMPLES = 5;
 
 /**
+ * At least one snapshot per calendar weekday (0–6) before showing the full chart UI.
+ * @param {Array<{ dayOfWeek: number }>} rows
+ */
+function allWeekdaysHaveSnapshot(rows) {
+  const days = new Set();
+  rows.forEach((e) => {
+    if (typeof e.dayOfWeek === 'number' && e.dayOfWeek >= 0 && e.dayOfWeek <= 6) {
+      days.add(e.dayOfWeek);
+    }
+  });
+  return days.size === 7;
+}
+
+/**
  * @returns {Promise<object>}
  */
 async function analyzePeakHours() {
@@ -60,6 +74,7 @@ async function analyzePeakHours() {
     return {
       hasEnoughData: false,
       hasData: false,
+      peakHoursReady: false,
       message:
         data.length === 0
           ? "We're collecting gym traffic patterns — check back soon for peak hours."
@@ -77,6 +92,43 @@ async function analyzePeakHours() {
         verdict: 'collecting',
         headline: 'Building your chart',
         detail: 'Keep the app running — we save a snapshot every few minutes while the server is up.',
+        suggestedHour: null,
+      },
+    };
+  }
+
+  if (!allWeekdaysHaveSnapshot(data)) {
+    const daysSeen = new Set();
+    data.forEach((e) => {
+      if (typeof e.dayOfWeek === 'number' && e.dayOfWeek >= 0 && e.dayOfWeek <= 6) {
+        daysSeen.add(e.dayOfWeek);
+      }
+    });
+    const missing = [0, 1, 2, 3, 4, 5, 6].filter((d) => !daysSeen.has(d));
+    const missingLabels = missing.map((d) => DAY_NAMES[d]).join(', ');
+    return {
+      hasEnoughData: false,
+      hasData: false,
+      peakHoursReady: false,
+      daysCovered: daysSeen.size,
+      missingWeekdays: missing.map((d) => DAY_NAMES[d]),
+      message: `Peak hours are on the way. We need at least one snapshot on each day of the week (${daysSeen.size}/7 so far). Still collecting: ${missingLabels}.`,
+      totalSamples: data.length,
+      today: todayDow,
+      currentHour,
+      currentPercent: null,
+      byDay: {},
+      busiest: null,
+      bestTime: null,
+      busiestDay: null,
+      dataRange: {
+        oldest: data[0]?.timestamp,
+        newest: data[data.length - 1]?.timestamp,
+      },
+      recommendation: {
+        verdict: 'collecting',
+        headline: 'Peak hours coming soon',
+        detail: `We've seen ${daysSeen.size} of 7 weekdays in your data. Once every weekday has at least one reading, the full chart unlocks automatically.`,
         suggestedHour: null,
       },
     };
@@ -223,6 +275,8 @@ async function analyzePeakHours() {
   return {
     hasEnoughData: true,
     hasData: true,
+    peakHoursReady: true,
+    daysCovered: 7,
     totalSamples: data.length,
     today: todayDow,
     currentHour,
