@@ -6,7 +6,7 @@ It unifies live weight room occupancy, class schedules, and crowd insights in on
 ## Live Project
 
 - **Web App:** [https://oskilifts.com](https://oskilifts.com)
-- **API Health Endpoint:** [https://oskilifts.onrender.com/api/health](https://oskilifts.onrender.com/api/health)
+- **API Endpoint Index:** [https://oskilifts.onrender.com/api](https://oskilifts.onrender.com/api)
 
 ## Product Problem and Outcome
 
