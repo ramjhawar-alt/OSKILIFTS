@@ -29,6 +29,11 @@ export interface PeakRecommendation {
 
 export interface PeakHoursData {
   hasEnoughData: boolean;
+  /** True once each weekday (Sun–Sat) has at least one snapshot; drives full chart UI */
+  peakHoursReady?: boolean;
+  /** How many distinct weekdays (0–6) appear in the dataset */
+  daysCovered?: number;
+  missingWeekdays?: string[];
   /** Mirrors hasEnoughData for older responses */
   hasData?: boolean;
   message?: string;
@@ -179,6 +184,7 @@ export async function getPeakHours(): Promise<PeakHoursData> {
     return {
       hasEnoughData: false,
       hasData: false,
+      peakHoursReady: false,
       message:
         'Unable to load peak hours. Check your connection or try again shortly.',
       recommendation: {
