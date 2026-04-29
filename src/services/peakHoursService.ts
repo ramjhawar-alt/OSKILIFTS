@@ -1,17 +1,52 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
+export interface HourBucket {
+  hour: number;
+  avgPercent: number | null;
+  sampleCount?: number;
+}
+
+export interface PeakSlot {
+  hour: number;
+  avgPercent: number;
+  label: string;
+}
+
+export type PeakVerdict =
+  | 'closed'
+  | 'wait'
+  | 'go_now'
+  | 'best_now'
+  | 'collecting';
+
+export interface PeakRecommendation {
+  verdict: PeakVerdict;
+  headline: string;
+  detail: string;
+  suggestedHour: number | null;
+}
+
 export interface PeakHoursData {
-  hasData: boolean;
-  busiest?: string;
-  bestTime?: string;
+  hasEnoughData: boolean;
+  /** Mirrors hasEnoughData for older responses */
+  hasData?: boolean;
   message?: string;
   totalSamples?: number;
-  busiestDay?: string;
+  today?: number;
+  currentHour?: number;
+  currentPercent?: number | null;
+  byDay?: Record<string, HourBucket[]>;
+  busiest?: PeakSlot | null;
+  bestTime?: PeakSlot | null;
+  busiestDay?: string | null;
   dataRange?: {
     oldest?: string;
     newest?: string;
   };
+  recommendation?: PeakRecommendation;
+  busiestText?: string;
+  bestTimeText?: string;
 }
 
 const normalizeBaseUrl = (value?: string | null) => {
@@ -25,34 +60,38 @@ const envBaseUrl = normalizeBaseUrl(
   process.env.EXPO_PUBLIC_OSKILIFTS_API_URL ?? null,
 );
 
-// Helper to extract IP from Expo dev server URL
 const getNetworkIP = (): string | null => {
   try {
-    // Try to get IP from Expo Constants
-    // Check both expoConfig (newer) and manifest (older) for hostUri
-    const hostUri = Constants.expoConfig?.hostUri || 
-                    Constants.manifest?.hostUri ||
-                    Constants.expoConfig?.extra?.hostUri;
-    
+    const hostUri =
+      Constants.expoConfig?.hostUri ||
+      Constants.manifest?.hostUri ||
+      Constants.expoConfig?.extra?.hostUri;
+
     if (hostUri) {
-      // hostUri format: "192.168.1.100:8081" or "exp://192.168.1.100:8081" or "192.168.1.100"
       const match = hostUri.match(/(\d+\.\d+\.\d+\.\d+)/);
       if (match) {
         const ip = match[1];
-        // Filter out localhost and common non-routable IPs
-        if (ip !== '127.0.0.1' && ip !== '0.0.0.0' && !ip.startsWith('169.254.')) {
+        if (
+          ip !== '127.0.0.1' &&
+          ip !== '0.0.0.0' &&
+          !ip.startsWith('169.254.')
+        ) {
           return ip;
         }
       }
     }
-    
-    // Fallback: Try to get IP from debuggerHost (Expo's debugger URL)
-    const debuggerHost = Constants.expoConfig?.debuggerHost || Constants.manifest?.debuggerHost;
+
+    const debuggerHost =
+      Constants.expoConfig?.debuggerHost || Constants.manifest?.debuggerHost;
     if (debuggerHost) {
       const match = debuggerHost.match(/(\d+\.\d+\.\d+\.\d+)/);
       if (match) {
         const ip = match[1];
-        if (ip !== '127.0.0.1' && ip !== '0.0.0.0' && !ip.startsWith('169.254.')) {
+        if (
+          ip !== '127.0.0.1' &&
+          ip !== '0.0.0.0' &&
+          !ip.startsWith('169.254.')
+        ) {
           return ip;
         }
       }
@@ -63,42 +102,38 @@ const getNetworkIP = (): string | null => {
   return null;
 };
 
-// For iOS simulator, always use 127.0.0.1 (more reliable than localhost)
-// For physical devices, use network IP from Expo dev server or env var
-// For web, use localhost in dev, env var in production
 const getBaseUrl = () => {
   if (Platform.OS === 'web') {
-    // For web: always use localhost in development (Expo web dev server)
-    // Only use env var in production builds (deployed to Vercel)
-    const isProduction = typeof window !== 'undefined' && 
-      (window.location.hostname !== 'localhost' && 
-       window.location.hostname !== '127.0.0.1' &&
-       !window.location.hostname.includes('192.168.') &&
-       !window.location.hostname.includes('172.16.'));
-    
-    // In production (Vercel), use env var if set, otherwise fallback to Render URL
+    const isProduction =
+      typeof window !== 'undefined' &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1' &&
+      !window.location.hostname.includes('192.168.') &&
+      !window.location.hostname.includes('172.16.');
+
     if (isProduction) {
       return envBaseUrl || 'https://oskilifts.onrender.com';
     }
-    
-    // In development (Expo web), ALWAYS use localhost (ignore env var)
+
     return 'http://localhost:4000';
   }
 
-  // For native platforms (iOS/Android)
   const networkIP = getNetworkIP();
-  const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.hostUri || '';
-  const debuggerHost = Constants.expoConfig?.debuggerHost || Constants.manifest?.debuggerHost || '';
-  
-  // If env var is set, assume it's for a physical device and use it
+  const hostUri =
+    Constants.expoConfig?.hostUri || Constants.manifest?.hostUri || '';
+  const debuggerHost =
+    Constants.expoConfig?.debuggerHost || Constants.manifest?.debuggerHost || '';
+
   if (envBaseUrl) {
     return envBaseUrl;
   }
-  
-  // Simulator detection
-  const isSimulator = 
-    (hostUri && (hostUri.includes('127.0.0.1') || hostUri.includes('localhost'))) ||
-    (debuggerHost && (debuggerHost.includes('127.0.0.1') || debuggerHost.includes('localhost'))) ||
+
+  const isSimulator =
+    (hostUri &&
+      (hostUri.includes('127.0.0.1') || hostUri.includes('localhost'))) ||
+    (debuggerHost &&
+      (debuggerHost.includes('127.0.0.1') ||
+        debuggerHost.includes('localhost'))) ||
     (!hostUri && !debuggerHost && !networkIP) ||
     Constants.executionEnvironment === 'storeClient';
 
@@ -106,46 +141,53 @@ const getBaseUrl = () => {
     return 'http://127.0.0.1:4000';
   }
 
-  // Physical device: use network IP from Expo dev server
   if (networkIP) {
     return `http://${networkIP}:4000`;
   }
 
-  // Fallback
-  console.warn('[PeakHours API] Could not determine network IP, falling back to localhost. Set EXPO_PUBLIC_OSKILIFTS_API_URL env var if this fails.');
+  console.warn(
+    '[PeakHours API] Could not determine network IP, falling back to localhost. Set EXPO_PUBLIC_OSKILIFTS_API_URL env var if this fails.',
+  );
   return 'http://127.0.0.1:4000';
 };
 
 const API_BASE_URL = getBaseUrl();
 
 /**
- * Get peak hours information for the RSF weight room
- * Fetches from the API which analyzes historical capacity data
+ * Peak hours analytics (historical occupancy patterns).
  */
 export async function getPeakHours(): Promise<PeakHoursData> {
   const url = `${API_BASE_URL}/api/peak-hours`;
-  
+
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     const response = await fetch(url, {
       signal: controller.signal,
+      headers: { Accept: 'application/json' },
     });
     clearTimeout(timeoutId);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch peak hours: ${response.status}`);
     }
-    
-    const data = await response.json() as PeakHoursData;
+
+    const data = (await response.json()) as PeakHoursData;
     return data;
   } catch (error) {
     console.error('[PeakHours] Error fetching peak hours:', error);
-    // Return placeholder if API fails
     return {
+      hasEnoughData: false,
       hasData: false,
-      message: "Unable to load peak hours data. We're collecting data to show you the best times to hit the RSF.",
+      message:
+        'Unable to load peak hours. Check your connection or try again shortly.',
+      recommendation: {
+        verdict: 'collecting',
+        headline: 'Offline',
+        detail:
+          'We could not reach the analytics service. Pull to refresh when you are back online.',
+        suggestedHour: null,
+      },
     };
   }
 }
-

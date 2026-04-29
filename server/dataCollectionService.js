@@ -1,103 +1,166 @@
-const fs = require('fs');
-const path = require('path');
+const { getSupabase, isSupabaseConfigured } = require('./supabaseClient');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const CAPACITY_DATA_FILE = path.join(DATA_DIR, 'capacity_history.json');
+const PACIFIC = 'America/Los_Angeles';
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+let warnedMissingSupabase = false;
+
+const WEEKDAY_TO_INDEX = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
+
+function getPacificParts(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: PACIFIC,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  });
+  const parts = formatter.formatToParts(date);
+  let weekday;
+  let hour = 0;
+  let minute = 0;
+  parts.forEach((part) => {
+    if (part.type === 'weekday') weekday = part.value;
+    if (part.type === 'hour') hour = Number(part.value);
+    if (part.type === 'minute') minute = Number(part.value);
+  });
+  return {
+    dayOfWeek: WEEKDAY_TO_INDEX[weekday] ?? 0,
+    hour,
+    minute,
+  };
 }
 
-/**
- * Load existing capacity data from file
- * @returns {Array} Array of capacity snapshots
- */
-function loadCapacityData() {
-  try {
-    if (fs.existsSync(CAPACITY_DATA_FILE)) {
-      const data = fs.readFileSync(CAPACITY_DATA_FILE, 'utf8');
-      return JSON.parse(data);
+async function insertSnapshotRow(row, attempt = 0) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return false;
+  }
+  const { error } = await supabase.from('capacity_snapshots').insert(row);
+  if (error) {
+    console.error('[DataCollection] Supabase insert error:', error.message);
+    if (attempt < 2) {
+      await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+      return insertSnapshotRow(row, attempt + 1);
     }
-  } catch (error) {
-    console.error('[DataCollection] Error loading capacity data:', error);
+    return false;
   }
-  return [];
+  return true;
 }
 
 /**
- * Save capacity data to file
- * @param {Array} data - Array of capacity snapshots
+ * Persist a capacity snapshot (Pacific-local day/hour for analytics alignment).
+ * @param {Object} status - { currentCount, maxCapacity, isOpen }
  */
-function saveCapacityData(data) {
-  try {
-    fs.writeFileSync(CAPACITY_DATA_FILE, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error('[DataCollection] Error saving capacity data:', error);
-  }
-}
-
-/**
- * Store a capacity snapshot
- * @param {Object} status - Weight room status object with capacity info
- */
-function storeCapacitySnapshot(status) {
+async function storeCapacitySnapshot(status) {
   if (!status || typeof status.currentCount !== 'number') {
-    return; // Skip invalid data
+    return;
+  }
+  if (!isSupabaseConfigured()) {
+    if (!warnedMissingSupabase) {
+      console.warn(
+        '[DataCollection] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set; snapshots not persisted.',
+      );
+      warnedMissingSupabase = true;
+    }
+    return;
   }
 
-  const snapshot = {
-    timestamp: new Date().toISOString(),
-    dayOfWeek: new Date().getDay(), // 0 = Sunday, 1 = Monday, etc.
-    hour: new Date().getHours(),
-    minute: new Date().getMinutes(),
-    currentCount: status.currentCount,
-    maxCapacity: status.maxCapacity || 100, // Default if not provided
-    percentage: status.currentCount / (status.maxCapacity || 100),
-    isOpen: status.isOpen !== false, // Default to true if not specified
+  const now = new Date();
+  const { dayOfWeek, hour, minute } = getPacificParts(now);
+  const maxCap = status.maxCapacity || 100;
+  const pct = status.currentCount / maxCap;
+
+  const row = {
+    recorded_at: now.toISOString(),
+    day_of_week: dayOfWeek,
+    hour,
+    minute,
+    current_count: status.currentCount,
+    max_capacity: maxCap,
+    percentage: pct,
+    is_open: status.isOpen !== false,
   };
 
-  const data = loadCapacityData();
-  data.push(snapshot);
-
-  // Keep only last 90 days of data to prevent file from growing too large
-  const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
-  const filteredData = data.filter(
-    (entry) => new Date(entry.timestamp).getTime() > ninetyDaysAgo,
-  );
-
-  saveCapacityData(filteredData);
-  console.log(`[DataCollection] Stored capacity snapshot: ${snapshot.currentCount}/${snapshot.maxCapacity} at ${snapshot.hour}:${snapshot.minute.toString().padStart(2, '0')}`);
+  const ok = await insertSnapshotRow(row);
+  if (ok) {
+    console.log(
+      `[DataCollection] Stored snapshot: ${row.current_count}/${row.max_capacity} @ Pacific ${hour}:${String(minute).padStart(2, '0')} DOW=${dayOfWeek}`,
+    );
+  }
 }
 
 /**
- * Get all capacity data
- * @returns {Array} Array of capacity snapshots
+ * Load snapshots from the last `days` days for analytics (max ~50k rows server-side cap via range).
  */
-function getCapacityData() {
-  return loadCapacityData();
+async function getCapacitySnapshotsForAnalytics(days = 90) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return [];
+  }
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('capacity_snapshots')
+    .select(
+      'recorded_at, day_of_week, hour, minute, current_count, max_capacity, percentage, is_open',
+    )
+    .gte('recorded_at', since)
+    .order('recorded_at', { ascending: true })
+    .limit(50000);
+
+  if (error) {
+    console.error('[DataCollection] Supabase select error:', error.message);
+    return [];
+  }
+  return (data || []).map((row) => ({
+    timestamp: row.recorded_at,
+    dayOfWeek: row.day_of_week,
+    hour: row.hour,
+    minute: row.minute,
+    currentCount: row.current_count,
+    maxCapacity: row.max_capacity,
+    percentage: row.percentage,
+    isOpen: row.is_open,
+  }));
+}
+
+/** @deprecated Use getCapacitySnapshotsForAnalytics — kept for scripts expecting sync shape */
+async function getCapacityData() {
+  return getCapacitySnapshotsForAnalytics(90);
 }
 
 /**
- * Get capacity data for a specific time range
- * @param {Date} startDate - Start date
- * @param {Date} endDate - End date
- * @returns {Array} Filtered capacity snapshots
+ * Recent rows for debugging (last N by time desc).
  */
-function getCapacityDataRange(startDate, endDate) {
-  const data = loadCapacityData();
-  const startTime = startDate.getTime();
-  const endTime = endDate.getTime();
+async function getRecentCapacityRows(limit = 100) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return [];
+  }
+  const { data, error } = await supabase
+    .from('capacity_snapshots')
+    .select('*')
+    .order('recorded_at', { ascending: false })
+    .limit(limit);
 
-  return data.filter((entry) => {
-    const entryTime = new Date(entry.timestamp).getTime();
-    return entryTime >= startTime && entryTime <= endTime;
-  });
+  if (error) {
+    console.error('[DataCollection] Supabase recent rows error:', error.message);
+    return [];
+  }
+  return data || [];
 }
 
 module.exports = {
   storeCapacitySnapshot,
+  getCapacitySnapshotsForAnalytics,
   getCapacityData,
-  getCapacityDataRange,
+  getRecentCapacityRows,
+  getPacificParts,
 };
-

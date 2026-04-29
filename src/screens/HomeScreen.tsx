@@ -16,6 +16,7 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { RootStackParamList } from '../types/navigation';
 import { fetchWeightRoomStatus } from '../services/api';
 import { getPeakHours, type PeakHoursData } from '../services/peakHoursService';
+import { PeakHoursChart } from '../components/PeakHoursChart';
 import { OskiBear } from '../components/OskiBear';
 import { calculateWorkoutStreak } from '../services/bearStreakService';
 import { getWorkouts } from '../services/workoutStorage';
@@ -41,10 +42,8 @@ export const HomeScreen = () => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [streak, setStreak] = useState(0);
   const [totalWorkouts, setTotalWorkouts] = useState(0);
-  const [peakHours, setPeakHours] = useState<PeakHoursData>({
-    hasData: false,
-    message: "Loading peak hours data...",
-  });
+  const [peakHours, setPeakHours] = useState<PeakHoursData | null>(null);
+  const [peakHoursLoading, setPeakHoursLoading] = useState(true);
 
   const loadData = useCallback(async (showLoading: boolean = true) => {
     try {
@@ -64,15 +63,19 @@ export const HomeScreen = () => {
   }, []);
 
   const loadPeakHours = useCallback(async () => {
+    setPeakHoursLoading(true);
     try {
       const data = await getPeakHours();
       setPeakHours(data);
     } catch (error) {
       console.error('Error loading peak hours:', error);
       setPeakHours({
+        hasEnoughData: false,
         hasData: false,
-        message: "Unable to load peak hours data.",
+        message: 'Unable to load peak hours data.',
       });
+    } finally {
+      setPeakHoursLoading(false);
     }
   }, []);
 
@@ -130,9 +133,9 @@ export const HomeScreen = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadData(), loadWorkoutData()]);
+    await Promise.all([loadData(), loadWorkoutData(), loadPeakHours()]);
     setRefreshing(false);
-  }, [loadData, loadWorkoutData]);
+  }, [loadData, loadWorkoutData, loadPeakHours]);
 
   const statusColor = useMemo(() => {
     const label = status?.status?.toLowerCase() || '';
@@ -215,33 +218,7 @@ export const HomeScreen = () => {
 
         <OskiBear streak={streak} totalWorkouts={totalWorkouts || workouts.length} />
 
-        <View style={styles.peakHoursCard}>
-          <Text style={styles.peakHoursTitle}>Peak Hours</Text>
-          {peakHours.hasData ? (
-            <>
-              <Text style={styles.peakHoursText}>
-                Usually busiest: {peakHours.busiest}
-              </Text>
-              <Text style={styles.peakHoursText}>
-                Best time to go: {peakHours.bestTime}
-              </Text>
-              {peakHours.busiestDay && (
-                <Text style={styles.peakHoursText}>
-                  Busiest day: {peakHours.busiestDay}
-                </Text>
-              )}
-              {peakHours.totalSamples && peakHours.totalSamples > 0 && (
-                <Text style={styles.peakHoursSubtext}>
-                  Based on {peakHours.totalSamples.toLocaleString()} data points
-                </Text>
-              )}
-            </>
-          ) : (
-            <Text style={styles.peakHoursPlaceholder}>
-              {peakHours.message}
-            </Text>
-          )}
-        </View>
+        <PeakHoursChart data={peakHours} loading={peakHoursLoading} />
       </ScrollView>
     </ScreenContainer>
   );
@@ -371,41 +348,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#2563eb',
     fontWeight: '600',
-  },
-  peakHoursCard: {
-    marginTop: 16,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  peakHoursTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 12,
-  },
-  peakHoursText: {
-    fontSize: 14,
-    color: '#475569',
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  peakHoursSubtext: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  peakHoursPlaceholder: {
-    fontSize: 14,
-    color: '#64748b',
-    lineHeight: 20,
-    fontStyle: 'italic',
   },
 });
 
