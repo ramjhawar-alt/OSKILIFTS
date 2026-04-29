@@ -81,6 +81,61 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+app.get('/api', (_req, res) => {
+  res.json({
+    name: 'OSKILIFTS API',
+    status: 'online',
+    docs: 'Use the endpoints list below to explore available routes.',
+    endpoints: [
+      {
+        method: 'GET',
+        path: '/api/health',
+        description: 'Service health and server time',
+      },
+      {
+        method: 'GET',
+        path: '/api/weightroom',
+        description: 'Live weight room occupancy snapshot',
+      },
+      {
+        method: 'GET',
+        path: '/api/classes?startDate=YYYY-MM-DD',
+        description: 'Group fitness schedule window',
+      },
+      {
+        method: 'GET',
+        path: '/api/hoopers',
+        description: 'Current hoopers crowd estimate',
+      },
+      {
+        method: 'POST',
+        path: '/api/hoopers/checkin',
+        description: 'Check in a user by userId',
+      },
+      {
+        method: 'POST',
+        path: '/api/hoopers/checkout',
+        description: 'Check out a user by userId',
+      },
+      {
+        method: 'GET',
+        path: '/api/hoopers/status/:userId',
+        description: 'Check whether a user is currently checked in',
+      },
+      {
+        method: 'GET',
+        path: '/api/peak-hours',
+        description: 'Peak-hours analytics from collected snapshots',
+      },
+      {
+        method: 'GET',
+        path: '/api/capacity-data',
+        description: 'Recent raw capacity snapshots (last 100)',
+      },
+    ],
+  });
+});
+
 app.get('/api/health', (req, res) => {
   console.log(`[API] Health check from: ${req.headers.origin || 'unknown'} (${req.ip})`);
   res.json({ ok: true, time: new Date().toISOString() });
