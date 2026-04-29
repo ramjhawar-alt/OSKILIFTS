@@ -5,8 +5,8 @@ It unifies live weight room occupancy, class schedules, and crowd insights in on
 
 ## Live Project
 
-- **Web App:** [https://oskilifts.vercel.app](https://oskilifts.vercel.app)
-- **API Base:** [https://oskilifts.onrender.com](https://oskilifts.onrender.com)
+- **Web App:** [https://oskilifts.com](https://oskilifts.com)
+- **API Health Endpoint:** [https://oskilifts.onrender.com/api/health](https://oskilifts.onrender.com/api/health)
 
 ## Product Problem and Outcome
 
