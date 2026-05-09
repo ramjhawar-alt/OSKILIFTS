@@ -98,7 +98,10 @@ async function storeCapacitySnapshot(status) {
 }
 
 /**
- * Load snapshots from the last `days` days for analytics (max ~50k rows server-side cap via range).
+ * Load snapshots from the last `days` days for analytics.
+ * Supabase/PostgREST often caps each response at 1000 rows; a single .limit(50000) still only returns
+ * the first page — which for ascending order is the *oldest* rows, hiding recent data and breaking
+ * weekday coverage + dataRange. Paginate with .range() until exhausted.
  */
 async function getCapacitySnapshotsForAnalytics(days = 90) {
   const supabase = getSupabase();
@@ -106,20 +109,38 @@ async function getCapacitySnapshotsForAnalytics(days = 90) {
     return [];
   }
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-  const { data, error } = await supabase
-    .from('capacity_snapshots')
-    .select(
-      'recorded_at, day_of_week, hour, minute, current_count, max_capacity, percentage, is_open',
-    )
-    .gte('recorded_at', since)
-    .order('recorded_at', { ascending: true })
-    .limit(50000);
+  const PAGE = 1000;
+  const MAX_ROWS = 50000;
+  const columns =
+    'recorded_at, day_of_week, hour, minute, current_count, max_capacity, percentage, is_open';
 
-  if (error) {
-    console.error('[DataCollection] Supabase select error:', error.message);
-    return [];
+  const allRows = [];
+  let offset = 0;
+
+  while (allRows.length < MAX_ROWS) {
+    const to = offset + PAGE - 1;
+    const { data, error } = await supabase
+      .from('capacity_snapshots')
+      .select(columns)
+      .gte('recorded_at', since)
+      .order('recorded_at', { ascending: true })
+      .range(offset, to);
+
+    if (error) {
+      console.error('[DataCollection] Supabase select error:', error.message);
+      return [];
+    }
+    if (!data?.length) {
+      break;
+    }
+    allRows.push(...data);
+    if (data.length < PAGE) {
+      break;
+    }
+    offset += PAGE;
   }
-  return (data || []).map((row) => ({
+
+  return allRows.map((row) => ({
     timestamp: row.recorded_at,
     dayOfWeek: row.day_of_week,
     hour: row.hour,
