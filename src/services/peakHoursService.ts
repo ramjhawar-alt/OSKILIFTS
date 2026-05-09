@@ -1,10 +1,34 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
+export type HourConfidence = 'low' | 'medium' | 'high';
+
 export interface HourBucket {
   hour: number;
   avgPercent: number | null;
   sampleCount?: number;
+  /** Average headcount in this hour bucket (when avgPercent is set) */
+  avgOccupancy?: number | null;
+  avgCapacity?: number | null;
+  /** Sample-size tier for this cell */
+  confidence?: HourConfidence | null;
+  /** 0–100: busier than this fraction of open-hour cells in the dataset (ties averaged) */
+  weekPercentile?: number | null;
+}
+
+export interface PerDaySummary {
+  dayOfWeek: number;
+  dayName: string;
+  peakHour: number | null;
+  peakAvgPercent: number | null;
+  peakAvgOccupancy: number | null;
+  quietHour: number | null;
+  quietAvgPercent: number | null;
+  quietAvgOccupancy: number | null;
+  dayMeanPercent: number | null;
+  daySampleCount: number;
+  hoursWithData: number;
+  hoursOpen: number;
 }
 
 export interface PeakSlot {
@@ -42,6 +66,10 @@ export interface PeakHoursData {
   currentHour?: number;
   currentPercent?: number | null;
   byDay?: Record<string, HourBucket[]>;
+  /** Analytics summary per weekday key "0"…"6" */
+  perDaySummary?: Record<string, PerDaySummary>;
+  /** Templated cross-day insights */
+  insights?: string[];
   busiest?: PeakSlot | null;
   bestTime?: PeakSlot | null;
   busiestDay?: string | null;
@@ -186,6 +214,8 @@ export async function getPeakHours(): Promise<PeakHoursData> {
       hasEnoughData: false,
       hasData: false,
       peakHoursReady: false,
+      perDaySummary: {},
+      insights: [],
       message:
         'Unable to load peak hours. Check your connection or try again shortly.',
       recommendation: {

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Dimensions,
+  Platform,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -8,9 +10,11 @@ import {
 } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 
+import {
+  getOperatingHoursForDay,
+  pickHourTicks,
+} from '../data/rsfWeightRoomHours';
 import type { HourBucket, PeakHoursData } from '../services/peakHoursService';
-
-const HOURS = Array.from({ length: 18 }, (_, i) => i + 6);
 
 const SHORT_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const FULL_DAYS = [
@@ -23,11 +27,38 @@ const FULL_DAYS = [
   'Saturday',
 ];
 
+function formatHour12(hour: number): string {
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const display = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${display}:00 ${period}`;
+}
+
+function formatHourShort(hour: number): string {
+  const period = hour >= 12 ? 'p' : 'a';
+  const display = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${display}${period}`;
+}
+
+function confidenceLabel(
+  c: string | null | undefined,
+): string | null {
+  if (!c) return null;
+  if (c === 'low') return 'Lower confidence (fewer samples in this hour)';
+  if (c === 'medium') return 'Moderate confidence';
+  return 'Higher confidence';
+}
+
 function barColor(avgPercent: number | null): string {
   if (avgPercent == null) return '#e2e8f0';
   if (avgPercent < 35) return '#86efac';
   if (avgPercent <= 65) return '#fcd34d';
   return '#fca5a5';
+}
+
+function barFillOpacity(confidence: string | null | undefined): number {
+  if (confidence === 'low') return 0.55;
+  if (confidence === 'medium') return 0.82;
+  return 1;
 }
 
 function verdictStyles(verdict: string | undefined) {
@@ -45,6 +76,51 @@ function verdictStyles(verdict: string | undefined) {
   }
 }
 
+type BarHitProps = {
+  hour: number;
+  width: number;
+  height: number;
+  marginRight: number;
+  onHover: (hour: number | null) => void;
+  onTogglePin: (hour: number) => void;
+};
+
+function BarHitTarget({
+  hour,
+  width,
+  height,
+  marginRight,
+  onHover,
+  onTogglePin,
+}: BarHitProps) {
+  const webHandlers =
+    Platform.OS === 'web'
+      ? ({
+          onMouseEnter: () => onHover(hour),
+          onMouseLeave: () => onHover(null),
+        } as Record<string, unknown>)
+      : {};
+
+  return (
+    <Pressable
+      accessibilityLabel={`${formatHour12(hour)} occupancy`}
+      onHoverIn={() => onHover(hour)}
+      onHoverOut={() => onHover(null)}
+      onPress={() => onTogglePin(hour)}
+      {...webHandlers}
+      style={[
+        {
+          width,
+          height,
+          marginRight,
+          zIndex: 2,
+        },
+        Platform.OS === 'web' ? ({ cursor: 'crosshair' } as const) : null,
+      ]}
+    />
+  );
+}
+
 type Props = {
   data: PeakHoursData | null;
   loading: boolean;
@@ -52,12 +128,13 @@ type Props = {
 
 export function PeakHoursChart({ data, loading }: Props) {
   const [selectedDay, setSelectedDay] = useState(0);
+  const [hoveredHour, setHoveredHour] = useState<number | null>(null);
+  const [pinnedHour, setPinnedHour] = useState<number | null>(null);
 
   const screenW = Dimensions.get('window').width;
   const chartWidth = Math.max(280, screenW - 56);
   const chartHeight = 132;
   const gap = 2;
-  const barW = (chartWidth - gap * (HOURS.length - 1)) / HOURS.length;
 
   useEffect(() => {
     if (data?.today != null) {
@@ -65,24 +142,71 @@ export function PeakHoursChart({ data, loading }: Props) {
     }
   }, [data?.today]);
 
+  useEffect(() => {
+    setHoveredHour(null);
+    setPinnedHour(null);
+  }, [selectedDay]);
+
+  const { hours: displayHours, label: hoursLabel } = useMemo(
+    () => getOperatingHoursForDay(selectedDay),
+    [selectedDay],
+  );
+
+  const barW =
+    displayHours.length > 0
+      ? (chartWidth - gap * (displayHours.length - 1)) / displayHours.length
+      : 0;
+
   const series: HourBucket[] = useMemo(() => {
     if (!data?.byDay) return [];
     return data.byDay[String(selectedDay)] ?? [];
   }, [data?.byDay, selectedDay]);
 
+  const selectedDaySummary = data?.perDaySummary?.[String(selectedDay)];
+
   const todayDow = data?.today ?? 0;
+
+  const defaultDetailHour = useMemo(() => {
+    if (!displayHours.length) return null;
+    if (
+      selectedDay === todayDow &&
+      data?.currentHour != null &&
+      displayHours.includes(data.currentHour)
+    ) {
+      return data.currentHour;
+    }
+    const peak = selectedDaySummary?.peakHour;
+    if (peak != null && displayHours.includes(peak)) return peak;
+    return displayHours[Math.floor(displayHours.length / 2)] ?? null;
+  }, [
+    displayHours,
+    selectedDay,
+    todayDow,
+    data?.currentHour,
+    selectedDaySummary?.peakHour,
+  ]);
+
+  const detailHour =
+    hoveredHour ?? pinnedHour ?? defaultDetailHour ?? null;
+
   const showNowMarker =
     selectedDay === todayDow &&
     data?.hasEnoughData &&
     data.currentHour != null &&
-    data.currentHour >= 6 &&
-    data.currentHour <= 23;
+    displayHours.includes(data.currentHour);
 
-  const nowIndex = showNowMarker ? data!.currentHour! - 6 : -1;
+  const nowIndex = showNowMarker
+    ? displayHours.indexOf(data!.currentHour!)
+    : -1;
   const nowX =
     nowIndex >= 0
       ? nowIndex * (barW + gap) + barW / 2
       : -1;
+
+  const tickHours = useMemo(
+    () => pickHourTicks(displayHours),
+    [displayHours],
+  );
 
   const footerSamples = data?.totalSamples ?? 0;
   const oldestLabel = data?.dataRange?.oldest
@@ -92,6 +216,11 @@ export function PeakHoursChart({ data, loading }: Props) {
         year: 'numeric',
       })
     : null;
+
+  const detailBucket =
+    detailHour != null
+      ? series.find((x) => x.hour === detailHour)
+      : undefined;
 
   if (loading) {
     return (
@@ -145,30 +274,76 @@ export function PeakHoursChart({ data, loading }: Props) {
   const rec = data.recommendation;
   const vs = verdictStyles(rec?.verdict);
 
+  const onTogglePin = (hour: number) => {
+    setPinnedHour((p) => (p === hour ? null : hour));
+  };
+
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Peak hours</Text>
-      <Text style={styles.subtitle}>
-        Typical foot traffic on {FULL_DAYS[selectedDay] ?? 'this day'}
+      <Text style={styles.lead}>
+        Historical occupancy from snapshots — compare a typical weekday to what
+        is happening live when you select today.
       </Text>
 
-      {rec ? (
-        <View
-          style={[
-            styles.recBanner,
-            { backgroundColor: vs.bg, borderLeftColor: vs.border },
-          ]}
-        >
-          <Text style={[styles.recHeadline, { color: vs.accent }]}>
-            {rec.headline}
+      <View style={styles.dayRow}>
+        {SHORT_DAYS.map((label, idx) => {
+          const active = selectedDay === idx;
+          return (
+            <TouchableOpacity
+              key={label}
+              onPress={() => setSelectedDay(idx)}
+              style={[styles.dayChip, active && styles.dayChipActive]}
+            >
+              <Text
+                style={[styles.dayChipText, active && styles.dayChipTextActive]}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {selectedDay === todayDow && rec && data.hasEnoughData ? (
+        <View style={styles.liveBlock}>
+          <Text style={styles.sectionLabel}>Live</Text>
+          <Text style={styles.liveContext}>
+            {FULL_DAYS[todayDow]} · {formatHour12(data.currentHour ?? 0)}{' '}
+            Pacific
+            {data.currentPercent != null
+              ? ` · ~${data.currentPercent}% full (recent / typical)`
+              : ''}
           </Text>
-          <Text style={styles.recDetail}>{rec.detail}</Text>
-          {rec.verdict === 'wait' && rec.suggestedHour != null ? (
-            <Text style={styles.recHint}>
-              Try around{' '}
-              {formatHour12(rec.suggestedHour)}
+          <View
+            style={[
+              styles.recBanner,
+              { backgroundColor: vs.bg, borderLeftColor: vs.border },
+            ]}
+          >
+            <Text style={[styles.recHeadline, { color: vs.accent }]}>
+              {rec.headline}
             </Text>
-          ) : null}
+            <Text style={styles.recDetail}>{rec.detail}</Text>
+            {rec.verdict === 'wait' && rec.suggestedHour != null ? (
+              <Text style={styles.recHint}>
+                Try around {formatHour12(rec.suggestedHour)}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
+      {selectedDay !== todayDow ? (
+        <View style={styles.recBannerMuted}>
+          <Text style={styles.recHeadlineMuted}>
+            Typical {FULL_DAYS[selectedDay]}
+          </Text>
+          <Text style={styles.recDetailMuted}>
+            Select the {SHORT_DAYS[todayDow]} chip to open the Live section for
+            today ({FULL_DAYS[todayDow]}). Everything below summarizes
+            historical patterns for {FULL_DAYS[selectedDay]} only.
+          </Text>
         </View>
       ) : null}
 
@@ -179,60 +354,143 @@ export function PeakHoursChart({ data, loading }: Props) {
         </Text>
       ) : (
         <>
-          <View style={styles.dayRow}>
-            {SHORT_DAYS.map((label, idx) => {
-              const active = selectedDay === idx;
-              return (
-                <TouchableOpacity
-                  key={label}
-                  onPress={() => setSelectedDay(idx)}
-                  style={[styles.dayChip, active && styles.dayChipActive]}
-                >
-                  <Text
-                    style={[styles.dayChipText, active && styles.dayChipTextActive]}
-                  >
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <Text style={styles.sectionLabel}>
+            Typical {FULL_DAYS[selectedDay]}
+          </Text>
+          <Text style={styles.hoursNote}>RSF weight room: {hoursLabel}</Text>
+          <Text style={styles.barsExplainer}>
+            One bar per clock hour while open. Axis ticks are spaced for
+            readability; hover or tap a bar for the full breakdown.
+          </Text>
 
           <View style={styles.chartWrap}>
-            <Svg width={chartWidth} height={chartHeight}>
-              {HOURS.map((hour, i) => {
-                const bucket = series.find((b) => b.hour === hour);
-                const pct = bucket?.avgPercent;
-                const h =
-                  pct != null ? Math.max(4, (pct / 100) * (chartHeight - 8)) : 4;
-                const x = i * (barW + gap);
-                const y = chartHeight - h;
-                return (
-                  <Rect
-                    key={hour}
-                    x={x}
-                    y={y}
-                    width={barW}
-                    height={h}
-                    rx={3}
-                    fill={barColor(pct ?? null)}
+            <View
+              style={[styles.chartInner, { width: chartWidth, height: chartHeight }]}
+            >
+              <Svg
+                pointerEvents="none"
+                width={chartWidth}
+                height={chartHeight}
+                style={styles.chartSvg}
+              >
+                {displayHours.map((hour, i) => {
+                  const bucket = series.find((b) => b.hour === hour);
+                  const pct = bucket?.avgPercent;
+                  const h =
+                    pct != null
+                      ? Math.max(4, (pct / 100) * (chartHeight - 8))
+                      : 4;
+                  const x = i * (barW + gap);
+                  const y = chartHeight - h;
+                  const active = detailHour === hour;
+                  const fo = barFillOpacity(bucket?.confidence);
+                  return (
+                    <Rect
+                      key={hour}
+                      x={x}
+                      y={y}
+                      width={barW}
+                      height={h}
+                      rx={3}
+                      fill={barColor(pct ?? null)}
+                      fillOpacity={fo}
+                      stroke={active ? '#6366f1' : 'transparent'}
+                      strokeWidth={active ? 2 : 0}
+                    />
+                  );
+                })}
+                {nowIndex >= 0 && nowX >= 0 ? (
+                  <Line
+                    x1={nowX}
+                    y1={4}
+                    x2={nowX}
+                    y2={chartHeight - 2}
+                    stroke="#6366f1"
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
                   />
-                );
-              })}
-              {nowIndex >= 0 && nowX >= 0 ? (
-                <Line
-                  x1={nowX}
-                  y1={4}
-                  x2={nowX}
-                  y2={chartHeight - 2}
-                  stroke="#6366f1"
-                  strokeWidth={2}
-                  strokeDasharray="4 4"
-                />
-              ) : null}
-            </Svg>
-            <View style={styles.hourLabels}>
-              {HOURS.filter((_, i) => i % 3 === 0).map((hour) => (
+                ) : null}
+              </Svg>
+              <View
+                pointerEvents="box-none"
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  styles.hitLayer,
+                  { flexDirection: 'row' },
+                ]}
+              >
+                {displayHours.map((hour, i) => (
+                  <BarHitTarget
+                    key={`hit-${hour}`}
+                    hour={hour}
+                    width={barW}
+                    height={chartHeight}
+                    marginRight={i < displayHours.length - 1 ? gap : 0}
+                    onHover={setHoveredHour}
+                    onTogglePin={onTogglePin}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.detailPanel}>
+              <Text style={styles.detailTitle}>Selected hour</Text>
+              {detailBucket && detailBucket.avgPercent != null ? (
+                <>
+                  <Text style={styles.detailMain}>
+                    {formatHour12(detailHour!)} — ~{detailBucket.avgPercent}%
+                    full
+                  </Text>
+                  {detailBucket.avgOccupancy != null ? (
+                    <Text style={styles.detailLine}>
+                      ~{detailBucket.avgOccupancy} people on average
+                      {detailBucket.avgCapacity != null
+                        ? ` (capacity ~${detailBucket.avgCapacity})`
+                        : ''}
+                    </Text>
+                  ) : null}
+                  {detailBucket.sampleCount != null ? (
+                    <Text style={styles.detailLine}>
+                      Based on {detailBucket.sampleCount} snapshot
+                      {detailBucket.sampleCount === 1 ? '' : 's'} in this
+                      (day, hour) cell
+                    </Text>
+                  ) : null}
+                  {confidenceLabel(detailBucket.confidence) ? (
+                    <Text style={styles.detailMuted}>
+                      {confidenceLabel(detailBucket.confidence)}
+                    </Text>
+                  ) : null}
+                  {detailBucket.weekPercentile != null ? (
+                    <Text style={styles.detailLine}>
+                      Week rank: busier than ~{detailBucket.weekPercentile}% of
+                      open-hour slots in this dataset (0 = quietest, 100 =
+                      busiest).
+                    </Text>
+                  ) : null}
+                </>
+              ) : detailHour != null ? (
+                <Text style={styles.detailMuted}>
+                  {formatHour12(detailHour)} — not enough samples in this cell
+                  yet.
+                </Text>
+              ) : (
+                <Text style={styles.detailMuted}>Select a bar to inspect.</Text>
+              )}
+            </View>
+
+            <Text style={styles.hoverHint}>
+              Hover (web) or tap a bar to pin. Dashed line: current time when
+              viewing today.
+            </Text>
+
+            <View
+              style={[
+                styles.hourLabels,
+                { width: chartWidth, maxWidth: chartWidth },
+              ]}
+            >
+              {tickHours.map((hour) => (
                 <Text key={hour} style={styles.hourTick}>
                   {formatHourShort(hour)}
                 </Text>
@@ -240,19 +498,60 @@ export function PeakHoursChart({ data, loading }: Props) {
             </View>
           </View>
 
-          {data.busiestText || data.bestTimeText ? (
+          {selectedDaySummary &&
+          (selectedDaySummary.peakHour != null ||
+            selectedDaySummary.quietHour != null) ? (
             <View style={styles.summaryRow}>
-              {data.busiestText ? (
-                <Text style={styles.summaryText}>Busy: {data.busiestText}</Text>
-              ) : null}
-              {data.bestTimeText ? (
-                <Text style={styles.summaryText}>Quiet: {data.bestTimeText}</Text>
-              ) : null}
-              {data.busiestDay ? (
+              {selectedDaySummary.peakHour != null ? (
                 <Text style={styles.summaryText}>
-                  Busiest day: {data.busiestDay}
+                  {FULL_DAYS[selectedDay]} peaks around{' '}
+                  {formatHour12(selectedDaySummary.peakHour)} (~
+                  {selectedDaySummary.peakAvgPercent}% full
+                  {selectedDaySummary.peakAvgOccupancy != null
+                    ? `, ~${selectedDaySummary.peakAvgOccupancy} people avg`
+                    : ''}
+                  ).
                 </Text>
               ) : null}
+              {selectedDaySummary.quietHour != null ? (
+                <Text style={styles.summaryText}>
+                  Quietest hour: {formatHour12(selectedDaySummary.quietHour)}{' '}
+                  (~{selectedDaySummary.quietAvgPercent}% full
+                  {selectedDaySummary.quietAvgOccupancy != null
+                    ? `, ~${selectedDaySummary.quietAvgOccupancy} people avg`
+                    : ''}
+                  ).
+                </Text>
+              ) : null}
+              {selectedDaySummary.dayMeanPercent != null ? (
+                <Text style={styles.summaryText}>
+                  Day mean (open hours with data): ~{' '}
+                  {selectedDaySummary.dayMeanPercent}% full
+                </Text>
+              ) : null}
+              <Text style={styles.summaryFootnote}>
+                Coverage: {selectedDaySummary.hoursWithData} /{' '}
+                {selectedDaySummary.hoursOpen} open hours with enough samples ·{' '}
+                {selectedDaySummary.daySampleCount.toLocaleString()} row
+                snapshots for this weekday
+              </Text>
+              {data.busiestDay ? (
+                <Text style={styles.summaryFootnote}>
+                  Whole-week context: {data.busiestDay} is busiest on average
+                  across all days in the dataset.
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+
+          {data.insights && data.insights.length > 0 ? (
+            <View style={styles.insightsSection}>
+              <Text style={styles.sectionLabel}>What the data suggests</Text>
+              {data.insights.map((line, i) => (
+                <Text key={i} style={styles.insightBullet}>
+                  • {line}
+                </Text>
+              ))}
             </View>
           ) : null}
 
@@ -265,18 +564,6 @@ export function PeakHoursChart({ data, loading }: Props) {
       )}
     </View>
   );
-}
-
-function formatHour12(hour: number): string {
-  const period = hour >= 12 ? 'PM' : 'AM';
-  const display = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${display}:00 ${period}`;
-}
-
-function formatHourShort(hour: number): string {
-  const period = hour >= 12 ? 'p' : 'a';
-  const display = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${display}${period}`;
 }
 
 const styles = StyleSheet.create({
@@ -295,18 +582,54 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#0f172a',
-    marginBottom: 4,
+    marginBottom: 6,
+  },
+  lead: {
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  liveBlock: {
+    marginBottom: 14,
+  },
+  liveContext: {
+    fontSize: 13,
+    color: '#475569',
+    marginBottom: 8,
+    fontWeight: '600',
   },
   subtitle: {
     fontSize: 13,
     color: '#64748b',
+    marginBottom: 4,
+  },
+  hoursNote: {
+    fontSize: 12,
+    color: '#64748b',
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  barsExplainer: {
+    fontSize: 11,
+    color: '#94a3b8',
     marginBottom: 12,
+    lineHeight: 16,
+    fontStyle: 'italic',
   },
   recBanner: {
     borderLeftWidth: 4,
     padding: 12,
     borderRadius: 12,
-    marginBottom: 14,
   },
   recHeadline: {
     fontSize: 16,
@@ -323,6 +646,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#64748b',
+  },
+  recBannerMuted: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#cbd5e1',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 14,
+    backgroundColor: '#f8fafc',
+  },
+  recHeadlineMuted: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 4,
+  },
+  recDetailMuted: {
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 18,
   },
   dayRow: {
     flexDirection: 'row',
@@ -351,27 +693,98 @@ const styles = StyleSheet.create({
   chartWrap: {
     alignItems: 'center',
   },
+  chartInner: {
+    position: 'relative',
+  },
+  chartSvg: {
+    zIndex: 0,
+  },
+  hitLayer: {
+    zIndex: 1,
+  },
+  detailPanel: {
+    marginTop: 12,
+    alignSelf: 'stretch',
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  detailTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  },
+  detailMain: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 6,
+  },
+  detailLine: {
+    fontSize: 13,
+    color: '#334155',
+    lineHeight: 19,
+    marginBottom: 4,
+  },
+  detailMuted: {
+    fontSize: 12,
+    color: '#64748b',
+    lineHeight: 17,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  hoverHint: {
+    marginTop: 8,
+    fontSize: 11,
+    color: '#94a3b8',
+    alignSelf: 'stretch',
+    textAlign: 'center',
+  },
   hourLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
     marginTop: 6,
   },
   hourTick: {
     fontSize: 10,
     color: '#94a3b8',
   },
+  insightsSection: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  insightBullet: {
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
   summaryRow: {
-    marginTop: 12,
-    gap: 4,
+    marginTop: 14,
+    gap: 6,
   },
   summaryText: {
     fontSize: 13,
     color: '#475569',
+    lineHeight: 19,
+  },
+  summaryFootnote: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginTop: 4,
+    fontStyle: 'italic',
+    lineHeight: 17,
   },
   footer: {
-    marginTop: 10,
+    marginTop: 12,
     fontSize: 12,
     color: '#94a3b8',
     fontStyle: 'italic',
