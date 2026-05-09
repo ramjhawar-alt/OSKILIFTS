@@ -169,6 +169,7 @@ export async function getPeakHours(): Promise<PeakHoursData> {
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     const response = await fetch(url, {
       signal: controller.signal,
+      cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
     clearTimeout(timeoutId);
