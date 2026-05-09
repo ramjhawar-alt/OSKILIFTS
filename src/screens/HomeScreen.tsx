@@ -72,6 +72,8 @@ export const HomeScreen = () => {
       setPeakHours({
         hasEnoughData: false,
         hasData: false,
+        perDaySummary: {},
+        insights: [],
         message: 'Unable to load peak hours data.',
       });
     } finally {
