@@ -264,8 +264,8 @@ app.get('/api/hoopers/status/:userId', (req, res) => {
 app.get('/api/peak-hours', async (_req, res) => {
   try {
     const analysis = await analyzePeakHours();
-    // Cache for 1 hour since this doesn't change frequently
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    // Do not cache: values change as snapshots arrive and after deploys; long cache caused stale "coming soon" UI.
+    res.setHeader('Cache-Control', 'private, no-store');
     res.json(analysis);
   } catch (error) {
     console.error('Error analyzing peak hours:', error);
