@@ -14,21 +14,21 @@ const MBO_WIDGET_ID = process.env.MBO_WIDGET_ID || '3262';
 const MBO_BASE_URL = 'https://widgets.mindbodyonline.com';
 const PACIFIC_TIMEZONE = 'America/Los_Angeles';
 
-/** RSF facility hours per RecWell (recwell.berkeley.edu/rsf-hours); weight room follows facility access. */
+/** RSF facility hours per RecWell (recwell.berkeley.edu/rsf-hours). Summer 2026: 5/16–8/22. */
 const WEIGHTROOM_HOURS = {
-  0: { open: '08:00', close: '23:00' }, // Sunday 8a–11p
-  1: { open: '07:00', close: '23:00' }, // Mon–Fri 7a–11p
-  2: { open: '07:00', close: '23:00' },
-  3: { open: '07:00', close: '23:00' },
-  4: { open: '07:00', close: '23:00' },
-  5: { open: '07:00', close: '23:00' },
+  0: { open: '08:00', close: '20:00' }, // Sunday 8a–8p
+  1: { open: '07:00', close: '20:00' }, // Mon–Fri 7a–8p
+  2: { open: '07:00', close: '20:00' },
+  3: { open: '07:00', close: '20:00' },
+  4: { open: '07:00', close: '20:00' },
+  5: { open: '07:00', close: '20:00' },
   6: { open: '08:00', close: '18:00' }, // Saturday 8a–6p
 };
 
 const WEIGHTROOM_HOURS_DISPLAY = [
-  { label: 'Mon – Fri', open: '7:00 AM', close: '11:00 PM' },
+  { label: 'Mon – Fri', open: '7:00 AM', close: '8:00 PM' },
   { label: 'Sat', open: '8:00 AM', close: '6:00 PM' },
-  { label: 'Sun', open: '8:00 AM', close: '11:00 PM' },
+  { label: 'Sun', open: '8:00 AM', close: '8:00 PM' },
 ];
 
 const cache = new Map();

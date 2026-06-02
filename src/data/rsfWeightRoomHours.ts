@@ -1,27 +1,27 @@
 /**
  * RSF facility hours (Pacific), aligned with server/rsfService.js WEIGHTROOM_HOURS
- * and RecWell published RSF schedule.
+ * and RecWell published RSF schedule. Summer 2026: 5/16–8/22.
  */
 export const WEIGHT_ROOM_HOURS_BY_DOW: Record<
   number,
   { open: string; close: string }
 > = {
-  0: { open: '08:00', close: '23:00' },
-  1: { open: '07:00', close: '23:00' },
-  2: { open: '07:00', close: '23:00' },
-  3: { open: '07:00', close: '23:00' },
-  4: { open: '07:00', close: '23:00' },
-  5: { open: '07:00', close: '23:00' },
-  6: { open: '08:00', close: '18:00' },
+  0: { open: '08:00', close: '20:00' }, // Summer: Sun 8a–8p
+  1: { open: '07:00', close: '20:00' }, // Summer: Mon–Fri 7a–8p
+  2: { open: '07:00', close: '20:00' },
+  3: { open: '07:00', close: '20:00' },
+  4: { open: '07:00', close: '20:00' },
+  5: { open: '07:00', close: '20:00' },
+  6: { open: '08:00', close: '18:00' }, // Summer: Sat 8a–6p
 };
 
 export const WEIGHT_ROOM_HOURS_LABEL: Record<number, string> = {
-  0: 'Sun 8a–11p',
-  1: 'Mon 7a–11p',
-  2: 'Tue 7a–11p',
-  3: 'Wed 7a–11p',
-  4: 'Thu 7a–11p',
-  5: 'Fri 7a–11p',
+  0: 'Sun 8a–8p',
+  1: 'Mon 7a–8p',
+  2: 'Tue 7a–8p',
+  3: 'Wed 7a–8p',
+  4: 'Thu 7a–8p',
+  5: 'Fri 7a–8p',
   6: 'Sat 8a–6p',
 };
 
