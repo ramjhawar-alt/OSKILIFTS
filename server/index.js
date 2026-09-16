@@ -163,8 +163,12 @@ app.get('/api/classes', async (req, res) => {
   try {
     const startDate = req.query.startDate || getPacificISODate();
     const data = await fetchGroupFitnessSchedule(startDate);
-    // Add cache headers for client-side caching
-    res.setHeader('Cache-Control', 'public, max-age=1800'); // Cache for 30 minutes
+    // Add cache headers for client-side caching. Kept in step with the
+    // in-memory 5-minute cache in rsfService.js — a longer client-side
+    // max-age would let browsers keep serving a stale response (e.g. from
+    // before a scraper fix ships) well after the backend itself has fresh
+    // data.
+    res.setHeader('Cache-Control', 'public, max-age=300'); // Cache for 5 minutes
     res.json(data);
   } catch (error) {
     console.error('Error fetching class schedule:', error);

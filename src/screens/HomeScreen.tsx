@@ -50,8 +50,12 @@ export const HomeScreen = () => {
       if (showLoading) {
         setError(null);
       }
-      // This will return cached data immediately if available, then fetch fresh data in background
-      const data = await fetchWeightRoomStatus(true);
+      // Always bypass the data-layer cache here: the mount effect already
+      // painted whatever was cached via loadCachedData() below, so this call
+      // is responsible for getting a genuinely fresh response into state
+      // (a background revalidation inside fetchWeightRoomStatus(true) would
+      // update the cache but never reach this component's state).
+      const data = await fetchWeightRoomStatus(false);
       setStatus(data);
     } catch (err) {
       setError(

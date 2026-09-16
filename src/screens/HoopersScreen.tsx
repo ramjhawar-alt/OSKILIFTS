@@ -45,8 +45,11 @@ export const HoopersScreen = () => {
       if (showLoading) {
         setError(null);
       }
-      // This will return cached data immediately if available, then fetch fresh data in background
-      const data = await getHoopersStatus(true);
+      // Always bypass the data-layer cache here so status updates (check-ins,
+      // player counts) actually reach this component — a background
+      // revalidation inside getHoopersStatus(true) would update the cache
+      // but never propagate to state, which matters for a 30s poll loop.
+      const data = await getHoopersStatus(false);
       setStatus(data);
     } catch (error: any) {
       console.error('Error loading hoopers status:', error);
