@@ -8,6 +8,7 @@ import type {
   CheckInStatusResponse,
 } from '../types/hoopers';
 import { getCached, setCached, CACHE_KEYS, CACHE_EXPIRY } from './cache';
+import { getTimeoutErrorMessage } from './api';
 
 const normalizeBaseUrl = (value?: string | null) => {
   if (!value) {
@@ -190,7 +191,7 @@ export async function getHoopersStatus(useCache: boolean = true): Promise<Hooper
   } catch (error) {
     console.error(`[Hoopers API] Fetch error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out. Is the server running at ' + url + '?');
+      throw new Error(getTimeoutErrorMessage(url, getNetworkIP()));
     }
     throw error;
   }
@@ -217,7 +218,7 @@ export async function checkIn(userId: string): Promise<CheckInResponse> {
   } catch (error) {
     console.error(`[Hoopers API] Check-in error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out. Is the server running at ' + url + '?');
+      throw new Error(getTimeoutErrorMessage(url, getNetworkIP()));
     }
     throw error;
   }
@@ -244,7 +245,7 @@ export async function checkOut(userId: string): Promise<CheckOutResponse> {
   } catch (error) {
     console.error(`[Hoopers API] Check-out error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out. Is the server running at ' + url + '?');
+      throw new Error(getTimeoutErrorMessage(url, getNetworkIP()));
     }
     throw error;
   }
@@ -266,7 +267,7 @@ export async function getCheckInStatus(userId: string): Promise<CheckInStatusRes
   } catch (error) {
     console.error(`[Hoopers API] Status check error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out. Is the server running at ' + url + '?');
+      throw new Error(getTimeoutErrorMessage(url, getNetworkIP()));
     }
     throw error;
   }

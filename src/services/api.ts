@@ -143,6 +143,40 @@ async function handleResponse<T>(response: Response, url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+// Helper function to generate appropriate timeout error message
+export function getTimeoutErrorMessage(url: string, networkIP?: string | null): string {
+  // Detect if we're in production (web, not localhost)
+  const isProduction = Platform.OS === 'web' && 
+    typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1' &&
+    !window.location.hostname.includes('192.168.') &&
+    !window.location.hostname.includes('172.16.');
+  
+  if (isProduction) {
+    // Production error message
+    return `Request timed out connecting to ${url}.\n\n` +
+      `The backend service appears to be unavailable. This could be because:\n` +
+      `1. The Render.com service is sleeping (free tier services sleep after inactivity)\n` +
+      `2. The service is temporarily down or experiencing issues\n` +
+      `3. Network connectivity problems\n\n` +
+      `Please try again in a few moments. If the problem persists, check:\n` +
+      `- Render.com dashboard: https://dashboard.render.com\n` +
+      `- Service status and logs\n` +
+      `- Ensure the service is not sleeping (may need to upgrade to paid plan for always-on service)`;
+  } else {
+    // Development error message - use provided networkIP or get it
+    const detectedIP = networkIP !== undefined ? networkIP : getNetworkIP();
+    return `Request timed out connecting to ${url}.\n\n` +
+      `Troubleshooting:\n` +
+      `1. Make sure "npm run server" is running in a terminal\n` +
+      `2. Ensure your phone and computer are on the same WiFi network\n` +
+      `3. Detected network IP: ${detectedIP || 'none'}\n` +
+      `4. If auto-detection fails, set EXPO_PUBLIC_OSKILIFTS_API_URL=http://YOUR_COMPUTER_IP:4000 in .env\n` +
+      `   Find your IP: ifconfig | grep "inet " | grep -v 127.0.0.1`;
+  }
+}
+
 export async function fetchWeightRoomStatus(
   useCache: boolean = true,
 ): Promise<WeightRoomStatus> {
@@ -182,15 +216,7 @@ export async function fetchWeightRoomStatus(
   } catch (error) {
     console.error(`[API] Fetch error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {
-      const networkIP = getNetworkIP();
-      const errorMsg = `Request timed out connecting to ${url}.\n\n` +
-        `Troubleshooting:\n` +
-        `1. Make sure "npm run server" is running in a terminal\n` +
-        `2. Ensure your phone and computer are on the same WiFi network\n` +
-        `3. Detected network IP: ${networkIP || 'none'}\n` +
-        `4. If auto-detection fails, set EXPO_PUBLIC_OSKILIFTS_API_URL=http://YOUR_COMPUTER_IP:4000 in .env\n` +
-        `   Find your IP: ifconfig | grep "inet " | grep -v 127.0.0.1`;
-      throw new Error(errorMsg);
+      throw new Error(getTimeoutErrorMessage(url));
     }
     throw error;
   }
@@ -241,15 +267,7 @@ export async function fetchClassSchedule(
   } catch (error) {
     console.error(`[API] Fetch error for ${url}:`, error);
     if (error instanceof Error && error.name === 'AbortError') {
-      const networkIP = getNetworkIP();
-      const errorMsg = `Request timed out connecting to ${url}.\n\n` +
-        `Troubleshooting:\n` +
-        `1. Make sure "npm run server" is running in a terminal\n` +
-        `2. Ensure your phone and computer are on the same WiFi network\n` +
-        `3. Detected network IP: ${networkIP || 'none'}\n` +
-        `4. If auto-detection fails, set EXPO_PUBLIC_OSKILIFTS_API_URL=http://YOUR_COMPUTER_IP:4000 in .env\n` +
-        `   Find your IP: ifconfig | grep "inet " | grep -v 127.0.0.1`;
-      throw new Error(errorMsg);
+      throw new Error(getTimeoutErrorMessage(url));
     }
     throw error;
   }
