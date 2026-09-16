@@ -10,8 +10,14 @@ const DENSITY_SHARE_TOKEN =
   process.env.DENSITY_SHARE_TOKEN ||
   'shr_o69HxjQ0BYrY2FPD9HxdirhJYcFDCeRolEd744Uj88e';
 
-const MBO_WIDGET_ID = process.env.MBO_WIDGET_ID || '3262';
-const MBO_BASE_URL = 'https://widgets.mindbodyonline.com';
+// RecWell moved group fitness registration off the old MindBody widget onto
+// their Innosoft Fusion storefront (shop.rs.berkeley.edu). There is no public
+// MindBody schedule for RSF classes anymore, so we scrape the Fusion site
+// instead.
+const RS_SHOP_BASE_URL = process.env.RS_SHOP_BASE_URL || 'https://shop.rs.berkeley.edu';
+const RS_SHOP_GROUP_FITNESS_CLASSIFICATION_ID =
+  process.env.RS_SHOP_GROUP_FITNESS_CLASSIFICATION_ID ||
+  '00000000-0000-0000-0000-000000026002';
 const PACIFIC_TIMEZONE = 'America/Los_Angeles';
 
 /** RSF facility hours per RecWell (recwell.berkeley.edu/rsf-hours). Summer 2026: 5/16–8/22. */
@@ -218,124 +224,151 @@ async function loadWeightRoomStatus() {
   });
 }
 
-async function fetchClassMarkup(startDateISO) {
-  const url = new URL(
-    `${MBO_BASE_URL}/widgets/schedules/${MBO_WIDGET_ID}/load_markup`,
-  );
-  url.searchParams.set('options[start_date]', startDateISO);
-  return fetchJson(url.toString());
+async function fetchText(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    const error = new Error(
+      `Request to ${url} failed with ${response.status}: ${body}`,
+    );
+    error.status = response.status;
+    throw error;
+  }
+  return response.text();
 }
 
-function parseSessionsFromHtml(html, scheduleDataMap = {}) {
+function categoryFromProgramName(name) {
+  const match = name.match(/^(.*?)\s+at\s+the\s+/i);
+  return (match ? match[1] : name).trim();
+}
+
+function formatDayLabel(isoDate) {
+  const probe = new Date(`${isoDate}T12:00:00Z`);
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: PACIFIC_TIMEZONE,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(probe);
+}
+
+async function fetchProgramCatalog() {
+  const html = await fetchText(
+    `${RS_SHOP_BASE_URL}/Program?classificationId=${RS_SHOP_GROUP_FITNESS_CLASSIFICATION_ID}`,
+  );
   const $ = cheerio.load(html);
-  const days = [];
-
-  $('.bw-widget__day').each((_, dayEl) => {
-    const $day = $(dayEl);
-    const label = $day.find('.bw-widget__date').text().trim();
-    const dateClass =
-      ($day.find('.bw-widget__date').attr('class') || '').match(/date-(\d{4}-\d{2}-\d{2})/);
-    const isoDate = dateClass ? dateClass[1] : null;
-    if (!isoDate) {
-      return;
+  const programs = [];
+  $('.program-list-item').each((_, el) => {
+    const $el = $(el);
+    const href = $el.find('a.img-link').attr('href') || '';
+    const idMatch = href.match(/courseId=([0-9a-fA-F-]{36})/);
+    const name = $el.find('.program-list-item-title').text().trim();
+    if (idMatch && name && !/test program/i.test(name)) {
+      programs.push({ id: idMatch[1], name });
     }
-    const sessions = [];
-    $day.find('.bw-session').each((__, sessionEl) => {
-      const $session = $(sessionEl);
-      const sessionId = $session.attr('id');
-      // Use mbo-class-id to match with schedule data (this is the key in scheduleData.contents)
-      const mboClassId = $session.attr('data-bw-widget-mbo-class-id');
-      const start = $session.find('time.hc_starttime').attr('datetime');
-      const end = $session.find('time.hc_endtime').attr('datetime');
-      const description = $session
-        .find('.bw-session__description')
-        .first()
-        .text()
-        .replace(/\s+/g, ' ')
-        .trim();
-      const location = $session
-        .find('.bw-session__room')
-        .text()
-        .replace(/Room:/i, '')
-        .trim();
-      const instructor = $session.find('.bw-session__staff').text().trim();
-      const category = $session.find('.bw-session__type').text().trim();
-      const name = $session.find('.bw-session__name').text().trim();
-      
-      // Check cancellation status: prefer schedule data JSON, fallback to HTML
-      let isCancelled = false;
-      if (mboClassId && scheduleDataMap[mboClassId]) {
-        isCancelled = scheduleDataMap[mboClassId].isCanceled === true;
-      } else {
-        // Fallback to HTML parsing
-        const cancelledEl = $session.find('.bw-session__canceled');
-        const cancelledText = cancelledEl.text().trim();
-        isCancelled =
-          cancelledEl.length > 0 &&
-          cancelledText.toLowerCase().includes('cancel');
-      }
-
-      sessions.push({
-        id: $session.attr('id'),
-        name,
-        category,
-        instructor,
-        startTimeLocal: start || null,
-        endTimeLocal: end || null,
-        timeZone: PACIFIC_TIMEZONE,
-        location: location || 'UC Berkeley Rec Sports',
-        description,
-        isCancelled,
-      });
-    });
-
-    days.push({
-      date: isoDate,
-      label,
-      sessions,
-    });
   });
+  return programs;
+}
 
-  return days;
+// #progDesc holds the class blurb plus boilerplate (cancellation notices,
+// registration/check-in instructions) with no separate markup boundary, so
+// trim everything from the first boilerplate heading onward.
+function trimDescriptionBoilerplate(text) {
+  const boilerplateMarkers = ['Canceled classes for', 'Group Fitness Classes'];
+  let cutoff = text.length;
+  boilerplateMarkers.forEach((marker) => {
+    const index = text.indexOf(marker);
+    if (index !== -1 && index < cutoff) {
+      cutoff = index;
+    }
+  });
+  return text.slice(0, cutoff).trim();
+}
+
+async function fetchProgramDescription(programId) {
+  try {
+    const html = await fetchText(
+      `${RS_SHOP_BASE_URL}/Program/GetProgramDetails?courseId=${programId}`,
+    );
+    const $ = cheerio.load(html);
+    const text = $('#progDesc').text().replace(/\s+/g, ' ').trim();
+    return trimDescriptionBoilerplate(text);
+  } catch (error) {
+    return '';
+  }
+}
+
+async function fetchProgramSessions(program) {
+  const [instancesHtml, description] = await Promise.all([
+    fetchText(
+      `${RS_SHOP_BASE_URL}/Program/GetProgramInstances?programID=${program.id}`,
+    ),
+    fetchProgramDescription(program.id),
+  ]);
+
+  const $ = cheerio.load(instancesHtml);
+  const raw = $('#ApptInfo').attr('value');
+  if (!raw) {
+    return [];
+  }
+
+  let instances;
+  try {
+    instances = JSON.parse(raw);
+  } catch (error) {
+    return [];
+  }
+
+  const category = categoryFromProgramName(program.name);
+
+  return instances.map((instance) => ({
+    id: instance.ID,
+    name: program.name,
+    category,
+    instructor: instance.InstructorFirstNameLastInitial || '',
+    startTimeLocal: instance.StartDate ? instance.StartDate.slice(0, 16) : null,
+    endTimeLocal: instance.EndDate ? instance.EndDate.slice(0, 16) : null,
+    timeZone: PACIFIC_TIMEZONE,
+    location: instance.Location || 'UC Berkeley Rec Sports',
+    description,
+    isCancelled: false,
+  }));
 }
 
 async function loadGroupFitnessSchedule(startDateISO) {
-  const payload = await fetchClassMarkup(startDateISO);
-  const htmlContent = payload?.class_sessions || payload?.contents;
-  if (!htmlContent) {
-    return { startDate: startDateISO, days: [] };
-  }
+  const programs = await fetchProgramCatalog();
+  const results = await Promise.allSettled(
+    programs.map((program) => fetchProgramSessions(program)),
+  );
 
-  // Extract schedule data JSON from embedded script tags
-  let scheduleDataMap = {};
-  try {
-    const scheduleDataMatch = htmlContent.match(
-      /scheduleData\s*=\s*({[\s\S]*?})\s*$/m,
-    );
-    if (scheduleDataMatch) {
-      const dataStr = scheduleDataMatch[1];
-      // Extract all session IDs and their isCanceled status
-      // Pattern: "sessionId":{"...","isCanceled":true/false,"...
-      const sessionMatches = dataStr.matchAll(
-        /"(\d+)"\s*:\s*\{[^}]*"isCanceled"\s*:\s*(true|false)/g,
-      );
-      for (const match of sessionMatches) {
-        const sessionId = match[1];
-        const isCanceled = match[2] === 'true';
-        scheduleDataMap[sessionId] = { isCanceled };
-      }
+  const sessionsByDate = new Map();
+  results.forEach((result) => {
+    if (result.status !== 'fulfilled') {
+      return;
     }
-  } catch (e) {
-    // If parsing fails, continue with HTML-only parsing
-    console.warn('Could not parse schedule data JSON:', e.message);
-  }
+    result.value.forEach((session) => {
+      const date = session.startTimeLocal ? session.startTimeLocal.slice(0, 10) : null;
+      if (!date || date < startDateISO) {
+        return;
+      }
+      if (!sessionsByDate.has(date)) {
+        sessionsByDate.set(date, []);
+      }
+      sessionsByDate.get(date).push(session);
+    });
+  });
 
-  const days = parseSessionsFromHtml(htmlContent, scheduleDataMap);
+  const days = Array.from(sessionsByDate.keys())
+    .sort()
+    .map((date) => ({
+      date,
+      label: formatDayLabel(date),
+      sessions: sessionsByDate
+        .get(date)
+        .sort((a, b) => (a.startTimeLocal || '').localeCompare(b.startTimeLocal || '')),
+    }));
 
-  return {
-    startDate: startDateISO,
-    days,
-  };
+  return { startDate: startDateISO, days };
 }
 
 function cachedClasses(startDateISO) {
