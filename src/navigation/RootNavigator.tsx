@@ -1,3 +1,4 @@
+import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -9,10 +10,20 @@ import { LogWorkoutScreen } from '../screens/LogWorkoutScreen';
 import { WorkoutDetailScreen } from '../screens/WorkoutDetailScreen';
 import { HoopersScreen } from '../screens/HoopersScreen';
 import { BearDebugScreen } from '../screens/BearDebugScreen';
-import { RootStackParamList, TabParamList } from '../types/navigation';
+import { SignInScreen } from '../screens/auth/SignInScreen';
+import { SignUpScreen } from '../screens/auth/SignUpScreen';
+import { CheckYourEmailScreen } from '../screens/auth/CheckYourEmailScreen';
+import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  AuthStackParamList,
+  RootStackParamList,
+  TabParamList,
+} from '../types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 
 const navigationTheme = {
   ...DefaultTheme,
@@ -94,49 +105,74 @@ const HoopersStack = () => {
   );
 };
 
+const AuthNavigator = () => (
+  <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+    <AuthStack.Screen name="SignIn" component={SignInScreen} />
+    <AuthStack.Screen name="SignUp" component={SignUpScreen} />
+    <AuthStack.Screen name="CheckYourEmail" component={CheckYourEmailScreen} />
+    <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+  </AuthStack.Navigator>
+);
+
+const MainTabs = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#2563eb',
+        tabBarInactiveTintColor: '#64748b',
+        headerShown: false,
+      }}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeStack}
+        options={{
+          title: 'Home',
+          tabBarIcon: () => null,
+        }}
+      />
+      <Tab.Screen
+        name="ClassesTab"
+        component={ClassesStack}
+        options={{
+          title: 'Classes',
+          tabBarIcon: () => null,
+        }}
+      />
+      <Tab.Screen
+        name="WorkoutsTab"
+        component={WorkoutsStack}
+        options={{
+          title: 'Workouts',
+          tabBarIcon: () => null,
+        }}
+      />
+      <Tab.Screen
+        name="HoopersTab"
+        component={HoopersStack}
+        options={{
+          title: 'HOOPERS',
+          tabBarIcon: () => null,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
 export const RootNavigator = () => {
+  const { session, initializing } = useAuth();
+
   return (
     <NavigationContainer theme={navigationTheme}>
-      <Tab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: '#2563eb',
-          tabBarInactiveTintColor: '#64748b',
-          headerShown: false,
-        }}
-      >
-        <Tab.Screen
-          name="HomeTab"
-          component={HomeStack}
-          options={{
-            title: 'Home',
-            tabBarIcon: () => null,
-          }}
-        />
-        <Tab.Screen
-          name="ClassesTab"
-          component={ClassesStack}
-          options={{
-            title: 'Classes',
-            tabBarIcon: () => null,
-          }}
-        />
-        <Tab.Screen
-          name="WorkoutsTab"
-          component={WorkoutsStack}
-          options={{
-            title: 'Workouts',
-            tabBarIcon: () => null,
-          }}
-        />
-        <Tab.Screen
-          name="HoopersTab"
-          component={HoopersStack}
-          options={{
-            title: 'HOOPERS',
-            tabBarIcon: () => null,
-          }}
-        />
-      </Tab.Navigator>
+      {initializing ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#1d4ed8" />
+        </View>
+      ) : session ? (
+        <MainTabs />
+      ) : (
+        <AuthNavigator />
+      )}
     </NavigationContainer>
   );
 };

@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { RootStackParamList } from '../types/navigation';
 import { fetchWeightRoomStatus } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { getPeakHours, type PeakHoursData } from '../services/peakHoursService';
 import { PeakHoursChart } from '../components/PeakHoursChart';
 import { OskiBear } from '../components/OskiBear';
@@ -35,6 +36,7 @@ const STATUS_COLORS = {
 
 export const HomeScreen = () => {
   const navigation = useNavigation<HomeNavigationProp>();
+  const { user, signOut } = useAuth();
   const [status, setStatus] = useState<WeightRoomStatus | null>(null);
   const [loading, setLoading] = useState(false); // Start as false - cached data loads instantly
   const [refreshing, setRefreshing] = useState(false);
@@ -180,7 +182,15 @@ export const HomeScreen = () => {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>UC Berkeley</Text>
+          <View style={styles.accountRow}>
+            <Text style={styles.eyebrow}>UC Berkeley</Text>
+            <TouchableOpacity
+              onPress={() => signOut().catch((e) => console.error('Sign out failed:', e))}
+              accessibilityLabel={`Sign out ${user?.email ?? ''}`}
+            >
+              <Text style={styles.signOutText}>Sign out</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.title}>RSF Weight Room</Text>
         </View>
 
@@ -240,6 +250,16 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 4,
+  },
+  accountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  signOutText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1d4ed8',
   },
   eyebrow: {
     fontSize: 14,

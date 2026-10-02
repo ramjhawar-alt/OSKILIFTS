@@ -8,6 +8,13 @@ export type RootStackParamList = {
   BearDebug: undefined;
 };
 
+export type AuthStackParamList = {
+  SignIn: undefined;
+  SignUp: undefined;
+  CheckYourEmail: { email: string };
+  ForgotPassword: undefined;
+};
+
 export type TabParamList = {
   HomeTab: undefined;
   ClassesTab: undefined;
