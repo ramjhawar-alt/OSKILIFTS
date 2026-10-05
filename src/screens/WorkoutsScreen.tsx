@@ -14,24 +14,12 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { RootStackParamList } from '../types/navigation';
 import { getWorkouts, getWorkoutsByDateRange } from '../services/workoutStorage';
 import type { Workout } from '../types/workout';
+import { getDateFromDateString, getDateFromISOString } from '../utils/workoutFormat';
 
 type WorkoutsNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'Workouts'
 >;
-
-// Helper function to get date from ISO string, preserving the date part
-function getDateFromISOString(isoString: string): Date {
-  const datePart = isoString.split('T')[0];
-  const [year, month, day] = datePart.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-// Helper function to get date from YYYY-MM-DD string, preserving the date part
-function getDateFromDateString(dateString: string): Date {
-  const [year, month, day] = dateString.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
 
 export const WorkoutsScreen = () => {
   const navigation = useNavigation<WorkoutsNavigationProp>();

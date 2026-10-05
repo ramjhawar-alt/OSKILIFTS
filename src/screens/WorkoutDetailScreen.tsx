@@ -17,19 +17,12 @@ import {
   deleteWorkout,
 } from '../services/workoutStorage';
 import type { Workout } from '../types/workout';
+import { formatReps, getDateFromISOString } from '../utils/workoutFormat';
 
 type WorkoutDetailNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'WorkoutDetail'
 >;
-
-// Helper function to get date from ISO string, preserving the date part
-// Extracts YYYY-MM-DD and creates a local date to avoid timezone shifts
-function getDateFromISOString(isoString: string): Date {
-  const datePart = isoString.split('T')[0];
-  const [year, month, day] = datePart.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
 
 export const WorkoutDetailScreen = () => {
   const navigation = useNavigation<WorkoutDetailNavigationProp>();
@@ -149,9 +142,7 @@ export const WorkoutDetailScreen = () => {
                 <Text style={styles.detailText}>
                   Reps:{' '}
                   <Text style={styles.detailValue}>
-                    {Array.isArray(entry.reps)
-                      ? entry.reps.join(', ')
-                      : entry.reps}
+                    {formatReps(entry.reps)}
                   </Text>
                 </Text>
               </View>

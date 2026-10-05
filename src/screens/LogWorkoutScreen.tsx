@@ -22,6 +22,7 @@ import {
 import { ExerciseSearch } from '../components/ExerciseSearch';
 import { CustomDayTypeModal } from '../components/CustomDayTypeModal';
 import type { Workout, WorkoutDayType, ExerciseEntry } from '../types/workout';
+import { formatExerciseEntry } from '../utils/workoutFormat';
 
 type LogWorkoutNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -293,11 +294,7 @@ export const LogWorkoutScreen = () => {
                   </View>
                 </View>
                 <Text style={styles.exerciseDetails}>
-                  {entry.sets} sets ×{' '}
-                  {Array.isArray(entry.reps)
-                    ? entry.reps.join(', ')
-                    : entry.reps}{' '}
-                  reps
+                  {formatExerciseEntry(entry)}
                 </Text>
               </View>
             ))

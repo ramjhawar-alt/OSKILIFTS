@@ -91,6 +91,7 @@ export async function saveWorkout(workout: Workout): Promise<void> {
           updated_at: new Date().toISOString(),
         })
         .eq('id', workout.id)
+        .eq('user_id', userId)
         .select('id');
       if (error) throw error;
       if (data && data.length > 0) return;
@@ -107,12 +108,13 @@ export async function saveWorkout(workout: Workout): Promise<void> {
 
 export async function getWorkouts(): Promise<Workout[]> {
   try {
-    await requireUserId();
+    const userId = await requireUserId();
     const workouts: Workout[] = [];
     for (let offset = 0; ; offset += PAGE_SIZE) {
       const { data, error } = await supabase
         .from('workouts')
         .select('id, date, day_type, exercises, notes')
+        .eq('user_id', userId)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1);
@@ -133,10 +135,11 @@ export async function getWorkoutsByDateRange(
   endDate: Date,
 ): Promise<Workout[]> {
   try {
-    await requireUserId();
+    const userId = await requireUserId();
     const { data, error } = await supabase
       .from('workouts')
       .select('id, date, day_type, exercises, notes')
+      .eq('user_id', userId)
       .gte('date', startDate.toISOString())
       .lte('date', endDate.toISOString())
       .order('date', { ascending: false });
@@ -150,12 +153,13 @@ export async function getWorkoutsByDateRange(
 
 export async function deleteWorkout(workoutId: string): Promise<void> {
   try {
-    await requireUserId();
+    const userId = await requireUserId();
     if (!isUuid(workoutId)) return;
     const { error } = await supabase
       .from('workouts')
       .delete()
-      .eq('id', workoutId);
+      .eq('id', workoutId)
+      .eq('user_id', userId);
     if (error) throw error;
   } catch (error) {
     console.error('Error deleting workout:', error);
@@ -165,12 +169,13 @@ export async function deleteWorkout(workoutId: string): Promise<void> {
 
 export async function getWorkoutById(workoutId: string): Promise<Workout | null> {
   try {
-    await requireUserId();
+    const userId = await requireUserId();
     if (!isUuid(workoutId)) return null;
     const { data, error } = await supabase
       .from('workouts')
       .select('id, date, day_type, exercises, notes')
       .eq('id', workoutId)
+      .eq('user_id', userId)
       .maybeSingle();
     if (error) throw error;
     return data ? rowToWorkout(data as WorkoutRow) : null;
