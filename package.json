@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "web:build": "expo export --platform web && node scripts/inject-supabase-config.js",
     "server": "node server/index.js",
-    "test:sql": "node server/tests/local/run.mjs"
+    "test:sql": "node server/tests/local/run.mjs && node server/tests/local/backfill_check.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
