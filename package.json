@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "web:build": "expo export --platform web && node scripts/inject-supabase-config.js",
-    "server": "node server/index.js"
+    "server": "node server/index.js",
+    "test:sql": "node server/tests/local/run.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
@@ -34,6 +35,7 @@
     "react-native-web": "^0.21.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@expo/ngrok": "^4.1.3",
     "@types/react": "~19.1.0",
     "markdown-pdf": "^11.0.0",
