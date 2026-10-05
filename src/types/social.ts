@@ -52,3 +52,9 @@ export interface FeedItem {
   likeCount: number;
   likedByMe: boolean;
 }
+
+export interface BlockedUser {
+  userId: string;
+  username: string | null;
+  displayName: string | null;
+}

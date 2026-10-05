@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { TERMS_VERSION } from '../config/legal';
 import type {
+  BlockedUser,
   FeedItem,
   FollowRequest,
   Profile,
@@ -265,4 +266,116 @@ export async function getFeed(
     likeCount: Number(row.like_count),
     likedByMe: Boolean(row.liked_by_me),
   }));
+}
+
+// ---------------------------------------------------------------------------
+// likes
+// ---------------------------------------------------------------------------
+export async function likeWorkout(workoutId: string): Promise<void> {
+  const me = await requireUserId();
+  const { error } = await supabase
+    .from('workout_likes')
+    .insert({ workout_id: workoutId, user_id: me });
+  // Double-tap: already liked is success.
+  if (error && error.code !== UNIQUE_VIOLATION) throw new Error(error.message);
+}
+
+export async function unlikeWorkout(workoutId: string): Promise<void> {
+  const me = await requireUserId();
+  const { error } = await supabase
+    .from('workout_likes')
+    .delete()
+    .eq('workout_id', workoutId)
+    .eq('user_id', me);
+  if (error) throw new Error(error.message);
+}
+
+// ---------------------------------------------------------------------------
+// blocks
+// ---------------------------------------------------------------------------
+export async function blockUser(userId: string): Promise<void> {
+  const me = await requireUserId();
+  const { error } = await supabase
+    .from('blocks')
+    .insert({ blocker_id: me, blocked_id: userId });
+  if (error && error.code !== UNIQUE_VIOLATION) throw new Error(error.message);
+}
+
+export async function unblockUser(userId: string): Promise<void> {
+  const me = await requireUserId();
+  const { error } = await supabase
+    .from('blocks')
+    .delete()
+    .eq('blocker_id', me)
+    .eq('blocked_id', userId);
+  if (error) throw new Error(error.message);
+}
+
+export async function getBlockedUsers(): Promise<BlockedUser[]> {
+  const me = await requireUserId();
+  const { data, error } = await supabase
+    .from('blocks')
+    .select('blocked_id, created_at, blocked:profiles!blocks_blocked_id_fkey(username, display_name)')
+    .eq('blocker_id', me)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row: any) => ({
+    userId: row.blocked_id,
+    username: row.blocked?.username ?? null,
+    displayName: row.blocked?.display_name ?? null,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// reports
+// ---------------------------------------------------------------------------
+export type ReportReason =
+  | 'harassment'
+  | 'hate'
+  | 'sexual'
+  | 'spam'
+  | 'impersonation'
+  | 'other';
+
+export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
+  { value: 'harassment', label: 'Harassment or bullying' },
+  { value: 'hate', label: 'Hate speech' },
+  { value: 'sexual', label: 'Sexual or graphic content' },
+  { value: 'spam', label: 'Spam or scam' },
+  { value: 'impersonation', label: 'Impersonation' },
+  { value: 'other', label: 'Something else' },
+];
+
+export async function submitReport(
+  targetType: 'workout' | 'profile',
+  targetId: string,
+  reason: ReportReason,
+  details?: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('submit_report', {
+    p_target_type: targetType,
+    p_target_id: targetId,
+    p_reason: reason,
+    p_details: details?.trim() ? details.trim().slice(0, 1000) : null,
+  });
+  if (!error) return;
+  if (error.message.includes('report_rate_limited')) {
+    throw new Error('You’ve sent too many reports today. Please try again tomorrow.');
+  }
+  if (error.message.includes('report_target_not_found')) {
+    throw new Error('That content is no longer available.');
+  }
+  if (error.message.includes('cannot_report_self')) {
+    throw new Error('You can’t report yourself.');
+  }
+  throw new Error(error.message);
+}
+
+// ---------------------------------------------------------------------------
+// account deletion
+// ---------------------------------------------------------------------------
+/** Deletes the account and all its data server-side. The caller then signs out. */
+export async function deleteMyAccount(): Promise<void> {
+  const { error } = await supabase.rpc('delete_my_account');
+  if (error) throw new Error(error.message);
 }

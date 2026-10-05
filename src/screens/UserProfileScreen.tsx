@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -13,12 +14,15 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Avatar } from '../components/Avatar';
 import { RelationshipButton } from '../components/RelationshipButton';
+import { SafetySheet } from '../components/SafetySheet';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useAuth } from '../contexts/AuthContext';
 import { useRequests } from '../contexts/RequestsContext';
+import { SUPPORT_EMAIL } from '../config/legal';
 import { calculateWorkoutStreak } from '../services/bearStreakService';
 import {
   acceptFollowRequest,
+  deleteMyAccount,
   followUser,
   getProfileSummary,
   removeFollower,
@@ -44,6 +48,7 @@ export const UserProfileScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [safetyOpen, setSafetyOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -108,6 +113,23 @@ export const UserProfileScreen = () => {
       if (confirmed) await run(() => unfollowUser(summary.id));
     }
   }, [run, summary]);
+
+  const handleDeleteAccount = useCallback(async () => {
+    const confirmed = await confirmAction({
+      title: 'Delete your account?',
+      message:
+        'This permanently deletes your profile, workouts, follows and likes. This can’t be undone.',
+      confirmLabel: 'Delete account',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await deleteMyAccount();
+      await signOut().catch(() => undefined);
+    } catch (err) {
+      showMessage('Error', err instanceof Error ? err.message : 'Unable to delete your account.');
+    }
+  }, [signOut]);
 
   if (loading) {
     return (
@@ -196,23 +218,46 @@ export const UserProfileScreen = () => {
           </View>
         ) : null}
 
+        {!isSelf ? (
+          <TouchableOpacity onPress={() => setSafetyOpen(true)} style={styles.reportLink}>
+            <Text style={styles.reportLinkText}>Report or block</Text>
+          </TouchableOpacity>
+        ) : null}
+
         {isSelf ? (
           <View style={styles.menu}>
             <MenuRow
               label="Follow requests"
               badge={pendingCount}
-              onPress={() => navigation.navigate('Connections')}
+              onPress={() => navigation.navigate('Connections', { initialTab: 'requests' })}
             />
             <MenuRow label="Find people" onPress={() => navigation.navigate('SearchUsers')} />
+            <MenuRow
+              label="Blocked users"
+              onPress={() => navigation.navigate('Connections', { initialTab: 'blocked' })}
+            />
             <MenuRow label="Community guidelines" onPress={() => navigation.navigate('Guidelines')} />
             <MenuRow
+              label="Contact support"
+              onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}
+            />
+            <MenuRow
               label="Sign out"
-              destructive
               onPress={() => signOut().catch((e) => console.error('Sign out failed:', e))}
             />
+            <MenuRow label="Delete account" destructive onPress={handleDeleteAccount} />
           </View>
         ) : null}
       </ScrollView>
+      <SafetySheet
+        target={
+          safetyOpen && !isSelf
+            ? { kind: 'profile', userId: summary.id, username: summary.username }
+            : null
+        }
+        onClose={() => setSafetyOpen(false)}
+        onBlocked={() => navigation.goBack()}
+      />
     </ScreenContainer>
   );
 };
@@ -297,6 +342,8 @@ const styles = StyleSheet.create({
   },
   noticeTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
   noticeText: { fontSize: 14, color: '#64748b' },
+  reportLink: { alignSelf: 'center', paddingVertical: 8 },
+  reportLinkText: { color: '#64748b', fontSize: 14, fontWeight: '600' },
   menu: {
     backgroundColor: '#fff',
     borderRadius: 12,

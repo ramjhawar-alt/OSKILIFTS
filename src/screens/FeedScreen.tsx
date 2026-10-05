@@ -14,7 +14,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FeedWorkoutCard } from '../components/FeedWorkoutCard';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useRequests } from '../contexts/RequestsContext';
-import { FEED_PAGE_SIZE, getFeed } from '../services/socialService';
+import { SafetySheet, type SafetyTarget } from '../components/SafetySheet';
+import {
+  FEED_PAGE_SIZE,
+  getFeed,
+  likeWorkout,
+  unlikeWorkout,
+} from '../services/socialService';
 import type { RootStackParamList } from '../types/navigation';
 import type { FeedItem } from '../types/social';
 
@@ -31,6 +37,7 @@ export const FeedScreen = () => {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const loadingMoreRef = useRef(false);
+  const [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null);
 
   const loadFirstPage = useCallback(async () => {
     try {
@@ -83,6 +90,30 @@ export const FeedScreen = () => {
     [navigation],
   );
 
+  const toggleLike = useCallback(async (item: FeedItem) => {
+    const nextLiked = !item.likedByMe;
+    const apply = (liked: boolean, delta: number) =>
+      setItems((current) =>
+        current.map((entry) =>
+          entry.id === item.id
+            ? { ...entry, likedByMe: liked, likeCount: Math.max(0, entry.likeCount + delta) }
+            : entry,
+        ),
+      );
+    apply(nextLiked, nextLiked ? 1 : -1);
+    try {
+      if (nextLiked) await likeWorkout(item.id);
+      else await unlikeWorkout(item.id);
+    } catch (err) {
+      apply(item.likedByMe, nextLiked ? -1 : 1);
+      setError(err instanceof Error ? err.message : 'Unable to update your like.');
+    }
+  }, []);
+
+  const handleBlocked = useCallback((userId: string) => {
+    setItems((current) => current.filter((entry) => entry.userId !== userId));
+  }, []);
+
   if (loading) {
     return (
       <ScreenContainer>
@@ -100,7 +131,19 @@ export const FeedScreen = () => {
         data={items}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <FeedWorkoutCard item={item} onPressAuthor={openProfile} />
+          <FeedWorkoutCard
+            item={item}
+            onPressAuthor={openProfile}
+            onToggleLike={toggleLike}
+            onMore={(entry) =>
+              setSafetyTarget({
+                kind: 'workout',
+                workoutId: entry.id,
+                userId: entry.userId,
+                username: entry.username,
+              })
+            }
+          />
         )}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -122,6 +165,11 @@ export const FeedScreen = () => {
             </TouchableOpacity>
           </View>
         }
+      />
+      <SafetySheet
+        target={safetyTarget}
+        onClose={() => setSafetyTarget(null)}
+        onBlocked={handleBlocked}
       />
     </ScreenContainer>
   );

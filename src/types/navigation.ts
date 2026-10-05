@@ -9,7 +9,7 @@ export type RootStackParamList = {
   Feed: undefined;
   SearchUsers: undefined;
   UserProfile: { userId?: string } | undefined;
-  Connections: undefined;
+  Connections: { initialTab?: 'requests' | 'blocked' } | undefined;
   Guidelines: undefined;
 };
 
