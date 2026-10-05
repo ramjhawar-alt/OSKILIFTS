@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Linking, StyleSheet, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import {
@@ -9,6 +10,7 @@ import {
   AuthLink,
 } from '../../components/AuthForm';
 import { useAuth } from '../../contexts/AuthContext';
+import { TERMS_URL } from '../../config/legal';
 import type { AuthStackParamList } from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
@@ -73,6 +75,13 @@ export const SignUpScreen = ({ navigation }: Props) => {
         onSubmitEditing={handleSubmit}
       />
       <AuthError message={error} />
+      <Text style={styles.terms}>
+        By creating an account you agree to the{' '}
+        <Text style={styles.termsLink} onPress={() => Linking.openURL(TERMS_URL)}>
+          Terms
+        </Text>
+        . You’ll review the community guidelines next.
+      </Text>
       <AuthButton
         label="Create account"
         onPress={handleSubmit}
@@ -86,3 +95,8 @@ export const SignUpScreen = ({ navigation }: Props) => {
     </AuthLayout>
   );
 };
+
+const styles = StyleSheet.create({
+  terms: { fontSize: 13, color: '#64748b' },
+  termsLink: { color: '#1d4ed8', fontWeight: '600' },
+});

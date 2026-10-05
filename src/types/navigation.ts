@@ -15,6 +15,11 @@ export type AuthStackParamList = {
   ForgotPassword: undefined;
 };
 
+export type OnboardingStackParamList = {
+  SetUsername: undefined;
+  Guidelines: undefined;
+};
+
 export type TabParamList = {
   HomeTab: undefined;
   ClassesTab: undefined;

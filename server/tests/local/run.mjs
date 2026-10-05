@@ -1,6 +1,8 @@
 // Runs the SQL migrations and SQL tests against an in-process Postgres (PGlite).
 //   node server/tests/local/run.mjs            -> migrations + every server/tests/*.sql
 //   node server/tests/local/run.mjs --no-tests -> migrations only
+// Migrations are always applied twice to prove they are idempotent (the
+// Supabase SQL editor makes accidental re-runs easy).
 import { PGlite } from '@electric-sql/pglite';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -32,6 +34,7 @@ const migrations = readdirSync(migrationsDir)
   .sort();
 for (const file of migrations) {
   await applyFile(`migration ${file}`, join(migrationsDir, file));
+  await applyFile(`migration ${file} (re-run)`, join(migrationsDir, file));
 }
 
 if (runTests) {

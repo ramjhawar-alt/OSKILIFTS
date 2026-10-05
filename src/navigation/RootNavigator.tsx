@@ -14,9 +14,15 @@ import { SignInScreen } from '../screens/auth/SignInScreen';
 import { SignUpScreen } from '../screens/auth/SignUpScreen';
 import { CheckYourEmailScreen } from '../screens/auth/CheckYourEmailScreen';
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
+import { SetUsernameScreen } from '../screens/onboarding/SetUsernameScreen';
+import { GuidelinesScreen } from '../screens/GuidelinesScreen';
+import { AuthButton, AuthLayout, AuthLink } from '../components/AuthForm';
 import { useAuth } from '../contexts/AuthContext';
+import { useProfile } from '../contexts/ProfileContext';
+import { isProfileComplete } from '../types/social';
 import {
   AuthStackParamList,
+  OnboardingStackParamList,
   RootStackParamList,
   TabParamList,
 } from '../types/navigation';
@@ -24,6 +30,7 @@ import {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
 
 const navigationTheme = {
   ...DefaultTheme,
@@ -114,6 +121,38 @@ const AuthNavigator = () => (
   </AuthStack.Navigator>
 );
 
+const OnboardingNavigator = () => (
+  <OnboardingStack.Navigator>
+    <OnboardingStack.Screen
+      name="SetUsername"
+      component={SetUsernameScreen}
+      options={{ headerShown: false }}
+    />
+    <OnboardingStack.Screen
+      name="Guidelines"
+      component={GuidelinesScreen}
+      options={{ title: 'Community Guidelines' }}
+    />
+  </OnboardingStack.Navigator>
+);
+
+const ProfileErrorScreen = ({ message }: { message: string }) => {
+  const { signOut } = useAuth();
+  const { refreshProfile } = useProfile();
+  return (
+    <AuthLayout title="Couldn’t load your profile" subtitle={message}>
+      <AuthButton label="Try again" onPress={refreshProfile} />
+      <AuthLink label="Sign out" onPress={() => signOut().catch(() => undefined)} />
+    </AuthLayout>
+  );
+};
+
+const LoadingView = () => (
+  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+    <ActivityIndicator size="large" color="#1d4ed8" />
+  </View>
+);
+
 const MainTabs = () => {
   return (
     <Tab.Navigator
@@ -161,18 +200,26 @@ const MainTabs = () => {
 
 export const RootNavigator = () => {
   const { session, initializing } = useAuth();
+  const { profile, profileLoading, profileError } = useProfile();
+
+  let content;
+  if (initializing) {
+    content = <LoadingView />;
+  } else if (!session) {
+    content = <AuthNavigator />;
+  } else if (profileLoading) {
+    content = <LoadingView />;
+  } else if (profileError || !profile) {
+    content = <ProfileErrorScreen message={profileError ?? 'Please try again.'} />;
+  } else if (!isProfileComplete(profile)) {
+    content = <OnboardingNavigator />;
+  } else {
+    content = <MainTabs />;
+  }
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      {initializing ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color="#1d4ed8" />
-        </View>
-      ) : session ? (
-        <MainTabs />
-      ) : (
-        <AuthNavigator />
-      )}
+      {content}
     </NavigationContainer>
   );
 };
