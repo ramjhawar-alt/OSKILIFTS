@@ -7,7 +7,6 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '../components/ScreenContainer';
@@ -19,6 +18,7 @@ import {
   getCheckInStatus,
 } from '../services/hoopersService';
 import type { HoopersData } from '../types/hoopers';
+import { showMessage } from '../utils/alert';
 
 export const HoopersScreen = () => {
   const [status, setStatus] = useState<HoopersData | null>(null);
@@ -114,7 +114,7 @@ export const HoopersScreen = () => {
     if (!userId) {
       const id = await loadUserId();
       if (!id) {
-        Alert.alert('Error', 'Unable to create user ID. Please try again.');
+        showMessage('Error', 'Unable to create user ID. Please try again.');
         return;
       }
       setUserId(id);
@@ -122,7 +122,7 @@ export const HoopersScreen = () => {
 
     const idToUse = userId || (await loadUserId());
     if (!idToUse) {
-      Alert.alert('Error', 'Unable to get user ID. Please try again.');
+      showMessage('Error', 'Unable to get user ID. Please try again.');
       return;
     }
 
@@ -132,10 +132,10 @@ export const HoopersScreen = () => {
       const response = await checkIn(idToUse);
       setCheckedIn(true);
       setStatus({ count: response.count, status: response.status });
-      Alert.alert('Checked In!', 'You\'re now marked as playing basketball.');
+      showMessage('Checked In!', 'You\'re now marked as playing basketball.');
     } catch (error: any) {
       console.error('Error checking in:', error);
-      Alert.alert('Error', error.message || 'Failed to check in. Please try again.');
+      showMessage('Error', error.message || 'Failed to check in. Please try again.');
     } finally {
       setCheckingIn(false);
     }
@@ -152,10 +152,10 @@ export const HoopersScreen = () => {
       const response = await checkOut(userId);
       setCheckedIn(false);
       setStatus({ count: response.count, status: response.status });
-      Alert.alert('Checked Out!', 'You\'re no longer marked as playing basketball.');
+      showMessage('Checked Out!', 'You\'re no longer marked as playing basketball.');
     } catch (error: any) {
       console.error('Error checking out:', error);
-      Alert.alert('Error', error.message || 'Failed to check out. Please try again.');
+      showMessage('Error', error.message || 'Failed to check out. Please try again.');
     } finally {
       setCheckingIn(false);
     }

@@ -17,6 +17,12 @@ import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 import { SetUsernameScreen } from '../screens/onboarding/SetUsernameScreen';
 import { GuidelinesScreen } from '../screens/GuidelinesScreen';
 import { AuthButton, AuthLayout, AuthLink } from '../components/AuthForm';
+import { FeedScreen } from '../screens/FeedScreen';
+import { SearchUsersScreen } from '../screens/SearchUsersScreen';
+import { UserProfileScreen } from '../screens/UserProfileScreen';
+import { ConnectionsScreen } from '../screens/ConnectionsScreen';
+import { HeaderLink } from '../components/HeaderLink';
+import { RequestsProvider, useRequests } from '../contexts/RequestsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../contexts/ProfileContext';
 import { isProfileComplete } from '../types/social';
@@ -112,6 +118,36 @@ const HoopersStack = () => {
   );
 };
 
+// Feed Tab Stack
+const FeedHeaderLeft = ({ onPress }: { onPress: () => void }) => {
+  const { pendingCount } = useRequests();
+  return <HeaderLink label="Me" badge={pendingCount} onPress={onPress} />;
+};
+
+const FeedStack = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="Feed"
+        component={FeedScreen}
+        options={({ navigation }) => ({
+          title: 'Feed',
+          headerLeft: () => (
+            <FeedHeaderLeft onPress={() => navigation.navigate('UserProfile', {})} />
+          ),
+          headerRight: () => (
+            <HeaderLink label="Find people" onPress={() => navigation.navigate('SearchUsers')} />
+          ),
+        })}
+      />
+      <Stack.Screen name="SearchUsers" component={SearchUsersScreen} options={{ title: 'Find people' }} />
+      <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'Profile' }} />
+      <Stack.Screen name="Connections" component={ConnectionsScreen} options={{ title: 'Follow requests' }} />
+      <Stack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
+    </Stack.Navigator>
+  );
+};
+
 const AuthNavigator = () => (
   <AuthStack.Navigator screenOptions={{ headerShown: false }}>
     <AuthStack.Screen name="SignIn" component={SignInScreen} />
@@ -153,7 +189,8 @@ const LoadingView = () => (
   </View>
 );
 
-const MainTabs = () => {
+const TabsWithBadge = () => {
+  const { pendingCount } = useRequests();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -171,11 +208,12 @@ const MainTabs = () => {
         }}
       />
       <Tab.Screen
-        name="ClassesTab"
-        component={ClassesStack}
+        name="FeedTab"
+        component={FeedStack}
         options={{
-          title: 'Classes',
+          title: 'Feed',
           tabBarIcon: () => null,
+          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
         }}
       />
       <Tab.Screen
@@ -183,6 +221,14 @@ const MainTabs = () => {
         component={WorkoutsStack}
         options={{
           title: 'Workouts',
+          tabBarIcon: () => null,
+        }}
+      />
+      <Tab.Screen
+        name="ClassesTab"
+        component={ClassesStack}
+        options={{
+          title: 'Classes',
           tabBarIcon: () => null,
         }}
       />
@@ -197,6 +243,12 @@ const MainTabs = () => {
     </Tab.Navigator>
   );
 };
+
+const MainTabs = () => (
+  <RequestsProvider>
+    <TabsWithBadge />
+  </RequestsProvider>
+);
 
 export const RootNavigator = () => {
   const { session, initializing } = useAuth();

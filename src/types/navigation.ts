@@ -6,6 +6,11 @@ export type RootStackParamList = {
   WorkoutDetail: { workoutId: string };
   Hoopers: undefined;
   BearDebug: undefined;
+  Feed: undefined;
+  SearchUsers: undefined;
+  UserProfile: { userId?: string } | undefined;
+  Connections: undefined;
+  Guidelines: undefined;
 };
 
 export type AuthStackParamList = {
@@ -22,6 +27,7 @@ export type OnboardingStackParamList = {
 
 export type TabParamList = {
   HomeTab: undefined;
+  FeedTab: undefined;
   ClassesTab: undefined;
   WorkoutsTab: undefined;
   HoopersTab: undefined;

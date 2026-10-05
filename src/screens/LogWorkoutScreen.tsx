@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -21,8 +20,9 @@ import {
 } from '../services/workoutStorage';
 import { ExerciseSearch } from '../components/ExerciseSearch';
 import { CustomDayTypeModal } from '../components/CustomDayTypeModal';
-import type { Workout, WorkoutDayType, ExerciseEntry } from '../types/workout';
+import type { WorkoutVisibility, Workout, WorkoutDayType, ExerciseEntry } from '../types/workout';
 import { formatExerciseEntry } from '../utils/workoutFormat';
+import { confirmAction, showMessage } from '../utils/alert';
 
 type LogWorkoutNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -47,6 +47,7 @@ export const LogWorkoutScreen = () => {
   const [dayTypes, setDayTypes] = useState<WorkoutDayType[]>([]);
   const [exercises, setExercises] = useState<ExerciseEntry[]>([]);
   const [notes, setNotes] = useState('');
+  const [visibility, setVisibility] = useState<WorkoutVisibility>('followers');
   const [showDayTypeModal, setShowDayTypeModal] = useState(false);
   const [showExerciseSearch, setShowExerciseSearch] = useState(false);
   const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(
@@ -69,12 +70,13 @@ export const LogWorkoutScreen = () => {
         setSelectedDayType(workout.dayType);
         setExercises(workout.exercises);
         setNotes(workout.notes || '');
+        setVisibility(workout.visibility ?? 'followers');
       }
       const types = await getWorkoutDayTypes();
       setDayTypes(types);
     } catch (error) {
       console.error('Error loading workout:', error);
-      Alert.alert('Error', 'Failed to load workout data');
+      showMessage('Error', 'Failed to load workout data');
     } finally {
       setLoading(false);
     }
@@ -112,22 +114,16 @@ export const LogWorkoutScreen = () => {
     setShowExerciseSearch(true);
   };
 
-  const handleRemoveExercise = (index: number) => {
-    Alert.alert(
-      'Remove Exercise',
-      'Are you sure you want to remove this exercise?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            const updated = exercises.filter((_, i) => i !== index);
-            setExercises(updated);
-          },
-        },
-      ],
-    );
+  const handleRemoveExercise = async (index: number) => {
+    const confirmed = await confirmAction({
+      title: 'Remove Exercise',
+      message: 'Are you sure you want to remove this exercise?',
+      confirmLabel: 'Remove',
+      destructive: true,
+    });
+    if (confirmed) {
+      setExercises((current) => current.filter((_, i) => i !== index));
+    }
   };
 
   const handleAddCustomDayType = async (name: string) => {
@@ -139,18 +135,18 @@ export const LogWorkoutScreen = () => {
       setSelectedDayType(newDayType);
       setShowDayTypeModal(false);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to add custom day type');
+      showMessage('Error', error.message || 'Failed to add custom day type');
     }
   };
 
   const handleSave = async () => {
     if (!selectedDayType) {
-      Alert.alert('Required', 'Please select a workout day type');
+      showMessage('Required', 'Please select a workout day type');
       return;
     }
 
     if (exercises.length === 0) {
-      Alert.alert('Required', 'Please add at least one exercise');
+      showMessage('Required', 'Please add at least one exercise');
       return;
     }
 
@@ -159,7 +155,7 @@ export const LogWorkoutScreen = () => {
       // Validate and normalize the date string (ensure it's YYYY-MM-DD format)
       const dateMatch = workoutDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
       if (!dateMatch) {
-        Alert.alert('Invalid Date', 'Please enter a date in YYYY-MM-DD format');
+        showMessage('Invalid Date', 'Please enter a date in YYYY-MM-DD format');
         setSaving(false);
         return;
       }
@@ -176,13 +172,14 @@ export const LogWorkoutScreen = () => {
         dayType: selectedDayType,
         exercises,
         notes: notes.trim() || undefined,
+        visibility,
       };
 
       await saveWorkout(workout);
       navigation.goBack();
     } catch (error) {
       console.error('Error saving workout:', error);
-      Alert.alert('Error', 'Failed to save workout');
+      showMessage('Error', 'Failed to save workout');
     } finally {
       setSaving(false);
     }
@@ -314,6 +311,43 @@ export const LogWorkoutScreen = () => {
           />
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.label}>Who can see this</Text>
+          <View style={styles.visibilityRow}>
+            {(
+              [
+                { value: 'followers', label: 'Followers' },
+                { value: 'private', label: 'Only me' },
+              ] as { value: WorkoutVisibility; label: string }[]
+            ).map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.dayTypeChip,
+                  visibility === option.value && styles.dayTypeChipSelected,
+                ]}
+                onPress={() => setVisibility(option.value)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: visibility === option.value }}
+              >
+                <Text
+                  style={[
+                    styles.dayTypeChipText,
+                    visibility === option.value && styles.dayTypeChipTextSelected,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.visibilityHint}>
+            {visibility === 'followers'
+              ? 'Shown in your approved followers’ feeds, including your notes.'
+              : 'Only you can see this workout.'}
+          </Text>
+        </View>
+
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
           onPress={handleSave}
@@ -393,6 +427,15 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   dayTypeScroll: {
+    marginTop: 8,
+  },
+  visibilityRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  visibilityHint: {
+    fontSize: 13,
+    color: '#64748b',
     marginTop: 8,
   },
   dayTypeChip: {

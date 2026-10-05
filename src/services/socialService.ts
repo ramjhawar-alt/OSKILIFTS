@@ -1,6 +1,13 @@
 import { supabase } from './supabaseClient';
 import { TERMS_VERSION } from '../config/legal';
-import type { Profile } from '../types/social';
+import type {
+  FeedItem,
+  FollowRequest,
+  Profile,
+  ProfileSummary,
+  Relationship,
+  SearchResult,
+} from '../types/social';
 
 const UNIQUE_VIOLATION = '23505';
 const CHECK_VIOLATION = '23514';
@@ -107,4 +114,155 @@ function friendlyProfileError(error: { code?: string; message: string }): string
     return 'Usernames are 3-20 characters: lowercase letters, numbers and underscores.';
   }
   return error.message;
+}
+
+// ---------------------------------------------------------------------------
+// search / profiles
+// ---------------------------------------------------------------------------
+export async function searchProfiles(prefix: string): Promise<SearchResult[]> {
+  const { data, error } = await supabase.rpc('search_profiles', {
+    p_prefix: prefix.trim().toLowerCase(),
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(
+    (row: { id: string; username: string; display_name: string | null; relationship: Relationship }) => ({
+      id: row.id,
+      username: row.username,
+      displayName: row.display_name,
+      relationship: row.relationship,
+    }),
+  );
+}
+
+export async function getProfileSummary(userId: string): Promise<ProfileSummary | null> {
+  const { data, error } = await supabase.rpc('get_profile_summary', { p_user: userId });
+  if (error) throw new Error(error.message);
+  const row = (data ?? [])[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    username: row.username,
+    displayName: row.display_name,
+    followerCount: Number(row.follower_count),
+    followingCount: Number(row.following_count),
+    relationship: row.relationship,
+    workoutCount: row.workout_count === null ? null : Number(row.workout_count),
+    workoutDates: row.workout_dates ?? null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// follows
+// ---------------------------------------------------------------------------
+function friendlyFollowError(error: { code?: string; message: string }): string {
+  if (error.message.includes('follow_blocked')) return 'You can’t follow this user.';
+  if (error.message.includes('too_many_pending_requests')) {
+    return 'You have too many pending follow requests. Wait for some to be answered.';
+  }
+  if (error.message.includes('follow_rate_limited')) {
+    return 'You’re sending requests too quickly. Try again in a bit.';
+  }
+  return error.message;
+}
+
+export async function followUser(userId: string): Promise<void> {
+  const me = await requireUserId();
+  const { error } = await supabase
+    .from('follows')
+    .insert({ follower_id: me, followee_id: userId });
+  // Already requested/following: nothing to do.
+  if (error && error.code !== UNIQUE_VIOLATION) {
+    throw new Error(friendlyFollowError(error));
+  }
+}
+
+/** Unfollow, or cancel a pending request. */
+export async function unfollowUser(userId: string): Promise<void> {
+  const me = await requireUserId();
+  const { error } = await supabase
+    .from('follows')
+    .delete()
+    .eq('follower_id', me)
+    .eq('followee_id', userId);
+  if (error) throw new Error(error.message);
+}
+
+export async function acceptFollowRequest(followerId: string): Promise<void> {
+  const me = await requireUserId();
+  const { error } = await supabase
+    .from('follows')
+    .update({ status: 'accepted' })
+    .eq('follower_id', followerId)
+    .eq('followee_id', me);
+  if (error) throw new Error(error.message);
+}
+
+/** Decline a request, or remove an existing follower. */
+export async function removeFollower(followerId: string): Promise<void> {
+  const me = await requireUserId();
+  const { error } = await supabase
+    .from('follows')
+    .delete()
+    .eq('follower_id', followerId)
+    .eq('followee_id', me);
+  if (error) throw new Error(error.message);
+}
+
+export async function getIncomingRequests(): Promise<FollowRequest[]> {
+  const me = await requireUserId();
+  const { data, error } = await supabase
+    .from('follows')
+    .select(
+      'follower_id, created_at, follower:profiles!follows_follower_id_fkey(username, display_name)',
+    )
+    .eq('followee_id', me)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row: any) => ({
+    followerId: row.follower_id,
+    username: row.follower?.username ?? null,
+    displayName: row.follower?.display_name ?? null,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function getIncomingRequestCount(): Promise<number> {
+  const me = await requireUserId();
+  const { count, error } = await supabase
+    .from('follows')
+    .select('follower_id', { count: 'exact', head: true })
+    .eq('followee_id', me)
+    .eq('status', 'pending');
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+// ---------------------------------------------------------------------------
+// feed
+// ---------------------------------------------------------------------------
+export const FEED_PAGE_SIZE = 20;
+
+export async function getFeed(
+  cursor?: { createdAt: string; id: string },
+): Promise<FeedItem[]> {
+  const { data, error } = await supabase.rpc('get_feed', {
+    p_limit: FEED_PAGE_SIZE,
+    p_before_created_at: cursor?.createdAt ?? null,
+    p_before_id: cursor?.id ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    userId: row.user_id,
+    username: row.username,
+    displayName: row.display_name,
+    date: new Date(row.date).toISOString(),
+    dayType: row.day_type,
+    exercises: row.exercises,
+    notes: row.notes ?? undefined,
+    createdAt: row.created_at,
+    likeCount: Number(row.like_count),
+    likedByMe: Boolean(row.liked_by_me),
+  }));
 }

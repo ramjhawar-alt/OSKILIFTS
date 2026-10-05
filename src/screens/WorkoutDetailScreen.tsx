@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -18,6 +17,7 @@ import {
 } from '../services/workoutStorage';
 import type { Workout } from '../types/workout';
 import { formatReps, getDateFromISOString } from '../utils/workoutFormat';
+import { confirmAction, showMessage } from '../utils/alert';
 
 type WorkoutDetailNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -40,7 +40,7 @@ export const WorkoutDetailScreen = () => {
       setWorkout(data);
     } catch (error) {
       console.error('Error loading workout:', error);
-      Alert.alert('Error', 'Failed to load workout');
+      showMessage('Error', 'Failed to load workout');
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -57,30 +57,24 @@ export const WorkoutDetailScreen = () => {
     }
   };
 
-  const handleDelete = () => {
-    Alert.alert(
-      'Delete Workout',
-      'Are you sure you want to delete this workout? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setDeleting(true);
-              await deleteWorkout(workoutId);
-              navigation.goBack();
-            } catch (error) {
-              console.error('Error deleting workout:', error);
-              Alert.alert('Error', 'Failed to delete workout');
-            } finally {
-              setDeleting(false);
-            }
-          },
-        },
-      ],
-    );
+  const handleDelete = async () => {
+    const confirmed = await confirmAction({
+      title: 'Delete Workout',
+      message: 'Are you sure you want to delete this workout? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      setDeleting(true);
+      await deleteWorkout(workoutId);
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error deleting workout:', error);
+      showMessage('Error', 'Failed to delete workout');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading || deleting) {

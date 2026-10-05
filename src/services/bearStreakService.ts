@@ -5,7 +5,7 @@ import type { Workout } from '../types/workout';
  * @param workouts - Array of all workouts, sorted by date
  * @returns Number of consecutive days with workouts
  */
-export function calculateWorkoutStreak(workouts: Workout[]): number {
+export function calculateWorkoutStreak(workouts: Pick<Workout, 'date'>[]): number {
   if (workouts.length === 0) {
     return 0;
   }

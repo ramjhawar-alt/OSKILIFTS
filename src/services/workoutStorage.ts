@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   Workout,
   WorkoutDayType,
+  WorkoutVisibility,
   Exercise,
   ExerciseEntry,
 } from '../types/workout';
@@ -22,12 +23,15 @@ const UUID_PATTERN =
 const UNIQUE_VIOLATION = '23505';
 const PAGE_SIZE = 1000; // PostgREST caps responses at 1000 rows
 
+const WORKOUT_COLUMNS = 'id, date, day_type, exercises, notes, visibility';
+
 interface WorkoutRow {
   id: string;
   date: string;
   day_type: WorkoutDayType;
   exercises: ExerciseEntry[];
   notes: string | null;
+  visibility: WorkoutVisibility;
 }
 
 interface WorkoutInsert {
@@ -36,6 +40,8 @@ interface WorkoutInsert {
   day_type: WorkoutDayType;
   exercises: ExerciseEntry[];
   notes: string | null;
+  // Omitted -> the column default ('followers') applies.
+  visibility?: WorkoutVisibility;
 }
 
 function isUuid(value: string) {
@@ -59,6 +65,7 @@ function rowToWorkout(row: WorkoutRow): Workout {
     dayType: row.day_type,
     exercises: row.exercises,
     notes: row.notes ?? undefined,
+    visibility: row.visibility,
   };
 }
 
@@ -69,6 +76,7 @@ function workoutToInsert(workout: Workout, userId: string): WorkoutInsert {
     day_type: workout.dayType,
     exercises: workout.exercises,
     notes: workout.notes ?? null,
+    ...(workout.visibility ? { visibility: workout.visibility } : {}),
   };
 }
 
@@ -88,6 +96,9 @@ export async function saveWorkout(workout: Workout): Promise<void> {
           day_type: row.day_type,
           exercises: row.exercises,
           notes: row.notes,
+          // Only when the caller set it, so an edit can never silently reshare
+          // a private workout.
+          ...(row.visibility ? { visibility: row.visibility } : {}),
           updated_at: new Date().toISOString(),
         })
         .eq('id', workout.id)
@@ -113,7 +124,7 @@ export async function getWorkouts(): Promise<Workout[]> {
     for (let offset = 0; ; offset += PAGE_SIZE) {
       const { data, error } = await supabase
         .from('workouts')
-        .select('id, date, day_type, exercises, notes')
+        .select(WORKOUT_COLUMNS)
         .eq('user_id', userId)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
@@ -138,7 +149,7 @@ export async function getWorkoutsByDateRange(
     const userId = await requireUserId();
     const { data, error } = await supabase
       .from('workouts')
-      .select('id, date, day_type, exercises, notes')
+      .select(WORKOUT_COLUMNS)
       .eq('user_id', userId)
       .gte('date', startDate.toISOString())
       .lte('date', endDate.toISOString())
@@ -173,7 +184,7 @@ export async function getWorkoutById(workoutId: string): Promise<Workout | null>
     if (!isUuid(workoutId)) return null;
     const { data, error } = await supabase
       .from('workouts')
-      .select('id, date, day_type, exercises, notes')
+      .select(WORKOUT_COLUMNS)
       .eq('id', workoutId)
       .eq('user_id', userId)
       .maybeSingle();
@@ -359,7 +370,11 @@ export async function migrateLocalWorkoutsToCloud(): Promise<void> {
   }
 
   if (localWorkouts.length > 0) {
-    const rows = localWorkouts.map((workout) => workoutToInsert(workout, userId));
+    // Pre-account workouts were never meant to be shared: keep them private.
+    const rows = localWorkouts.map((workout) => ({
+      ...workoutToInsert(workout, userId),
+      visibility: 'private' as WorkoutVisibility,
+    }));
     const { error } = await supabase.from('workouts').insert(rows);
     if (error) throw error;
   }
