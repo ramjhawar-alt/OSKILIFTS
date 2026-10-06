@@ -10,6 +10,7 @@ import {
 
 import { useAuth } from './AuthContext';
 import { getMyProfile } from '../services/socialService';
+import type { WeightUnit } from '../domain/units';
 import type { Profile } from '../types/social';
 
 interface ProfileContextValue {
@@ -72,6 +73,12 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 };
+
+/** The viewer's weight unit; 'lb' until their profile has loaded. */
+export function useWeightUnit(): WeightUnit {
+  const { profile } = useProfile();
+  return profile?.weightUnit ?? 'lb';
+}
 
 export function useProfile(): ProfileContextValue {
   const context = useContext(ProfileContext);

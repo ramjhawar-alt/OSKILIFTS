@@ -18,6 +18,7 @@ import {
 import type { Workout } from '../types/workout';
 import { formatExerciseEntry, formatReps, getDateFromISOString } from '../utils/workoutFormat';
 import { confirmAction, showMessage } from '../utils/alert';
+import { useWeightUnit } from '../contexts/ProfileContext';
 
 type WorkoutDetailNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -26,6 +27,7 @@ type WorkoutDetailNavigationProp = NativeStackNavigationProp<
 
 export const WorkoutDetailScreen = () => {
   const navigation = useNavigation<WorkoutDetailNavigationProp>();
+  const unit = useWeightUnit();
   const route = useRoute();
   const workoutId = (route.params as { workoutId: string }).workoutId;
 
@@ -136,7 +138,7 @@ export const WorkoutDetailScreen = () => {
                   </Text>
                 </View>
               ) : (
-                <Text style={styles.detailValue}>{formatExerciseEntry(entry)}</Text>
+                <Text style={styles.detailValue}>{formatExerciseEntry(entry, unit)}</Text>
               )}
             </View>
           ))}

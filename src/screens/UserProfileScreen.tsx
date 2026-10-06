@@ -17,12 +17,14 @@ import { RelationshipButton } from '../components/RelationshipButton';
 import { SafetySheet } from '../components/SafetySheet';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useAuth } from '../contexts/AuthContext';
+import { useProfile } from '../contexts/ProfileContext';
 import { useRequests } from '../contexts/RequestsContext';
 import { SUPPORT_EMAIL } from '../config/legal';
 import { calculateWorkoutStreak } from '../services/bearStreakService';
 import {
   acceptFollowRequest,
   deleteMyAccount,
+  setWeightUnit,
   followUser,
   getProfileSummary,
   removeFollower,
@@ -39,6 +41,7 @@ export const UserProfileScreen = () => {
   const route = useRoute();
   const { user, signOut } = useAuth();
   const { pendingCount, refreshPending } = useRequests();
+  const { profile, setProfile } = useProfile();
 
   const routeUserId = (route.params as { userId?: string } | undefined)?.userId;
   const userId = routeUserId ?? user?.id ?? '';
@@ -113,6 +116,21 @@ export const UserProfileScreen = () => {
       if (confirmed) await run(() => unfollowUser(summary.id));
     }
   }, [run, summary]);
+
+  const changeUnit = useCallback(
+    async (unit: 'lb' | 'kg') => {
+      if (!profile || profile.weightUnit === unit) return;
+      const previous = profile;
+      setProfile({ ...profile, weightUnit: unit }); // optimistic
+      try {
+        await setWeightUnit(unit);
+      } catch (err) {
+        setProfile(previous);
+        showMessage('Couldn’t change units', err instanceof Error ? err.message : 'Please try again.');
+      }
+    },
+    [profile, setProfile],
+  );
 
   const handleDeleteAccount = useCallback(async () => {
     const confirmed = await confirmAction({
@@ -222,6 +240,30 @@ export const UserProfileScreen = () => {
           <TouchableOpacity onPress={() => setSafetyOpen(true)} style={styles.reportLink}>
             <Text style={styles.reportLinkText}>Report or block</Text>
           </TouchableOpacity>
+        ) : null}
+
+        {isSelf && profile ? (
+          <View style={styles.unitsRow}>
+            <View>
+              <Text style={styles.menuLabel}>Units</Text>
+              <Text style={styles.unitsHint}>Weights and distances you see</Text>
+            </View>
+            <View style={styles.unitsToggle}>
+              {(['lb', 'kg'] as const).map((unit) => (
+                <TouchableOpacity
+                  key={unit}
+                  style={[styles.unitsOption, profile.weightUnit === unit && styles.unitsOptionActive]}
+                  onPress={() => changeUnit(unit)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: profile.weightUnit === unit }}
+                >
+                  <Text style={[styles.unitsText, profile.weightUnit === unit && styles.unitsTextActive]}>
+                    {unit}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         ) : null}
 
         {isSelf ? (
@@ -344,6 +386,27 @@ const styles = StyleSheet.create({
   noticeText: { fontSize: 14, color: '#64748b' },
   reportLink: { alignSelf: 'center', paddingVertical: 8 },
   reportLinkText: { color: '#64748b', fontSize: 14, fontWeight: '600' },
+  unitsRow: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  unitsHint: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  unitsToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    padding: 3,
+  },
+  unitsOption: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8 },
+  unitsOptionActive: { backgroundColor: '#fff' },
+  unitsText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
+  unitsTextActive: { color: '#2563eb' },
   menu: {
     backgroundColor: '#fff',
     borderRadius: 12,

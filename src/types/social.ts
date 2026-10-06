@@ -1,8 +1,11 @@
+import type { WeightUnit } from '../domain/units';
+
 export interface Profile {
   id: string;
   username: string | null;
   displayName: string | null;
   termsAcceptedAt: string | null;
+  weightUnit: WeightUnit;
 }
 
 export function isProfileComplete(profile: Profile): boolean {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Avatar } from './Avatar';
+import { useWeightUnit } from '../contexts/ProfileContext';
 import type { FeedItem } from '../types/social';
 import { formatExerciseEntry, getDateFromISOString } from '../utils/workoutFormat';
 
@@ -18,6 +19,7 @@ export const FeedWorkoutCard = ({
   onToggleLike?: (item: FeedItem) => void;
   onMore?: (item: FeedItem) => void;
 }) => {
+  const unit = useWeightUnit();
   const [expanded, setExpanded] = useState(false);
   const date = getDateFromISOString(item.date).toLocaleDateString('en-US', {
     weekday: 'short',
@@ -61,7 +63,7 @@ export const FeedWorkoutCard = ({
           <Text style={styles.exerciseName} numberOfLines={1}>
             {entry.exercise.name}
           </Text>
-          <Text style={styles.exerciseDetail}>{formatExerciseEntry(entry)}</Text>
+          <Text style={styles.exerciseDetail}>{formatExerciseEntry(entry, unit)}</Text>
         </View>
       ))}
       {hidden > 0 ? (

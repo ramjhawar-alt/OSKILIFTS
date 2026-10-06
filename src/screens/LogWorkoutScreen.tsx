@@ -25,6 +25,7 @@ import { entryFromLegacy } from '../domain/entry';
 import { localDateString, toStoredWorkoutDate } from '../domain/dates';
 import { formatExerciseEntry } from '../utils/workoutFormat';
 import { confirmAction, showMessage } from '../utils/alert';
+import { useWeightUnit } from '../contexts/ProfileContext';
 
 type LogWorkoutNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -33,6 +34,7 @@ type LogWorkoutNavigationProp = NativeStackNavigationProp<
 
 export const LogWorkoutScreen = () => {
   const navigation = useNavigation<LogWorkoutNavigationProp>();
+  const unit = useWeightUnit();
   const route = useRoute();
   const params = route.params as { workoutId?: string; initialDate?: string };
   const workoutId = params?.workoutId;
@@ -289,7 +291,7 @@ export const LogWorkoutScreen = () => {
                   </View>
                 </View>
                 <Text style={styles.exerciseDetails}>
-                  {formatExerciseEntry(entry)}
+                  {formatExerciseEntry(entry, unit)}
                 </Text>
               </View>
             ))

@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { normalizeEntries } from '../domain/entry';
 import { TERMS_VERSION } from '../config/legal';
+import type { WeightUnit } from '../domain/units';
 import type {
   BlockedUser,
   FeedItem,
@@ -19,6 +20,8 @@ interface ProfileRow {
   username: string | null;
   display_name: string | null;
   terms_accepted_at: string | null;
+  // Absent until migration 006 has been run.
+  weight_unit?: string | null;
 }
 
 function rowToProfile(row: ProfileRow): Profile {
@@ -27,6 +30,7 @@ function rowToProfile(row: ProfileRow): Profile {
     username: row.username,
     displayName: row.display_name,
     termsAcceptedAt: row.terms_accepted_at,
+    weightUnit: row.weight_unit === 'kg' ? 'kg' : 'lb',
   };
 }
 
@@ -41,7 +45,7 @@ async function requireUserId(): Promise<string> {
 export async function getMyProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, display_name, terms_accepted_at')
+    .select('*')
     .eq('id', userId)
     .maybeSingle();
   if (error) throw error;
@@ -77,7 +81,7 @@ export async function claimProfile(
     })
     .eq('id', userId)
     .is('username', null)
-    .select('id, username, display_name, terms_accepted_at')
+    .select('*')
     .maybeSingle();
 
   if (error) throw new Error(friendlyProfileError(error));
@@ -95,10 +99,20 @@ export async function acceptTerms(userId?: string): Promise<Profile> {
     .from('profiles')
     .update({ terms_version: TERMS_VERSION })
     .eq('id', id)
-    .select('id, username, display_name, terms_accepted_at')
+    .select('*')
     .single();
   if (error) throw new Error(friendlyProfileError(error));
   return rowToProfile(data as ProfileRow);
+}
+
+/** Persists the viewer's unit. Fails with a clear message if migration 006 isn't applied. */
+export async function setWeightUnit(unit: WeightUnit): Promise<void> {
+  const userId = await requireUserId();
+  const { error } = await supabase
+    .from('profiles')
+    .update({ weight_unit: unit })
+    .eq('id', userId);
+  if (error) throw new Error(friendlyProfileError(error));
 }
 
 function friendlyProfileError(error: { code?: string; message: string }): string {
