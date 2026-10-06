@@ -124,7 +124,13 @@ export const WorkoutDetailScreen = () => {
           <Text style={styles.sectionTitle}>Exercises</Text>
           {workout.exercises.map((entry, index) => (
             <View key={index} style={styles.exerciseCard}>
-              <Text style={styles.exerciseName}>{entry.exercise.name}</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ExerciseDetail', { key: entry.key, name: entry.exercise.name })}
+                accessibilityRole="link"
+                accessibilityLabel={`${entry.exercise.name} progress`}
+              >
+                <Text style={styles.exerciseName}>{entry.exercise.name}</Text>
+              </TouchableOpacity>
               {entry.legacy && !entry.touched ? (
                 <View style={styles.exerciseDetails}>
                   <Text style={styles.detailText}>

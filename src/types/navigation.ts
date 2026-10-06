@@ -11,6 +11,8 @@ export type RootStackParamList = {
   UserProfile: { userId?: string } | undefined;
   Connections: { initialTab?: 'requests' | 'blocked' } | undefined;
   Guidelines: undefined;
+  Exercises: undefined;
+  ExerciseDetail: { key: string; name: string };
 };
 
 export type AuthStackParamList = {

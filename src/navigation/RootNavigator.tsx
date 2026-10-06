@@ -21,6 +21,8 @@ import { FeedScreen } from '../screens/FeedScreen';
 import { SearchUsersScreen } from '../screens/SearchUsersScreen';
 import { UserProfileScreen } from '../screens/UserProfileScreen';
 import { ConnectionsScreen } from '../screens/ConnectionsScreen';
+import { ExercisesScreen } from '../screens/ExercisesScreen';
+import { ExerciseDetailScreen } from '../screens/ExerciseDetailScreen';
 import { HeaderLink } from '../components/HeaderLink';
 import { RequestsProvider, useRequests } from '../contexts/RequestsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -76,8 +78,15 @@ const WorkoutsStack = () => {
       <Stack.Screen
         name="Workouts"
         component={WorkoutsScreen}
-        options={{ title: 'My Workouts' }}
+        options={({ navigation }) => ({
+          title: 'My Workouts',
+          headerRight: () => (
+            <HeaderLink label="Exercises" onPress={() => navigation.navigate('Exercises')} />
+          ),
+        })}
       />
+      <Stack.Screen name="Exercises" component={ExercisesScreen} options={{ title: 'Exercises' }} />
+      <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} options={{ title: 'Exercise' }} />
       <Stack.Screen
         name="LogWorkout"
         component={LogWorkoutScreen}
