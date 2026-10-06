@@ -4,8 +4,9 @@ import type {
   WorkoutDayType,
   WorkoutVisibility,
   Exercise,
-  ExerciseEntry,
+  StoredEntry,
 } from '../types/workout';
+import { entriesToStored, normalizeEntries } from '../domain/entry';
 import {
   DEFAULT_WORKOUT_DAY_TYPES,
   DEFAULT_EXERCISES,
@@ -23,13 +24,14 @@ const UUID_PATTERN =
 const UNIQUE_VIOLATION = '23505';
 const PAGE_SIZE = 1000; // PostgREST caps responses at 1000 rows
 
-const WORKOUT_COLUMNS = 'id, date, day_type, exercises, notes, visibility';
+const WORKOUT_COLUMNS = 'id, date, created_at, day_type, exercises, notes, visibility';
 
 interface WorkoutRow {
   id: string;
   date: string;
+  created_at: string;
   day_type: WorkoutDayType;
-  exercises: ExerciseEntry[];
+  exercises: unknown; // stored jsonb; always read through normalizeEntries
   notes: string | null;
   visibility: WorkoutVisibility;
 }
@@ -38,7 +40,7 @@ interface WorkoutInsert {
   user_id: string;
   date: string;
   day_type: WorkoutDayType;
-  exercises: ExerciseEntry[];
+  exercises: StoredEntry[];
   notes: string | null;
   // Omitted -> the column default ('followers') applies.
   visibility?: WorkoutVisibility;
@@ -62,8 +64,9 @@ function rowToWorkout(row: WorkoutRow): Workout {
     // timestamptz comes back as "+00:00"; screens split on "T" and expect
     // the "...T12:00:00.000Z" shape LogWorkoutScreen writes.
     date: new Date(row.date).toISOString(),
+    createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
     dayType: row.day_type,
-    exercises: row.exercises,
+    exercises: normalizeEntries(row.exercises),
     notes: row.notes ?? undefined,
     visibility: row.visibility,
   };
@@ -74,14 +77,15 @@ function workoutToInsert(workout: Workout, userId: string): WorkoutInsert {
     user_id: userId,
     date: workout.date,
     day_type: workout.dayType,
-    exercises: workout.exercises,
+    exercises: entriesToStored(workout.exercises),
     notes: workout.notes ?? null,
     ...(workout.visibility ? { visibility: workout.visibility } : {}),
   };
 }
 
 // Workout operations
-export async function saveWorkout(workout: Workout): Promise<void> {
+/** Saves (insert or update) and returns the workout's database id. */
+export async function saveWorkout(workout: Workout): Promise<string> {
   try {
     const userId = await requireUserId();
     const row = workoutToInsert(workout, userId);
@@ -105,36 +109,50 @@ export async function saveWorkout(workout: Workout): Promise<void> {
         .eq('user_id', userId)
         .select('id');
       if (error) throw error;
-      if (data && data.length > 0) return;
+      if (data && data.length > 0) return data[0].id as string;
       // The row no longer exists (e.g. deleted on another device): re-create.
     }
 
-    const { error } = await supabase.from('workouts').insert(row);
+    const { data: inserted, error } = await supabase
+      .from('workouts')
+      .insert(row)
+      .select('id')
+      .single();
     if (error) throw error;
+    return inserted.id as string;
   } catch (error) {
     console.error('Error saving workout:', error);
     throw error;
   }
 }
 
+/**
+ * All of the user's workouts, newest first. Throws on failure, unlike
+ * getWorkouts() which hides errors as an empty list; use this anywhere a
+ * silent empty result would be misread (history, hints, PR detection).
+ */
+export async function getWorkoutsStrict(): Promise<Workout[]> {
+  const userId = await requireUserId();
+  const workouts: Workout[] = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('workouts')
+      .select(WORKOUT_COLUMNS)
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1);
+    if (error) throw error;
+    const page = (data ?? []) as WorkoutRow[];
+    workouts.push(...page.map(rowToWorkout));
+    if (page.length < PAGE_SIZE) break;
+  }
+  return workouts;
+}
+
 export async function getWorkouts(): Promise<Workout[]> {
   try {
-    const userId = await requireUserId();
-    const workouts: Workout[] = [];
-    for (let offset = 0; ; offset += PAGE_SIZE) {
-      const { data, error } = await supabase
-        .from('workouts')
-        .select(WORKOUT_COLUMNS)
-        .eq('user_id', userId)
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .range(offset, offset + PAGE_SIZE - 1);
-      if (error) throw error;
-      const page = (data ?? []) as WorkoutRow[];
-      workouts.push(...page.map(rowToWorkout));
-      if (page.length < PAGE_SIZE) break;
-    }
-    return workouts;
+    return await getWorkoutsStrict();
   } catch (error) {
     console.error('Error getting workouts:', error);
     return [];
@@ -314,6 +332,14 @@ export async function saveCustomExercise(exercise: Exercise): Promise<void> {
 }
 
 // One-time upload of pre-account, on-device data into the signed-in account.
+// What the pre-account, on-device store kept (exercises in the original shape).
+interface LegacyLocalWorkout {
+  date: string;
+  dayType: WorkoutDayType;
+  exercises: unknown;
+  notes?: string;
+}
+
 async function readLegacyJson<T>(key: string): Promise<T[]> {
   try {
     const raw = await AsyncStorage.getItem(key);
@@ -332,7 +358,7 @@ export async function migrateLocalWorkoutsToCloud(): Promise<void> {
   if (await AsyncStorage.getItem(flagKey)) return;
 
   const [localWorkouts, localDayTypes, localExercises] = await Promise.all([
-    readLegacyJson<Workout>(LEGACY_WORKOUTS_KEY),
+    readLegacyJson<LegacyLocalWorkout>(LEGACY_WORKOUTS_KEY),
     readLegacyJson<WorkoutDayType>(LEGACY_CUSTOM_DAY_TYPES_KEY),
     readLegacyJson<Exercise>(LEGACY_CUSTOM_EXERCISES_KEY),
   ]);
@@ -371,8 +397,13 @@ export async function migrateLocalWorkoutsToCloud(): Promise<void> {
 
   if (localWorkouts.length > 0) {
     // Pre-account workouts were never meant to be shared: keep them private.
-    const rows = localWorkouts.map((workout) => ({
-      ...workoutToInsert(workout, userId),
+    const rows: WorkoutInsert[] = localWorkouts.map((workout) => ({
+      user_id: userId,
+      date: workout.date,
+      day_type: workout.dayType,
+      // Round-trips through the normalizer: byte-identical for well-formed data.
+      exercises: entriesToStored(normalizeEntries(workout.exercises)),
+      notes: workout.notes ?? null,
       visibility: 'private' as WorkoutVisibility,
     }));
     const { error } = await supabase.from('workouts').insert(rows);

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { normalizeEntries } from '../domain/entry';
 import { TERMS_VERSION } from '../config/legal';
 import type {
   BlockedUser,
@@ -260,7 +261,8 @@ export async function getFeed(
     displayName: row.display_name,
     date: new Date(row.date).toISOString(),
     dayType: row.day_type,
-    exercises: row.exercises,
+    // Other people's jsonb: never trusted, always normalized.
+    exercises: normalizeEntries(row.exercises),
     notes: row.notes ?? undefined,
     createdAt: row.created_at,
     likeCount: Number(row.like_count),

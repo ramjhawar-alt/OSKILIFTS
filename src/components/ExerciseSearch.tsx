@@ -14,13 +14,15 @@ import {
   saveCustomExercise,
 } from '../services/workoutStorage';
 import { CustomExerciseModal } from './CustomExerciseModal';
-import type { Exercise, ExerciseEntry } from '../types/workout';
+import type { EntryData, Exercise } from '../types/workout';
+import { legacyProjection } from '../domain/entry';
+import { showMessage } from '../utils/alert';
 
 type ExerciseSearchProps = {
   visible: boolean;
   onClose: () => void;
   onSelect: (exercise: Exercise, sets: number, reps: number | number[]) => void;
-  initialExercise?: ExerciseEntry;
+  initialExercise?: EntryData;
 };
 
 export const ExerciseSearch = ({
@@ -33,13 +35,12 @@ export const ExerciseSearch = ({
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [sets, setSets] = useState(
-    initialExercise?.sets.toString() || '3',
-  );
+  const initialLegacy = initialExercise ? legacyProjection(initialExercise) : undefined;
+  const [sets, setSets] = useState(initialLegacy?.sets.toString() || '3');
   const [reps, setReps] = useState(
-    Array.isArray(initialExercise?.reps)
-      ? initialExercise.reps.join(', ')
-      : initialExercise?.reps.toString() || '10',
+    Array.isArray(initialLegacy?.reps)
+      ? initialLegacy.reps.join(', ')
+      : initialLegacy?.reps.toString() || '10',
   );
 
   const loadExercises = useCallback(async () => {
@@ -58,11 +59,12 @@ export const ExerciseSearch = ({
     if (visible) {
       loadExercises();
       if (initialExercise) {
-        setSets(initialExercise.sets.toString());
+        const projection = legacyProjection(initialExercise);
+        setSets(projection.sets.toString());
         setReps(
-          Array.isArray(initialExercise.reps)
-            ? initialExercise.reps.join(', ')
-            : initialExercise.reps.toString(),
+          Array.isArray(projection.reps)
+            ? projection.reps.join(', ')
+            : projection.reps.toString(),
         );
       }
     } else {
@@ -81,9 +83,15 @@ export const ExerciseSearch = ({
     const repsValue = reps.includes(',')
       ? reps.split(',').map((r) => parseInt(r.trim(), 10))
       : parseInt(reps, 10);
+    const repsList = Array.isArray(repsValue) ? repsValue : [repsValue];
 
-    if (isNaN(setsNum) || (typeof repsValue === 'number' && isNaN(repsValue))) {
-      alert('Please enter valid numbers for sets and reps');
+    if (
+      isNaN(setsNum) ||
+      setsNum < 1 ||
+      setsNum > 60 ||
+      repsList.some((r) => isNaN(r) || r < 1 || r > 999)
+    ) {
+      showMessage('Check your numbers', 'Sets must be 1-60 and every reps value 1-999.');
       return;
     }
 

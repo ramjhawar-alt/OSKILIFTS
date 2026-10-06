@@ -20,7 +20,9 @@ import {
 } from '../services/workoutStorage';
 import { ExerciseSearch } from '../components/ExerciseSearch';
 import { CustomDayTypeModal } from '../components/CustomDayTypeModal';
-import type { WorkoutVisibility, Workout, WorkoutDayType, ExerciseEntry } from '../types/workout';
+import type { WorkoutVisibility, Workout, WorkoutDayType, EntryData } from '../types/workout';
+import { entryFromLegacy } from '../domain/entry';
+import { localDateString, toStoredWorkoutDate } from '../domain/dates';
 import { formatExerciseEntry } from '../utils/workoutFormat';
 import { confirmAction, showMessage } from '../utils/alert';
 
@@ -39,13 +41,13 @@ export const LogWorkoutScreen = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [workoutDate, setWorkoutDate] = useState(
-    initialDate || new Date().toISOString().split('T')[0],
+    initialDate || localDateString(),
   );
   const [selectedDayType, setSelectedDayType] = useState<WorkoutDayType | null>(
     null,
   );
   const [dayTypes, setDayTypes] = useState<WorkoutDayType[]>([]);
-  const [exercises, setExercises] = useState<ExerciseEntry[]>([]);
+  const [exercises, setExercises] = useState<EntryData[]>([]);
   const [notes, setNotes] = useState('');
   const [visibility, setVisibility] = useState<WorkoutVisibility>('followers');
   const [showDayTypeModal, setShowDayTypeModal] = useState(false);
@@ -92,11 +94,7 @@ export const LogWorkoutScreen = () => {
   };
 
   const handleExerciseSelect = (exercise: any, sets: number, reps: number | number[]) => {
-    const newExercise: ExerciseEntry = {
-      exercise,
-      sets,
-      reps,
-    };
+    const newExercise: EntryData = entryFromLegacy(exercise, sets, reps);
 
     if (editingExerciseIndex !== null) {
       const updated = [...exercises];
@@ -164,7 +162,7 @@ export const LogWorkoutScreen = () => {
       // This ensures the date part (YYYY-MM-DD) is always preserved correctly
       // when we extract it with split('T')[0], regardless of timezone
       const normalizedDate = dateMatch[0]; // This is YYYY-MM-DD
-      const dateString = `${normalizedDate}T12:00:00.000Z`;
+      const dateString = toStoredWorkoutDate(normalizedDate);
       
       const workout: Workout = {
         id: workoutId || `workout-${Date.now()}`,

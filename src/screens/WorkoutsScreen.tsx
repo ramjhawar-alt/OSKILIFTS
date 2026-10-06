@@ -15,6 +15,7 @@ import { RootStackParamList } from '../types/navigation';
 import { getWorkouts, getWorkoutsByDateRange } from '../services/workoutStorage';
 import type { Workout } from '../types/workout';
 import { getDateFromDateString, getDateFromISOString } from '../utils/workoutFormat';
+import { localDateString } from '../domain/dates';
 
 type WorkoutsNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -26,7 +27,7 @@ export const WorkoutsScreen = () => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0],
+    localDateString(),
   );
 
   const loadWorkouts = useCallback(async () => {

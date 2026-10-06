@@ -16,7 +16,7 @@ import {
   deleteWorkout,
 } from '../services/workoutStorage';
 import type { Workout } from '../types/workout';
-import { formatReps, getDateFromISOString } from '../utils/workoutFormat';
+import { formatExerciseEntry, formatReps, getDateFromISOString } from '../utils/workoutFormat';
 import { confirmAction, showMessage } from '../utils/alert';
 
 type WorkoutDetailNavigationProp = NativeStackNavigationProp<
@@ -112,12 +112,6 @@ export const WorkoutDetailScreen = () => {
                 day: 'numeric',
               })}
             </Text>
-            <Text style={styles.timeText}>
-              {workoutDate.toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </Text>
           </View>
           <View style={styles.dayTypeBadge}>
             <Text style={styles.dayTypeText}>{workout.dayType.name}</Text>
@@ -129,17 +123,21 @@ export const WorkoutDetailScreen = () => {
           {workout.exercises.map((entry, index) => (
             <View key={index} style={styles.exerciseCard}>
               <Text style={styles.exerciseName}>{entry.exercise.name}</Text>
-              <View style={styles.exerciseDetails}>
-                <Text style={styles.detailText}>
-                  Sets: <Text style={styles.detailValue}>{entry.sets}</Text>
-                </Text>
-                <Text style={styles.detailText}>
-                  Reps:{' '}
-                  <Text style={styles.detailValue}>
-                    {formatReps(entry.reps)}
+              {entry.legacy && !entry.touched ? (
+                <View style={styles.exerciseDetails}>
+                  <Text style={styles.detailText}>
+                    Sets: <Text style={styles.detailValue}>{entry.legacy.sets}</Text>
                   </Text>
-                </Text>
-              </View>
+                  <Text style={styles.detailText}>
+                    Reps:{' '}
+                    <Text style={styles.detailValue}>
+                      {formatReps(entry.legacy.reps)}
+                    </Text>
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.detailValue}>{formatExerciseEntry(entry)}</Text>
+              )}
             </View>
           ))}
         </View>

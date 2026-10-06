@@ -44,7 +44,7 @@ export interface FeedItem {
   displayName: string | null;
   date: string;
   dayType: { name: string; isCustom: boolean };
-  exercises: import('./workout').ExerciseEntry[];
+  exercises: import('./workout').EntryData[];
   notes?: string;
   // Raw string from the server; pass it back unchanged as the next cursor
   // (a JS Date round-trip would truncate microseconds).

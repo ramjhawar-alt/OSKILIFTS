@@ -1,4 +1,5 @@
 import type { WorkoutDayType, Exercise } from '../types/workout';
+import { defaultTypeForName } from '../domain/exerciseTypes';
 
 export const DEFAULT_WORKOUT_DAY_TYPES: WorkoutDayType[] = [
   { name: 'Legs', isCustom: false },
@@ -11,7 +12,7 @@ export const DEFAULT_WORKOUT_DAY_TYPES: WorkoutDayType[] = [
   { name: 'Rest', isCustom: false },
 ];
 
-export const DEFAULT_EXERCISES: Exercise[] = [
+const BASE_EXERCISES: Exercise[] = [
   // Legs
   { name: 'Squat', isCustom: false, muscleGroup: 'Legs' },
   { name: 'Deadlift', isCustom: false, muscleGroup: 'Legs' },
@@ -84,3 +85,7 @@ export const DEFAULT_EXERCISES: Exercise[] = [
   { name: 'Stair Climber', isCustom: false, muscleGroup: 'Cardio' },
 ];
 
+export const DEFAULT_EXERCISES: Exercise[] = BASE_EXERCISES.map((exercise) => ({
+  ...exercise,
+  type: defaultTypeForName(exercise.name) ?? 'weight_reps',
+}));
