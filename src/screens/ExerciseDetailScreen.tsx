@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import { PrChips } from '../components/PrChips';
 import { ProgressChart } from '../components/ProgressChart';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useAuth } from '../contexts/AuthContext';
@@ -162,6 +163,7 @@ export const ExerciseDetailScreen = () => {
           >
             <Text style={styles.historyDate}>{dateLabel(session.date)}</Text>
             <Text style={styles.historySets}>{formatExerciseEntry(session.entry, unit)}</Text>
+            <PrChips prs={session.entry.prs} />
           </TouchableOpacity>
         ))}
       </ScrollView>

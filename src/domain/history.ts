@@ -58,6 +58,21 @@ export function lastPerformance(
   });
 }
 
+/** Every session of an exercise strictly before (date, createdAt), excluding one workout. */
+export function sessionsBefore(
+  index: HistoryIndex,
+  key: string,
+  before: { date: string; createdAt?: string },
+  excludeWorkoutId?: string,
+): Session[] {
+  const beforeCreated = before.createdAt ?? FAR_FUTURE;
+  return (index.get(key) ?? []).filter((session) => {
+    if (excludeWorkoutId && session.workoutId === excludeWorkoutId) return false;
+    if (session.date !== before.date) return session.date < before.date;
+    return session.createdAt < beforeCreated;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // hints for set rows
 // ---------------------------------------------------------------------------

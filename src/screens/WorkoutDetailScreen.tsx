@@ -19,6 +19,7 @@ import type { Workout } from '../types/workout';
 import { formatReps, formatSet, getDateFromISOString } from '../utils/workoutFormat';
 import { confirmAction, showMessage } from '../utils/alert';
 import { useWeightUnit } from '../contexts/ProfileContext';
+import { PrChips } from '../components/PrChips';
 
 type WorkoutDetailNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -131,6 +132,7 @@ export const WorkoutDetailScreen = () => {
               >
                 <Text style={styles.exerciseName}>{entry.exercise.name}</Text>
               </TouchableOpacity>
+              <PrChips prs={entry.prs} />
               {entry.legacy && !entry.touched ? (
                 <View style={styles.exerciseDetails}>
                   <Text style={styles.detailText}>

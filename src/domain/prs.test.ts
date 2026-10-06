@@ -4,7 +4,9 @@ import test from 'node:test';
 import { buildChartModel, filterRange, niceTicks } from './chart';
 import { buildHistoryIndex, type Session } from './history';
 import { normalizeEntries } from './entry';
-import { computeRecords, detectPrs, e1rm, eligibleSets, metricsFor, progressSeries } from './prs';
+import { computeRecords, detectPrs, e1rm, eligibleSets, metricsFor, progressSeries, stampPrs } from './prs';
+import { sessionsBefore } from './history';
+import { entriesToStored } from './entry';
 import { lbToKg } from './units';
 import type { EntryData, Workout } from '../types/workout';
 
@@ -120,4 +122,43 @@ test('niceTicks, range filter and chart model', () => {
   const single = buildChartModel(points.slice(0, 1), 300, 200, { left: 40, right: 10, top: 10, bottom: 20 });
   assert.equal(single.points.length, 1);
   assert.ok(Number.isFinite(single.points[0].x) && Number.isFinite(single.points[0].y));
+});
+
+test('stampPrs: stamps only exercises that set records; idempotent re-stamp replaces old stamps', () => {
+  const index = buildHistoryIndex(HISTORY);
+  const prior = (key: string) => sessionsBefore(index, key, { date: '2026-10-05' });
+  const entries = normalizeEntries([
+    v2('Bench Press', [set(165, 3)]),
+    v2('Squat', [set(225, 5)]),
+    { exercise: { name: 'Row', isCustom: false }, sets: 3, reps: 10 },
+  ]);
+  entries[0].touched = true;
+  const stamped = stampPrs(entries, prior);
+  assert.deepEqual(stamped[0].prs, ['weight', 'e1rm']);
+  assert.deepEqual(stamped[1].prs, []); // first Squat is a baseline
+  assert.deepEqual(stamped[2].prs, []); // legacy entries are never stamped
+  const stored = entriesToStored(stamped) as any[];
+  assert.deepEqual(stored[0].prs, ['weight', 'e1rm']);
+  assert.equal(stored[1].prs, undefined);
+  assert.equal(JSON.stringify(stored[2]), JSON.stringify({ exercise: { name: 'Row', isCustom: false }, sets: 3, reps: 10 }));
+
+  // Re-stamping an edited entry replaces (never accumulates) previous stamps.
+  const edited = stampPrs([{ ...stamped[0], sets: normalizeEntries([v2('Bench Press', [set(135, 3)])])[0].sets }], prior);
+  assert.deepEqual(edited[0].prs, []);
+});
+
+test('stampPrs: two entries of one exercise in a workout give the PR to the best set', () => {
+  const index = buildHistoryIndex(HISTORY);
+  const prior = (key: string) => sessionsBefore(index, key, { date: '2026-10-05' });
+  const entries = normalizeEntries([v2('Bench Press', [set(135, 5)]), v2('Bench Press', [set(170, 2)])]);
+  const stamped = stampPrs(entries, prior);
+  assert.deepEqual(stamped[0].prs, []);
+  assert.ok(stamped[1].prs.includes('weight'));
+});
+
+test('sessionsBefore respects date, createdAt and the excluded workout', () => {
+  const index = buildHistoryIndex(HISTORY);
+  assert.equal(sessionsBefore(index, 'bench press', { date: '2026-09-15', createdAt: '2026-09-15T18:00:00Z' }).length, 1);
+  assert.equal(sessionsBefore(index, 'bench press', { date: '2026-12-01' }, 'w2').length, 1);
+  assert.equal(sessionsBefore(index, 'nope', { date: '2026-12-01' }).length, 0);
 });

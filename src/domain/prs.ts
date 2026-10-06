@@ -114,6 +114,52 @@ export function detectPrs(prior: Session[], entry: EntryData): PrKind[] {
 }
 
 // ---------------------------------------------------------------------------
+// stamping (done once, when a workout is saved)
+// ---------------------------------------------------------------------------
+/**
+ * Returns the entries with `prs` filled in, comparing each exercise against
+ * everything logged before this workout. If the same exercise appears twice in
+ * one workout, the PR goes on the entry holding the best set. Untouched legacy
+ * entries (no weights) are never stamped.
+ */
+export function stampPrs(
+  entries: EntryData[],
+  priorFor: (key: string) => Session[],
+): EntryData[] {
+  const byKey = new Map<string, EntryData[]>();
+  for (const entry of entries) {
+    if (entry.legacy && !entry.touched) continue;
+    byKey.set(entry.key, [...(byKey.get(entry.key) ?? []), entry]);
+  }
+
+  const stamped = new Map<EntryData, PrKind[]>();
+  for (const [key, group] of byKey) {
+    const prior = priorFor(key);
+    // Detect on the combined sets, then hand each kind to the entry that earned it.
+    const combined: EntryData = { ...group[0], sets: group.flatMap((entry) => entry.sets) };
+    const kinds = detectPrs(prior, combined);
+    for (const kind of kinds) {
+      const score = (entry: EntryData): number => {
+        const sets = eligibleSets(entry);
+        if (sets.length === 0) return -Infinity;
+        if (kind === 'weight') return Math.max(...sets.map((s) => s.kg ?? 0));
+        if (kind === 'reps') return Math.max(...sets.map((s) => s.reps ?? 0));
+        return Math.max(...sets.filter((s) => s.kg !== null && (s.reps as number) <= E1RM_MAX_REPS).map((s) => e1rm(s.kg as number, s.reps as number)), -Infinity);
+      };
+      const winner = group.reduce((best, entry) => (score(entry) > score(best) ? entry : best), group[0]);
+      stamped.set(winner, [...(stamped.get(winner) ?? []), kind]);
+    }
+  }
+  return entries.map((entry) => (stamped.has(entry) ? { ...entry, prs: stamped.get(entry) as PrKind[] } : { ...entry, prs: entry.legacy && !entry.touched ? entry.prs : [] }));
+}
+
+export const PR_LABEL: Record<PrKind, string> = {
+  weight: 'Weight PR',
+  e1rm: '1RM PR',
+  reps: 'Rep PR',
+};
+
+// ---------------------------------------------------------------------------
 // progress series (one point per day)
 // ---------------------------------------------------------------------------
 export type ProgressMetric = 'e1rm' | 'weight' | 'reps';

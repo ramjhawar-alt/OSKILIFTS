@@ -33,7 +33,8 @@ import {
   MAX_DRAFT_ENTRIES,
 } from '../domain/draft';
 import { exerciseKey } from '../domain/entry';
-import { lastPerformance, type HistoryIndex } from '../domain/history';
+import { lastPerformance, sessionsBefore, type HistoryIndex } from '../domain/history';
+import { PR_LABEL, stampPrs } from '../domain/prs';
 import {
   adjustRest,
   formatRemaining,
@@ -307,14 +308,28 @@ export const LogWorkoutScreen = () => {
       showMessage('Invalid Date', 'Please enter a date in YYYY-MM-DD format');
       return;
     }
-    const { entries, errors } = draftToEntries(draft);
-    if (errors.length > 0) {
-      showMessage('Check your workout', errors.slice(0, 4).join('\n'));
+    const converted = draftToEntries(draft);
+    if (converted.errors.length > 0) {
+      showMessage('Check your workout', converted.errors.slice(0, 4).join('\n'));
       return;
     }
 
     setSaving(true);
     try {
+      // Stamp personal records against everything logged before this workout.
+      // If history can't be loaded we save without badges rather than guess.
+      let entries = converted.entries;
+      if (userId) {
+        try {
+          const { index } = await getHistory(userId, { force: true });
+          entries = stampPrs(entries, (key) =>
+            sessionsBefore(index, key, { date: draft.date, createdAt: editingCreatedAt }, draft.editingId),
+          );
+        } catch (historyError) {
+          console.error('[PR] skipping PR detection:', historyError);
+        }
+      }
+
       const workout: Workout = {
         id: draft.editingId || `workout-${Date.now()}`,
         date: toStoredWorkoutDate(draft.date),
@@ -326,6 +341,10 @@ export const LogWorkoutScreen = () => {
       await saveWorkout(workout);
       persist.current = false;
       if (userId && !draft.editingId) await clearDraft(userId);
+      const records = entries
+        .filter((entry) => entry.prs.length > 0)
+        .map((entry) => `${entry.exercise.name}: ${entry.prs.map((pr) => PR_LABEL[pr]).join(', ')}`);
+      if (records.length > 0) showMessage('New personal record! 🏆', records.join('\n'));
       navigation.goBack();
     } catch (error: any) {
       console.error('Error saving workout:', error);

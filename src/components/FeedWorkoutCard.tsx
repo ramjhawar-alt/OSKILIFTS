@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Avatar } from './Avatar';
+import { PrChips } from './PrChips';
 import { useWeightUnit } from '../contexts/ProfileContext';
 import type { FeedItem } from '../types/social';
 import { formatExerciseEntry, getDateFromISOString } from '../utils/workoutFormat';
@@ -60,9 +61,12 @@ export const FeedWorkoutCard = ({
 
       {visible.map((entry, index) => (
         <View key={`${entry.exercise.name}-${index}`} style={styles.exerciseRow}>
-          <Text style={styles.exerciseName} numberOfLines={1}>
-            {entry.exercise.name}
-          </Text>
+          <View style={styles.exerciseTitle}>
+            <Text style={styles.exerciseName} numberOfLines={1}>
+              {entry.exercise.name}
+            </Text>
+            <PrChips prs={entry.prs} />
+          </View>
           <Text style={styles.exerciseDetail}>{formatExerciseEntry(entry, unit)}</Text>
         </View>
       ))}
@@ -128,7 +132,8 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 2,
   },
-  exerciseName: { flex: 1, fontSize: 15, fontWeight: '600', color: '#0f172a' },
+  exerciseTitle: { flex: 1, gap: 4 },
+  exerciseName: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
   exerciseDetail: { fontSize: 14, color: '#475569' },
   link: { color: '#2563eb', fontSize: 14, fontWeight: '600' },
   notes: {
