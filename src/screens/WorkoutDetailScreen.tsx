@@ -16,7 +16,7 @@ import {
   deleteWorkout,
 } from '../services/workoutStorage';
 import type { Workout } from '../types/workout';
-import { formatExerciseEntry, formatReps, getDateFromISOString } from '../utils/workoutFormat';
+import { formatReps, formatSet, getDateFromISOString } from '../utils/workoutFormat';
 import { confirmAction, showMessage } from '../utils/alert';
 import { useWeightUnit } from '../contexts/ProfileContext';
 
@@ -138,7 +138,23 @@ export const WorkoutDetailScreen = () => {
                   </Text>
                 </View>
               ) : (
-                <Text style={styles.detailValue}>{formatExerciseEntry(entry, unit)}</Text>
+                <View style={styles.setList}>
+                  {entry.sets.map((set, setIndex) => {
+                    const label =
+                      set.kind === 'warmup' ? 'W' : set.kind === 'drop' ? 'D' : set.kind === 'failure' ? 'F' : String(
+                        entry.sets.slice(0, setIndex + 1).filter((s) => s.kind !== 'warmup').length,
+                      );
+                    return (
+                      <View key={setIndex} style={styles.setLine}>
+                        <Text style={styles.setLabel}>{label}</Text>
+                        <Text style={styles.detailValue}>
+                          {formatSet(set, entry.exercise.type, unit)}
+                          {set.kg !== null && entry.exercise.type !== 'duration' ? ` ${unit}` : ''}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
               )}
             </View>
           ))}
@@ -173,6 +189,18 @@ export const WorkoutDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  setList: { gap: 6, marginTop: 4 },
+  setLine: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  setLabel: {
+    width: 28,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 6,
+    paddingVertical: 3,
+  },
   container: {
     flex: 1,
   },

@@ -16,6 +16,20 @@ import { getWorkouts, getWorkoutsByDateRange } from '../services/workoutStorage'
 import type { Workout } from '../types/workout';
 import { getDateFromDateString, getDateFromISOString } from '../utils/workoutFormat';
 import { localDateString } from '../domain/dates';
+import { draftHasContent } from '../domain/draft';
+import { useAuth } from '../contexts/AuthContext';
+import { clearDraft, loadDraft } from '../services/draftStorage';
+import { confirmAction } from '../utils/alert';
+
+function formatStartedAgo(startedAt: number): string {
+  const minutes = Math.max(0, Math.round((Date.now() - startedAt) / 60000));
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
 
 type WorkoutsNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -26,6 +40,9 @@ export const WorkoutsScreen = () => {
   const navigation = useNavigation<WorkoutsNavigationProp>();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const userId = user?.id ?? '';
+  const [draftInfo, setDraftInfo] = useState<{ startedAt: number; exerciseCount: number } | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(
     localDateString(),
   );
@@ -50,7 +67,16 @@ export const WorkoutsScreen = () => {
   useFocusEffect(
     useCallback(() => {
       loadWorkouts();
-    }, [loadWorkouts])
+      if (userId) {
+        loadDraft(userId).then((draft) =>
+          setDraftInfo(
+            draft && draftHasContent(draft)
+              ? { startedAt: draft.startedAt, exerciseCount: draft.entries.length }
+              : null,
+          ),
+        );
+      }
+    }, [loadWorkouts, userId])
   );
 
   // Create marked dates for calendar
@@ -81,8 +107,33 @@ export const WorkoutsScreen = () => {
     setSelectedDate(day.dateString);
   };
 
-  const handleLogWorkout = () => {
+  const handleLogWorkout = async () => {
+    if (draftInfo) {
+      const replace = await confirmAction({
+        title: 'Start a new workout?',
+        message: 'You have a workout in progress. Starting a new one discards it.',
+        confirmLabel: 'Discard and start new',
+        destructive: true,
+      });
+      if (!replace) return;
+      if (userId) await clearDraft(userId);
+      setDraftInfo(null);
+    }
     navigation.navigate('LogWorkout', { initialDate: selectedDate });
+  };
+
+  const handleResume = () => navigation.navigate('LogWorkout', { resume: true });
+
+  const handleDiscardDraft = async () => {
+    const confirmed = await confirmAction({
+      title: 'Discard workout in progress?',
+      message: 'This clears everything you entered.',
+      confirmLabel: 'Discard',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    if (userId) await clearDraft(userId);
+    setDraftInfo(null);
   };
 
   const handleWorkoutPress = (workoutId: string) => {
@@ -102,6 +153,26 @@ export const WorkoutsScreen = () => {
   return (
     <ScreenContainer>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {draftInfo ? (
+          <View style={styles.draftCard}>
+            <View style={styles.draftText}>
+              <Text style={styles.draftTitle}>Workout in progress</Text>
+              <Text style={styles.draftMeta}>
+                {draftInfo.exerciseCount} exercise{draftInfo.exerciseCount === 1 ? '' : 's'} · started{' '}
+                {formatStartedAgo(draftInfo.startedAt)}
+              </Text>
+            </View>
+            <View style={styles.draftActions}>
+              <TouchableOpacity style={styles.draftResume} onPress={handleResume} accessibilityRole="button">
+                <Text style={styles.draftResumeText}>Resume</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDiscardDraft} accessibilityRole="button">
+                <Text style={styles.draftDiscard}>Discard</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.header}>
           <Text style={styles.title}>Workout History</Text>
         </View>
@@ -192,6 +263,25 @@ export const WorkoutsScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  draftCard: {
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  draftText: { flex: 1 },
+  draftTitle: { fontSize: 16, fontWeight: '700', color: '#1e3a8a' },
+  draftMeta: { fontSize: 13, color: '#475569', marginTop: 2 },
+  draftActions: { alignItems: 'flex-end', gap: 6 },
+  draftResume: { backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
+  draftResumeText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  draftDiscard: { color: '#dc2626', fontSize: 13, fontWeight: '600' },
   container: {
     flex: 1,
   },

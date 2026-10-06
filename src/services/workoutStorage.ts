@@ -7,6 +7,7 @@ import type {
   StoredEntry,
 } from '../types/workout';
 import { entriesToStored, normalizeEntries } from '../domain/entry';
+import { isExerciseType } from '../domain/exerciseTypes';
 import {
   DEFAULT_WORKOUT_DAY_TYPES,
   DEFAULT_EXERCISES,
@@ -287,13 +288,14 @@ export async function getCustomExercises(): Promise<Exercise[]> {
     await requireUserId();
     const { data, error } = await supabase
       .from('custom_exercises')
-      .select('name, muscle_group')
+      .select('*')
       .order('created_at', { ascending: true });
     if (error) throw error;
     return (data ?? []).map((row) => ({
       name: row.name,
       isCustom: true,
       muscleGroup: row.muscle_group ?? undefined,
+      type: isExerciseType(row.exercise_type) ? row.exercise_type : 'weight_reps',
     }));
   } catch (error) {
     console.error('Error getting custom exercises:', error);
@@ -318,6 +320,11 @@ export async function saveCustomExercise(exercise: Exercise): Promise<void> {
       user_id: userId,
       name: exercise.name,
       muscle_group: exercise.muscleGroup ?? null,
+      // Only sent when non-default, so creating a normal exercise still works
+      // on a database that hasn't run migration 006 yet.
+      ...(exercise.type && exercise.type !== 'weight_reps'
+        ? { exercise_type: exercise.type }
+        : {}),
     });
     if (error) {
       if (error.code === UNIQUE_VIOLATION) {

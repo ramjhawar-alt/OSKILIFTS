@@ -70,6 +70,13 @@ export function formatDistance(meters: number, unit: WeightUnit): string {
   return `${text} ${unit === 'lb' ? 'mi' : 'km'}`;
 }
 
+/** Number-only text to prefill a distance input (meters -> mi for lb users, km for kg). */
+export function distanceInputText(meters: number | null, unit: WeightUnit): string {
+  if (meters === null) return '';
+  const value = unit === 'lb' ? meters / M_PER_MILE : meters / 1000;
+  return trimZeros(value.toFixed(2));
+}
+
 export function parseDistanceInput(text: string, unit: WeightUnit): number | null {
   const trimmed = text.trim();
   if (!WEIGHT_PATTERN.test(trimmed)) return null;

@@ -1,191 +1,238 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  AppState,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
+  View,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import { CustomDayTypeModal } from '../components/CustomDayTypeModal';
+import { ExerciseCard } from '../components/ExerciseCard';
+import { ExerciseSearch } from '../components/ExerciseSearch';
 import { ScreenContainer } from '../components/ScreenContainer';
-import { RootStackParamList } from '../types/navigation';
+import { useAuth } from '../contexts/AuthContext';
+import { useWeightUnit } from '../contexts/ProfileContext';
+import { isValidDateString, localDateString, toStoredWorkoutDate } from '../domain/dates';
+import {
+  convertDraftUnit,
+  countUncheckedWithData,
+  createDraft,
+  draftFromWorkout,
+  draftHasContent,
+  draftReducer,
+  draftToEntries,
+  MAX_DRAFT_ENTRIES,
+} from '../domain/draft';
+import { clearDraft, loadDraft, saveDraft } from '../services/draftStorage';
 import {
   getWorkoutById,
-  saveWorkout,
   getWorkoutDayTypes,
   saveCustomWorkoutDayType,
+  saveWorkout,
 } from '../services/workoutStorage';
-import { ExerciseSearch } from '../components/ExerciseSearch';
-import { CustomDayTypeModal } from '../components/CustomDayTypeModal';
-import type { WorkoutVisibility, Workout, WorkoutDayType, EntryData } from '../types/workout';
-import { entryFromLegacy } from '../domain/entry';
-import { localDateString, toStoredWorkoutDate } from '../domain/dates';
-import { formatExerciseEntry } from '../utils/workoutFormat';
+import { RootStackParamList } from '../types/navigation';
+import type { Exercise, Workout, WorkoutDayType, WorkoutVisibility } from '../types/workout';
 import { confirmAction, showMessage } from '../utils/alert';
-import { useWeightUnit } from '../contexts/ProfileContext';
 
-type LogWorkoutNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'LogWorkout'
->;
+type LogWorkoutNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LogWorkout'>;
+
+type PickerMode = { kind: 'add' } | { kind: 'replace'; entryId: string } | null;
+
+const AUTOSAVE_MS = 400;
 
 export const LogWorkoutScreen = () => {
   const navigation = useNavigation<LogWorkoutNavigationProp>();
-  const unit = useWeightUnit();
   const route = useRoute();
-  const params = route.params as { workoutId?: string; initialDate?: string };
+  const unit = useWeightUnit();
+  const { user } = useAuth();
+  const userId = user?.id ?? '';
+  const params = route.params as { workoutId?: string; initialDate?: string; resume?: boolean } | undefined;
   const workoutId = params?.workoutId;
-  const initialDate = params?.initialDate;
+  const resume = params?.resume === true;
 
-  const [loading, setLoading] = useState(false);
+  const [draft, dispatch] = useReducer(
+    draftReducer,
+    undefined,
+    () => createDraft({ date: params?.initialDate || localDateString(), unit }),
+  );
+  const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [workoutDate, setWorkoutDate] = useState(
-    initialDate || localDateString(),
-  );
-  const [selectedDayType, setSelectedDayType] = useState<WorkoutDayType | null>(
-    null,
-  );
   const [dayTypes, setDayTypes] = useState<WorkoutDayType[]>([]);
-  const [exercises, setExercises] = useState<EntryData[]>([]);
-  const [notes, setNotes] = useState('');
-  const [visibility, setVisibility] = useState<WorkoutVisibility>('followers');
   const [showDayTypeModal, setShowDayTypeModal] = useState(false);
-  const [showExerciseSearch, setShowExerciseSearch] = useState(false);
-  const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(
-    null,
-  );
+  const [picker, setPicker] = useState<PickerMode>(null);
 
-  const loadWorkoutData = useCallback(async () => {
-    if (!workoutId) {
-      // Load default day types for new workout
-      const types = await getWorkoutDayTypes();
-      setDayTypes(types);
-      return;
-    }
+  // ---------------------------------------------------------------------
+  // load: day types, then either the workout being edited, a resumed draft,
+  // or nothing (a fresh draft was created above)
+  // ---------------------------------------------------------------------
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const types = await getWorkoutDayTypes();
+        if (active) setDayTypes(types);
 
-    setLoading(true);
-    try {
-      const workout = await getWorkoutById(workoutId);
-      if (workout) {
-        setWorkoutDate(workout.date.split('T')[0]);
-        setSelectedDayType(workout.dayType);
-        setExercises(workout.exercises);
-        setNotes(workout.notes || '');
-        setVisibility(workout.visibility ?? 'followers');
+        if (workoutId) {
+          const workout = await getWorkoutById(workoutId);
+          if (!active) return;
+          if (workout) dispatch({ type: 'replaceDraft', draft: draftFromWorkout(workout, unit) });
+          else showMessage('Error', 'Workout not found');
+        } else if (resume && userId) {
+          const stored = await loadDraft(userId);
+          if (active && stored) {
+            dispatch({ type: 'replaceDraft', draft: convertDraftUnit(stored, unit) });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading workout:', error);
+        showMessage('Error', 'Failed to load workout data');
+      } finally {
+        if (active) setReady(true);
       }
-      const types = await getWorkoutDayTypes();
-      setDayTypes(types);
-    } catch (error) {
-      console.error('Error loading workout:', error);
-      showMessage('Error', 'Failed to load workout data');
-    } finally {
-      setLoading(false);
-    }
-  }, [workoutId]);
+    })();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workoutId, resume, userId]);
+
+  // ---------------------------------------------------------------------
+  // draft persistence (new workouts only): debounced, flushed on background
+  // ---------------------------------------------------------------------
+  const latestDraft = useRef(draft);
+  latestDraft.current = draft;
+  const persist = useRef(true);
 
   useEffect(() => {
-    loadWorkoutData();
-  }, [loadWorkoutData]);
+    if (!ready || !userId || draft.editingId || !persist.current) return undefined;
+    if (!draftHasContent(draft)) return undefined;
+    const timer = setTimeout(() => saveDraft(userId, draft), AUTOSAVE_MS);
+    return () => clearTimeout(timer);
+  }, [draft, ready, userId]);
 
-  const handleAddExercise = () => {
-    setEditingExerciseIndex(null);
-    setShowExerciseSearch(true);
-  };
-
-  const handleExerciseSelect = (exercise: any, sets: number, reps: number | number[]) => {
-    const newExercise: EntryData = entryFromLegacy(exercise, sets, reps);
-
-    if (editingExerciseIndex !== null) {
-      const updated = [...exercises];
-      updated[editingExerciseIndex] = newExercise;
-      setExercises(updated);
-      setEditingExerciseIndex(null);
-    } else {
-      setExercises([...exercises, newExercise]);
+  useEffect(() => {
+    const flush = () => {
+      const current = latestDraft.current;
+      if (persist.current && userId && !current.editingId && draftHasContent(current)) {
+        saveDraft(userId, current);
+      }
+    };
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') flush();
+    });
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('pagehide', flush);
+      document.addEventListener('visibilitychange', flush);
     }
-    setShowExerciseSearch(false);
-  };
+    return () => {
+      appState.remove();
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.removeEventListener('pagehide', flush);
+        document.removeEventListener('visibilitychange', flush);
+      }
+      flush();
+    };
+  }, [userId]);
 
-  const handleEditExercise = (index: number) => {
-    setEditingExerciseIndex(index);
-    setShowExerciseSearch(true);
-  };
+  // ---------------------------------------------------------------------
+  // handlers
+  // ---------------------------------------------------------------------
+  const handlePick = useCallback(
+    (exercises: Exercise[]) => {
+      if (picker?.kind === 'replace' && exercises[0]) {
+        dispatch({ type: 'replaceExercise', entryId: picker.entryId, exercise: exercises[0] });
+      } else if (exercises.length > 0) {
+        dispatch({ type: 'addEntries', exercises });
+      }
+      setPicker(null);
+    },
+    [picker],
+  );
 
-  const handleRemoveExercise = async (index: number) => {
+  const handleRemove = useCallback(async (entryId: string) => {
     const confirmed = await confirmAction({
-      title: 'Remove Exercise',
-      message: 'Are you sure you want to remove this exercise?',
+      title: 'Remove exercise',
+      message: 'Remove this exercise and its sets?',
       confirmLabel: 'Remove',
       destructive: true,
     });
-    if (confirmed) {
-      setExercises((current) => current.filter((_, i) => i !== index));
-    }
-  };
+    if (confirmed) dispatch({ type: 'removeEntry', entryId });
+  }, []);
+
+  const handleReplace = useCallback((entryId: string) => setPicker({ kind: 'replace', entryId }), []);
 
   const handleAddCustomDayType = async (name: string) => {
     try {
       const newDayType: WorkoutDayType = { name, isCustom: true };
       await saveCustomWorkoutDayType(newDayType);
-      const types = await getWorkoutDayTypes();
-      setDayTypes(types);
-      setSelectedDayType(newDayType);
+      setDayTypes(await getWorkoutDayTypes());
+      dispatch({ type: 'setMeta', patch: { dayType: newDayType } });
       setShowDayTypeModal(false);
     } catch (error: any) {
       showMessage('Error', error.message || 'Failed to add custom day type');
     }
   };
 
+  const handleDiscard = async () => {
+    const confirmed = await confirmAction({
+      title: 'Discard workout?',
+      message: 'This clears everything you entered.',
+      confirmLabel: 'Discard',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    persist.current = false;
+    if (userId) await clearDraft(userId);
+    navigation.goBack();
+  };
+
   const handleSave = async () => {
-    if (!selectedDayType) {
+    if (!draft.dayType) {
       showMessage('Required', 'Please select a workout day type');
       return;
     }
-
-    if (exercises.length === 0) {
-      showMessage('Required', 'Please add at least one exercise');
+    if (!isValidDateString(draft.date)) {
+      showMessage('Invalid Date', 'Please enter a date in YYYY-MM-DD format');
+      return;
+    }
+    const { entries, errors } = draftToEntries(draft);
+    if (errors.length > 0) {
+      showMessage('Check your workout', errors.slice(0, 4).join('\n'));
       return;
     }
 
     setSaving(true);
     try {
-      // Validate and normalize the date string (ensure it's YYYY-MM-DD format)
-      const dateMatch = workoutDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
-      if (!dateMatch) {
-        showMessage('Invalid Date', 'Please enter a date in YYYY-MM-DD format');
-        setSaving(false);
-        return;
-      }
-      
-      // Use the normalized date part to create ISO string at noon UTC
-      // This ensures the date part (YYYY-MM-DD) is always preserved correctly
-      // when we extract it with split('T')[0], regardless of timezone
-      const normalizedDate = dateMatch[0]; // This is YYYY-MM-DD
-      const dateString = toStoredWorkoutDate(normalizedDate);
-      
       const workout: Workout = {
-        id: workoutId || `workout-${Date.now()}`,
-        date: dateString,
-        dayType: selectedDayType,
-        exercises,
-        notes: notes.trim() || undefined,
-        visibility,
+        id: draft.editingId || `workout-${Date.now()}`,
+        date: toStoredWorkoutDate(draft.date),
+        dayType: draft.dayType,
+        exercises: entries,
+        notes: draft.notes.trim() || undefined,
+        visibility: draft.visibility,
       };
-
       await saveWorkout(workout);
+      persist.current = false;
+      if (userId && !draft.editingId) await clearDraft(userId);
       navigation.goBack();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving workout:', error);
-      showMessage('Error', 'Failed to save workout');
+      const tooBig = error?.code === '23514';
+      showMessage('Error', tooBig ? 'This workout is too large to save.' : 'Failed to save workout');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
+  if (!ready) {
     return (
       <ScreenContainer>
         <View style={styles.centered}>
@@ -195,187 +242,164 @@ export const LogWorkoutScreen = () => {
     );
   }
 
+  const unchecked = countUncheckedWithData(draft);
+
   return (
     <ScreenContainer>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.label}>Date</Text>
-          <TextInput
-            style={styles.input}
-            value={workoutDate}
-            onChangeText={setWorkoutDate}
-            placeholder="YYYY-MM-DD"
-          />
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.labelRow}>
-            <Text style={styles.label}>Workout Day Type</Text>
-            <TouchableOpacity
-              onPress={() => setShowDayTypeModal(true)}
-              style={styles.addButton}
-            >
-              <Text style={styles.addButtonText}>+ Custom</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.dayTypeScroll}
-          >
-            {dayTypes.map((type) => (
-              <TouchableOpacity
-                key={type.name}
-                style={[
-                  styles.dayTypeChip,
-                  selectedDayType?.name === type.name && styles.dayTypeChipSelected,
-                ]}
-                onPress={() => setSelectedDayType(type)}
-              >
-                <Text
-                  style={[
-                    styles.dayTypeChipText,
-                    selectedDayType?.name === type.name &&
-                      styles.dayTypeChipTextSelected,
-                  ]}
-                >
-                  {type.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.labelRow}>
-            <Text style={styles.label}>Exercises</Text>
-            <TouchableOpacity
-              onPress={handleAddExercise}
-              style={styles.addButton}
-            >
-              <Text style={styles.addButtonText}>+ Add</Text>
-            </TouchableOpacity>
-          </View>
-
-          {exercises.length === 0 ? (
-            <View style={styles.emptyExercises}>
-              <Text style={styles.emptyText}>No exercises added yet</Text>
-            </View>
-          ) : (
-            exercises.map((entry, index) => (
-              <View key={index} style={styles.exerciseCard}>
-                <View style={styles.exerciseHeader}>
-                  <Text style={styles.exerciseName}>
-                    {entry.exercise.name}
-                  </Text>
-                  <View style={styles.exerciseActions}>
-                    <TouchableOpacity
-                      onPress={() => handleEditExercise(index)}
-                      style={styles.actionButton}
-                    >
-                      <Text style={styles.actionButtonText}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveExercise(index)}
-                      style={[styles.actionButton, styles.removeButton]}
-                    >
-                      <Text
-                        style={[
-                          styles.actionButtonText,
-                          styles.removeButtonText,
-                        ]}
-                      >
-                        Remove
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <Text style={styles.exerciseDetails}>
-                  {formatExerciseEntry(entry, unit)}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.label}>Notes (Optional)</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="Add any notes about your workout..."
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.label}>Who can see this</Text>
-          <View style={styles.visibilityRow}>
-            {(
-              [
-                { value: 'followers', label: 'Followers' },
-                { value: 'private', label: 'Only me' },
-              ] as { value: WorkoutVisibility; label: string }[]
-            ).map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.dayTypeChip,
-                  visibility === option.value && styles.dayTypeChipSelected,
-                ]}
-                onPress={() => setVisibility(option.value)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: visibility === option.value }}
-              >
-                <Text
-                  style={[
-                    styles.dayTypeChipText,
-                    visibility === option.value && styles.dayTypeChipTextSelected,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={styles.visibilityHint}>
-            {visibility === 'followers'
-              ? 'Shown in your approved followers’ feeds, including your notes.'
-              : 'Only you can see this workout.'}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
         >
-          {saving ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Workout</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+          <View style={styles.section}>
+            <Text style={styles.label}>Date</Text>
+            <TextInput
+              style={styles.input}
+              value={draft.date}
+              onChangeText={(date) => dispatch({ type: 'setMeta', patch: { date } })}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#94a3b8"
+              maxLength={10}
+            />
+          </View>
 
-      {showExerciseSearch && (
+          <View style={styles.section}>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Workout Day Type</Text>
+              <TouchableOpacity onPress={() => setShowDayTypeModal(true)} style={styles.addButton}>
+                <Text style={styles.addButtonText}>+ Custom</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {dayTypes.map((type) => {
+                const selected = draft.dayType?.name === type.name;
+                return (
+                  <TouchableOpacity
+                    key={type.name}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    onPress={() => dispatch({ type: 'setMeta', patch: { dayType: type } })}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{type.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>Exercises</Text>
+            {draft.entries.length === 0 ? (
+              <View style={styles.emptyExercises}>
+                <Text style={styles.emptyText}>No exercises yet. Add one to start logging sets.</Text>
+              </View>
+            ) : (
+              draft.entries.map((entry) => (
+                <ExerciseCard
+                  key={entry.id}
+                  entry={entry}
+                  unit={draft.unit}
+                  dispatch={dispatch}
+                  onReplace={handleReplace}
+                  onRemove={handleRemove}
+                />
+              ))
+            )}
+            <TouchableOpacity
+              style={[styles.addExercise, draft.entries.length >= MAX_DRAFT_ENTRIES && styles.addExerciseDisabled]}
+              onPress={() => setPicker({ kind: 'add' })}
+              disabled={draft.entries.length >= MAX_DRAFT_ENTRIES}
+            >
+              <Text style={styles.addExerciseText}>+ Add exercises</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>Notes (Optional)</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={draft.notes}
+              onChangeText={(notes) => dispatch({ type: 'setMeta', patch: { notes } })}
+              placeholder="Add any notes about your workout..."
+              placeholderTextColor="#94a3b8"
+              multiline
+              numberOfLines={4}
+              maxLength={2000}
+              textAlignVertical="top"
+            />
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>Who can see this</Text>
+            <View style={styles.visibilityRow}>
+              {(
+                [
+                  { value: 'followers', label: 'Followers' },
+                  { value: 'private', label: 'Only me' },
+                ] as { value: WorkoutVisibility; label: string }[]
+              ).map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.chip, draft.visibility === option.value && styles.chipSelected]}
+                  onPress={() => dispatch({ type: 'setMeta', patch: { visibility: option.value } })}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: draft.visibility === option.value }}
+                >
+                  <Text style={[styles.chipText, draft.visibility === option.value && styles.chipTextSelected]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.visibilityHint}>
+              {draft.visibility === 'followers'
+                ? 'Shown in your approved followers’ feeds, including your notes.'
+                : 'Only you can see this workout.'}
+            </Text>
+          </View>
+
+          {unchecked > 0 ? (
+            <View style={styles.warning}>
+              <Text style={styles.warningText}>
+                {unchecked} set{unchecked === 1 ? '' : 's'} with numbers {unchecked === 1 ? 'isn’t' : 'aren’t'}{' '}
+                checked and won’t be saved.
+              </Text>
+              <TouchableOpacity onPress={() => dispatch({ type: 'checkAllValid' })} accessibilityRole="button">
+                <Text style={styles.warningAction}>Check all</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.saveButtonText}>{draft.editingId ? 'Save changes' : 'Save Workout'}</Text>
+            )}
+          </TouchableOpacity>
+
+          {!draft.editingId && draftHasContent(draft) ? (
+            <TouchableOpacity style={styles.discard} onPress={handleDiscard} accessibilityRole="button">
+              <Text style={styles.discardText}>Discard workout</Text>
+            </TouchableOpacity>
+          ) : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {picker ? (
         <ExerciseSearch
-          visible={showExerciseSearch}
-          onClose={() => {
-            setShowExerciseSearch(false);
-            setEditingExerciseIndex(null);
-          }}
-          onSelect={handleExerciseSelect}
-          initialExercise={
-            editingExerciseIndex !== null
-              ? exercises[editingExerciseIndex]
-              : undefined
-          }
+          visible
+          single={picker.kind === 'replace'}
+          onClose={() => setPicker(null)}
+          onPick={handlePick}
         />
-      )}
+      ) : null}
 
       <CustomDayTypeModal
         visible={showDayTypeModal}
@@ -387,32 +411,12 @@ export const LogWorkoutScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    paddingBottom: 20,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
+  flex: { flex: 1 },
+  content: { paddingBottom: 40 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  section: { marginBottom: 24 },
+  label: { fontSize: 16, fontWeight: '600', color: '#0f172a', marginBottom: 8 },
+  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   input: {
     backgroundColor: '#ffffff',
     borderWidth: 1,
@@ -422,23 +426,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#0f172a',
   },
-  textArea: {
-    minHeight: 100,
-    paddingTop: 12,
-  },
-  dayTypeScroll: {
-    marginTop: 8,
-  },
-  visibilityRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  visibilityHint: {
-    fontSize: 13,
-    color: '#64748b',
-    marginTop: 8,
-  },
-  dayTypeChip: {
+  textArea: { minHeight: 100, paddingTop: 12 },
+  visibilityRow: { flexDirection: 'row', gap: 8 },
+  visibilityHint: { fontSize: 13, color: '#64748b', marginTop: 8 },
+  chip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -447,29 +438,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  dayTypeChipSelected: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
-  },
-  dayTypeChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748b',
-  },
-  dayTypeChipTextSelected: {
-    color: '#ffffff',
-  },
-  addButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#f1f5f9',
-  },
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2563eb',
-  },
+  chipSelected: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
+  chipText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
+  chipTextSelected: { color: '#ffffff' },
+  addButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f1f5f9' },
+  addButtonText: { fontSize: 14, fontWeight: '600', color: '#2563eb' },
   emptyExercises: {
     padding: 20,
     alignItems: 'center',
@@ -478,70 +451,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderStyle: 'dashed',
+    marginBottom: 12,
   },
-  emptyText: {
-    fontSize: 14,
-    color: '#64748b',
+  emptyText: { fontSize: 14, color: '#64748b' },
+  addExercise: {
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
-  exerciseCard: {
-    backgroundColor: '#ffffff',
+  addExerciseDisabled: { opacity: 0.5 },
+  addExerciseText: { color: '#2563eb', fontSize: 16, fontWeight: '700' },
+  warning: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
     borderRadius: 8,
     padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  exerciseHeader: {
+    marginBottom: 12,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
+    gap: 12,
   },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
-    flex: 1,
-  },
-  exerciseActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    backgroundColor: '#f1f5f9',
-  },
-  actionButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2563eb',
-  },
-  removeButton: {
-    backgroundColor: '#fef2f2',
-  },
-  removeButtonText: {
-    color: '#dc2626',
-  },
-  exerciseDetails: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  saveButton: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  warningText: { flex: 1, fontSize: 14, color: '#92400e' },
+  warningAction: { fontSize: 14, fontWeight: '700', color: '#2563eb' },
+  saveButton: { backgroundColor: '#2563eb', padding: 16, borderRadius: 8, alignItems: 'center' },
+  saveButtonDisabled: { opacity: 0.6 },
+  saveButtonText: { color: '#ffffff', fontSize: 18, fontWeight: '600' },
+  discard: { alignItems: 'center', paddingVertical: 16 },
+  discardText: { color: '#dc2626', fontSize: 15, fontWeight: '600' },
 });
-

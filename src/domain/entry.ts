@@ -218,6 +218,17 @@ export function normalizeEntries(raw: unknown): EntryData[] {
   return entries;
 }
 
+/** An entry built from newly logged sets (always written in the per-set shape). */
+export function entryFromSets(
+  exercise: Exercise,
+  sets: SetData[],
+  prs: PrKind[] = [],
+): EntryData {
+  const entry = makeEntry(exercise, sets.slice(0, MAX_SETS), prs, null);
+  entry.touched = true;
+  return entry;
+}
+
 // ---------------------------------------------------------------------------
 // writing
 // ---------------------------------------------------------------------------

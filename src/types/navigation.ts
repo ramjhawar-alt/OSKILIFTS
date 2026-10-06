@@ -2,7 +2,7 @@ export type RootStackParamList = {
   Home: undefined;
   Classes: undefined;
   Workouts: undefined;
-  LogWorkout: { workoutId?: string; initialDate?: string };
+  LogWorkout: { workoutId?: string; initialDate?: string; resume?: boolean };
   WorkoutDetail: { workoutId: string };
   Hoopers: undefined;
   BearDebug: undefined;
