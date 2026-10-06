@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CustomDayTypeModal } from '../components/CustomDayTypeModal';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { ExerciseSearch } from '../components/ExerciseSearch';
+import { NameRoutineModal } from '../components/NameRoutineModal';
 import { RestTimerBar } from '../components/RestTimerBar';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,6 +36,8 @@ import {
 import { exerciseKey } from '../domain/entry';
 import { lastPerformance, sessionsBefore, type HistoryIndex } from '../domain/history';
 import { PR_LABEL, stampPrs } from '../domain/prs';
+import { draftFromRoutine, routineEntriesFromDraft } from '../domain/routines';
+import { createRoutine, getRoutine, markRoutineUsed } from '../services/routineService';
 import {
   adjustRest,
   formatRemaining,
@@ -76,9 +79,12 @@ export const LogWorkoutScreen = () => {
   const unit = useWeightUnit();
   const { user } = useAuth();
   const userId = user?.id ?? '';
-  const params = route.params as { workoutId?: string; initialDate?: string; resume?: boolean } | undefined;
+  const params = route.params as
+    | { workoutId?: string; initialDate?: string; resume?: boolean; routineId?: string }
+    | undefined;
   const workoutId = params?.workoutId;
   const resume = params?.resume === true;
+  const routineId = params?.routineId;
 
   const [draft, dispatch] = useReducer(
     draftReducer,
@@ -90,6 +96,7 @@ export const LogWorkoutScreen = () => {
   const [dayTypes, setDayTypes] = useState<WorkoutDayType[]>([]);
   const [showDayTypeModal, setShowDayTypeModal] = useState(false);
   const [picker, setPicker] = useState<PickerMode>(null);
+  const [namingRoutine, setNamingRoutine] = useState(false);
   const [history, setHistory] = useState<HistoryIndex | null>(null);
   const [editingCreatedAt, setEditingCreatedAt] = useState<string | undefined>();
   const [restSettings, setRestSettings] = useState<RestSettings>(DEFAULT_REST_SETTINGS);
@@ -115,6 +122,17 @@ export const LogWorkoutScreen = () => {
             setEditingCreatedAt(workout.createdAt);
           }
           else showMessage('Error', 'Workout not found');
+        } else if (routineId) {
+          const routine = await getRoutine(routineId);
+          if (!active) return;
+          if (routine) {
+            dispatch({
+              type: 'replaceDraft',
+              draft: draftFromRoutine(routine, { unit, date: params?.initialDate || localDateString() }),
+            });
+          } else {
+            showMessage('Routine not found', 'Starting an empty workout instead.');
+          }
         } else if (resume && userId) {
           const stored = await loadDraft(userId);
           if (active && stored) {
@@ -132,7 +150,7 @@ export const LogWorkoutScreen = () => {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutId, resume, userId]);
+  }, [workoutId, resume, routineId, userId]);
 
   // ---------------------------------------------------------------------
   // previous-session hints: one cached strict fetch, never blocks logging
@@ -286,6 +304,17 @@ export const LogWorkoutScreen = () => {
     }
   };
 
+  const handleSaveAsRoutine = async (name: string) => {
+    try {
+      const entries = routineEntriesFromDraft(draft);
+      await createRoutine({ name, dayType: draft.dayType, entries });
+      setNamingRoutine(false);
+      showMessage('Routine saved', `“${name.trim()}” is in your Routines. Start it any time from the Workouts tab.`);
+    } catch (error) {
+      showMessage('Couldn’t save routine', error instanceof Error ? error.message : 'Please try again.');
+    }
+  };
+
   const handleDiscard = async () => {
     const confirmed = await confirmAction({
       title: 'Discard workout?',
@@ -339,6 +368,7 @@ export const LogWorkoutScreen = () => {
         visibility: draft.visibility,
       };
       await saveWorkout(workout);
+      if (draft.routineId) markRoutineUsed(draft.routineId);
       persist.current = false;
       if (userId && !draft.editingId) await clearDraft(userId);
       const records = entries
@@ -538,6 +568,12 @@ export const LogWorkoutScreen = () => {
             )}
           </TouchableOpacity>
 
+          {draft.entries.length > 0 ? (
+            <TouchableOpacity style={styles.discard} onPress={() => setNamingRoutine(true)} accessibilityRole="button">
+              <Text style={styles.routineLink}>Save as routine</Text>
+            </TouchableOpacity>
+          ) : null}
+
           {!draft.editingId && draftHasContent(draft) ? (
             <TouchableOpacity style={styles.discard} onPress={handleDiscard} accessibilityRole="button">
               <Text style={styles.discardText}>Discard workout</Text>
@@ -554,6 +590,14 @@ export const LogWorkoutScreen = () => {
           onPick={handlePick}
         />
       ) : null}
+
+      <NameRoutineModal
+        visible={namingRoutine}
+        title="Save as routine"
+        initialName={draft.dayType?.name ?? ''}
+        onClose={() => setNamingRoutine(false)}
+        onSave={handleSaveAsRoutine}
+      />
 
       <CustomDayTypeModal
         visible={showDayTypeModal}
@@ -645,4 +689,5 @@ const styles = StyleSheet.create({
   saveButtonText: { color: '#ffffff', fontSize: 18, fontWeight: '600' },
   discard: { alignItems: 'center', paddingVertical: 16 },
   discardText: { color: '#dc2626', fontSize: 15, fontWeight: '600' },
+  routineLink: { color: '#2563eb', fontSize: 15, fontWeight: '600' },
 });

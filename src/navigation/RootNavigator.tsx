@@ -22,6 +22,7 @@ import { SearchUsersScreen } from '../screens/SearchUsersScreen';
 import { UserProfileScreen } from '../screens/UserProfileScreen';
 import { ConnectionsScreen } from '../screens/ConnectionsScreen';
 import { ExercisesScreen } from '../screens/ExercisesScreen';
+import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ExerciseDetailScreen } from '../screens/ExerciseDetailScreen';
 import { HeaderLink } from '../components/HeaderLink';
 import { RequestsProvider, useRequests } from '../contexts/RequestsContext';
@@ -81,11 +82,15 @@ const WorkoutsStack = () => {
         options={({ navigation }) => ({
           title: 'My Workouts',
           headerRight: () => (
-            <HeaderLink label="Exercises" onPress={() => navigation.navigate('Exercises')} />
+            <View style={{ flexDirection: 'row' }}>
+              <HeaderLink label="Routines" onPress={() => navigation.navigate('Routines')} />
+              <HeaderLink label="Exercises" onPress={() => navigation.navigate('Exercises')} />
+            </View>
           ),
         })}
       />
       <Stack.Screen name="Exercises" component={ExercisesScreen} options={{ title: 'Exercises' }} />
+      <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: 'Routines' }} />
       <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} options={{ title: 'Exercise' }} />
       <Stack.Screen
         name="LogWorkout"

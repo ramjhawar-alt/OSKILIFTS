@@ -2,7 +2,7 @@ export type RootStackParamList = {
   Home: undefined;
   Classes: undefined;
   Workouts: undefined;
-  LogWorkout: { workoutId?: string; initialDate?: string; resume?: boolean };
+  LogWorkout: { workoutId?: string; initialDate?: string; resume?: boolean; routineId?: string };
   WorkoutDetail: { workoutId: string };
   Hoopers: undefined;
   BearDebug: undefined;
@@ -12,6 +12,7 @@ export type RootStackParamList = {
   Connections: { initialTab?: 'requests' | 'blocked' } | undefined;
   Guidelines: undefined;
   Exercises: undefined;
+  Routines: undefined;
   ExerciseDetail: { key: string; name: string };
 };
 

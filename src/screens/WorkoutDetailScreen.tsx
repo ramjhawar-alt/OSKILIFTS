@@ -20,6 +20,9 @@ import { formatReps, formatSet, getDateFromISOString } from '../utils/workoutFor
 import { confirmAction, showMessage } from '../utils/alert';
 import { useWeightUnit } from '../contexts/ProfileContext';
 import { PrChips } from '../components/PrChips';
+import { NameRoutineModal } from '../components/NameRoutineModal';
+import { routineEntriesFromWorkout } from '../domain/routines';
+import { createRoutine } from '../services/routineService';
 
 type WorkoutDetailNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -29,6 +32,7 @@ type WorkoutDetailNavigationProp = NativeStackNavigationProp<
 export const WorkoutDetailScreen = () => {
   const navigation = useNavigation<WorkoutDetailNavigationProp>();
   const unit = useWeightUnit();
+  const [namingRoutine, setNamingRoutine] = useState(false);
   const route = useRoute();
   const workoutId = (route.params as { workoutId: string }).workoutId;
 
@@ -57,6 +61,17 @@ export const WorkoutDetailScreen = () => {
   const handleEdit = () => {
     if (workout) {
       navigation.navigate('LogWorkout', { workoutId: workout.id });
+    }
+  };
+
+  const handleSaveAsRoutine = async (name: string) => {
+    if (!workout) return;
+    try {
+      await createRoutine({ name, dayType: workout.dayType, entries: routineEntriesFromWorkout(workout) });
+      setNamingRoutine(false);
+      showMessage('Routine saved', `“${name.trim()}” is in your Routines. Start it any time from the Workouts tab.`);
+    } catch (error) {
+      showMessage('Couldn’t save routine', error instanceof Error ? error.message : 'Please try again.');
     }
   };
 
@@ -191,12 +206,34 @@ export const WorkoutDetailScreen = () => {
             <Text style={styles.deleteButtonText}>Delete</Text>
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity style={styles.routineButton} onPress={() => setNamingRoutine(true)} accessibilityRole="button">
+          <Text style={styles.routineButtonText}>Save as routine</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      <NameRoutineModal
+        visible={namingRoutine}
+        title="Save as routine"
+        initialName={workout.dayType.name}
+        onClose={() => setNamingRoutine(false)}
+        onSave={handleSaveAsRoutine}
+      />
     </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
+  routineButton: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  routineButtonText: { color: '#2563eb', fontSize: 16, fontWeight: '600' },
   setList: { gap: 6, marginTop: 4 },
   setLine: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   setLabel: {

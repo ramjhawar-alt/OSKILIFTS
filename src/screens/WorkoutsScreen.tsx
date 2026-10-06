@@ -20,6 +20,9 @@ import { draftHasContent } from '../domain/draft';
 import { useAuth } from '../contexts/AuthContext';
 import { clearDraft, loadDraft } from '../services/draftStorage';
 import { confirmAction } from '../utils/alert';
+import { listRoutines } from '../services/routineService';
+import { confirmDiscardDraftIfAny } from '../services/startWorkout';
+import type { Routine } from '../domain/routines';
 
 function formatStartedAgo(startedAt: number): string {
   const minutes = Math.max(0, Math.round((Date.now() - startedAt) / 60000));
@@ -41,6 +44,7 @@ export const WorkoutsScreen = () => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const [routines, setRoutines] = useState<Routine[]>([]);
   const userId = user?.id ?? '';
   const [draftInfo, setDraftInfo] = useState<{ startedAt: number; exerciseCount: number } | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -67,6 +71,8 @@ export const WorkoutsScreen = () => {
   useFocusEffect(
     useCallback(() => {
       loadWorkouts();
+      // Routines are optional: if the table isn't there yet this just stays empty.
+      listRoutines().then(setRoutines).catch(() => setRoutines([]));
       if (userId) {
         loadDraft(userId).then((draft) =>
           setDraftInfo(
@@ -173,6 +179,38 @@ export const WorkoutsScreen = () => {
           </View>
         ) : null}
 
+        {routines.length > 0 ? (
+          <View style={styles.routineSection}>
+            <View style={styles.routineHeader}>
+              <Text style={styles.routineTitle}>Start a routine</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Routines')} accessibilityRole="button">
+                <Text style={styles.routineManage}>Manage</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {routines.map((routine) => (
+                <TouchableOpacity
+                  key={routine.id}
+                  style={styles.routineCard}
+                  onPress={async () => {
+                    if (!(await confirmDiscardDraftIfAny(userId))) return;
+                    setDraftInfo(null);
+                    navigation.navigate('LogWorkout', { routineId: routine.id });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Start ${routine.name}`}
+                >
+                  <Text style={styles.routineName} numberOfLines={1}>{routine.name}</Text>
+                  <Text style={styles.routineMeta}>
+                    {routine.entries.length} exercise{routine.entries.length === 1 ? '' : 's'}
+                  </Text>
+                  <Text style={styles.routineStart}>Start</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
         <View style={styles.header}>
           <Text style={styles.title}>Workout History</Text>
         </View>
@@ -263,6 +301,23 @@ export const WorkoutsScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  routineSection: { marginBottom: 16 },
+  routineHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  routineTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
+  routineManage: { fontSize: 14, fontWeight: '600', color: '#2563eb' },
+  routineCard: {
+    width: 150,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    gap: 2,
+  },
+  routineName: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
+  routineMeta: { fontSize: 12, color: '#64748b' },
+  routineStart: { marginTop: 6, fontSize: 13, fontWeight: '700', color: '#2563eb' },
   draftCard: {
     backgroundColor: '#eff6ff',
     borderWidth: 1,
