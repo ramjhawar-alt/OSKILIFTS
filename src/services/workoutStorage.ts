@@ -8,6 +8,7 @@ import type {
 } from '../types/workout';
 import { entriesToStored, normalizeEntries } from '../domain/entry';
 import { isExerciseType } from '../domain/exerciseTypes';
+import { bumpHistoryVersion } from './historyVersion';
 import {
   DEFAULT_WORKOUT_DAY_TYPES,
   DEFAULT_EXERCISES,
@@ -110,7 +111,10 @@ export async function saveWorkout(workout: Workout): Promise<string> {
         .eq('user_id', userId)
         .select('id');
       if (error) throw error;
-      if (data && data.length > 0) return data[0].id as string;
+      if (data && data.length > 0) {
+        bumpHistoryVersion();
+        return data[0].id as string;
+      }
       // The row no longer exists (e.g. deleted on another device): re-create.
     }
 
@@ -120,6 +124,7 @@ export async function saveWorkout(workout: Workout): Promise<string> {
       .select('id')
       .single();
     if (error) throw error;
+    bumpHistoryVersion();
     return inserted.id as string;
   } catch (error) {
     console.error('Error saving workout:', error);
@@ -191,6 +196,7 @@ export async function deleteWorkout(workoutId: string): Promise<void> {
       .eq('id', workoutId)
       .eq('user_id', userId);
     if (error) throw error;
+    bumpHistoryVersion();
   } catch (error) {
     console.error('Error deleting workout:', error);
     throw error;

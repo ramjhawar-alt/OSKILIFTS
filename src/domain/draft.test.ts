@@ -229,3 +229,23 @@ test('check-all completes only rows that are valid and have data', () => {
   draft = draftReducer(draft, { type: 'checkAllValid' });
   assert.deepEqual(draft.entries[0].sets.map((s) => s.done), [true, false, false]);
 });
+
+test('applyHint fills empty fields (check) or overwrites (tap previous); can complete', () => {
+  let { draft, entryId, setIds } = withBench();
+  const hint = { weightText: '185', repsText: '5', secText: '', distText: '' };
+  draft = fill(draft, entryId, setIds[0], '', '');
+  draft = draftReducer(draft, { type: 'applyHint', entryId, setId: setIds[0], hint, overwrite: false, complete: true });
+  assert.deepEqual([draft.entries[0].sets[0].weightText, draft.entries[0].sets[0].repsText, draft.entries[0].sets[0].done], ['185', '5', true]);
+
+  draft = fill(draft, entryId, setIds[1], '200', '');
+  draft = draftReducer(draft, { type: 'applyHint', entryId, setId: setIds[1], hint, overwrite: false, complete: true });
+  assert.deepEqual([draft.entries[0].sets[1].weightText, draft.entries[0].sets[1].repsText], ['200', '5']); // typed weight kept
+
+  draft = draftReducer(draft, { type: 'applyHint', entryId, setId: setIds[2], hint, overwrite: true, complete: false });
+  assert.deepEqual([draft.entries[0].sets[2].weightText, draft.entries[0].sets[2].done], ['185', false]);
+
+  draft = fill(draft, entryId, setIds[2], '', '');
+  const bad = { weightText: '', repsText: '', secText: '', distText: '' };
+  draft = draftReducer(draft, { type: 'applyHint', entryId, setId: setIds[2], hint: bad, overwrite: false, complete: true });
+  assert.equal(draft.entries[0].sets[2].done, false); // a hint that can't complete the row doesn't
+});

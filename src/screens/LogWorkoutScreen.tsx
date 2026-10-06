@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CustomDayTypeModal } from '../components/CustomDayTypeModal';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { ExerciseSearch } from '../components/ExerciseSearch';
+import { RestTimerBar } from '../components/RestTimerBar';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useAuth } from '../contexts/AuthContext';
 import { useWeightUnit } from '../contexts/ProfileContext';
@@ -31,7 +32,27 @@ import {
   draftToEntries,
   MAX_DRAFT_ENTRIES,
 } from '../domain/draft';
+import { exerciseKey } from '../domain/entry';
+import { lastPerformance, type HistoryIndex } from '../domain/history';
+import {
+  adjustRest,
+  formatRemaining,
+  idleTimer,
+  nextPreset,
+  remainingMs,
+  shouldAlert,
+  startRest,
+  type RestTimer,
+} from '../domain/restTimer';
 import { clearDraft, loadDraft, saveDraft } from '../services/draftStorage';
+import { getHistory } from '../services/historyCache';
+import {
+  DEFAULT_REST_SETTINGS,
+  loadRestSettings,
+  saveRestSettings,
+  type RestSettings,
+} from '../services/restSettings';
+import { playRestOver, primeRestAlert } from '../utils/restAlert';
 import {
   getWorkoutById,
   getWorkoutDayTypes,
@@ -68,6 +89,11 @@ export const LogWorkoutScreen = () => {
   const [dayTypes, setDayTypes] = useState<WorkoutDayType[]>([]);
   const [showDayTypeModal, setShowDayTypeModal] = useState(false);
   const [picker, setPicker] = useState<PickerMode>(null);
+  const [history, setHistory] = useState<HistoryIndex | null>(null);
+  const [editingCreatedAt, setEditingCreatedAt] = useState<string | undefined>();
+  const [restSettings, setRestSettings] = useState<RestSettings>(DEFAULT_REST_SETTINGS);
+  const [rest, setRest] = useState<RestTimer>(idleTimer());
+  const [now, setNow] = useState(Date.now());
 
   // ---------------------------------------------------------------------
   // load: day types, then either the workout being edited, a resumed draft,
@@ -83,7 +109,10 @@ export const LogWorkoutScreen = () => {
         if (workoutId) {
           const workout = await getWorkoutById(workoutId);
           if (!active) return;
-          if (workout) dispatch({ type: 'replaceDraft', draft: draftFromWorkout(workout, unit) });
+          if (workout) {
+            dispatch({ type: 'replaceDraft', draft: draftFromWorkout(workout, unit) });
+            setEditingCreatedAt(workout.createdAt);
+          }
           else showMessage('Error', 'Workout not found');
         } else if (resume && userId) {
           const stored = await loadDraft(userId);
@@ -103,6 +132,81 @@ export const LogWorkoutScreen = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workoutId, resume, userId]);
+
+  // ---------------------------------------------------------------------
+  // previous-session hints: one cached strict fetch, never blocks logging
+  // ---------------------------------------------------------------------
+  useEffect(() => {
+    if (!userId) return undefined;
+    let active = true;
+    getHistory(userId)
+      .then(({ index }) => active && setHistory(index))
+      .catch((error) => console.error('[History] hints unavailable:', error));
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  const hintDate = isValidDateString(draft.date) ? draft.date : localDateString();
+  const previousFor = useCallback(
+    (name: string) =>
+      history
+        ? lastPerformance(
+            history,
+            exerciseKey(name),
+            { date: hintDate, createdAt: editingCreatedAt },
+            draft.editingId,
+          )?.entry.sets ?? null
+        : null,
+    [history, hintDate, editingCreatedAt, draft.editingId],
+  );
+
+  // ---------------------------------------------------------------------
+  // rest timer: starts when a set gets checked; derived from timestamps
+  // ---------------------------------------------------------------------
+  useEffect(() => {
+    loadRestSettings().then(setRestSettings);
+  }, []);
+
+  const doneCount = useMemo(
+    () => draft.entries.reduce((sum, entry) => sum + entry.sets.filter((s) => s.done).length, 0),
+    [draft.entries],
+  );
+  const lastDoneCount = useRef<number | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    if (lastDoneCount.current !== null && doneCount > lastDoneCount.current && restSettings.enabled) {
+      primeRestAlert();
+      setRest(startRest(Date.now(), restSettings.seconds));
+      setNow(Date.now());
+    }
+    lastDoneCount.current = doneCount;
+  }, [doneCount, ready, restSettings]);
+
+  useEffect(() => {
+    if (rest.endsAt === null) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 250);
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setNow(Date.now());
+    });
+    return () => {
+      clearInterval(timer);
+      appState.remove();
+    };
+  }, [rest.endsAt]);
+
+  useEffect(() => {
+    if (shouldAlert(rest, now)) {
+      playRestOver();
+      setRest((current) => ({ ...current, alerted: true }));
+    }
+  }, [rest, now]);
+
+  const updateRestSettings = useCallback((next: RestSettings) => {
+    setRestSettings(next);
+    saveRestSettings(next);
+    if (!next.enabled) setRest(idleTimer());
+  }, []);
 
   // ---------------------------------------------------------------------
   // draft persistence (new workouts only): debounced, flushed on background
@@ -266,7 +370,37 @@ export const LogWorkoutScreen = () => {
             />
           </View>
 
-          <View style={styles.section}>
+          <View style={styles.restRow}>
+            <Text style={styles.restLabel}>Rest timer</Text>
+            <TouchableOpacity
+              style={[styles.restToggle, restSettings.enabled && styles.restToggleOn]}
+              onPress={() => updateRestSettings({ ...restSettings, enabled: !restSettings.enabled })}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: restSettings.enabled }}
+            >
+              <Text style={[styles.restToggleText, restSettings.enabled && styles.restToggleTextOn]}>
+                {restSettings.enabled ? 'On' : 'Off'}
+              </Text>
+            </TouchableOpacity>
+            {restSettings.enabled ? (
+              <TouchableOpacity
+                onPress={() => updateRestSettings({ ...restSettings, seconds: nextPreset(restSettings.seconds) })}
+                accessibilityRole="button"
+                accessibilityLabel="Change rest duration"
+              >
+                <Text style={styles.restDuration}>{formatRemaining(restSettings.seconds * 1000)} · change</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+          {rest.endsAt !== null ? (
+            <RestTimerBar
+              remainingMs={remainingMs(rest, now)}
+              onAdjust={(delta) => setRest((current) => adjustRest(current, Date.now(), delta))}
+              onSkip={() => setRest(idleTimer())}
+            />
+          ) : null}
+
+          <View style={[styles.section, styles.afterRest]}>
             <View style={styles.labelRow}>
               <Text style={styles.label}>Workout Day Type</Text>
               <TouchableOpacity onPress={() => setShowDayTypeModal(true)} style={styles.addButton}>
@@ -302,6 +436,7 @@ export const LogWorkoutScreen = () => {
                   entry={entry}
                   unit={draft.unit}
                   dispatch={dispatch}
+                  previousSets={previousFor(entry.exercise.name)}
                   onReplace={handleReplace}
                   onRemove={handleRemove}
                 />
@@ -415,6 +550,14 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 40 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   section: { marginBottom: 24 },
+  afterRest: { marginTop: 16 },
+  restRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  restLabel: { fontSize: 14, fontWeight: '600', color: '#475569' },
+  restToggle: { paddingVertical: 4, paddingHorizontal: 12, borderRadius: 14, backgroundColor: '#f1f5f9' },
+  restToggleOn: { backgroundColor: '#dcfce7' },
+  restToggleText: { fontSize: 13, fontWeight: '700', color: '#64748b' },
+  restToggleTextOn: { color: '#15803d' },
+  restDuration: { fontSize: 13, fontWeight: '600', color: '#2563eb' },
   label: { fontSize: 16, fontWeight: '600', color: '#0f172a', marginBottom: 8 },
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   input: {

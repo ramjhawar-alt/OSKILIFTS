@@ -296,6 +296,16 @@ export type DraftAction =
     }
   | { type: 'toggleDone'; entryId: string; setId: string }
   | { type: 'cycleKind'; entryId: string; setId: string }
+  | {
+      type: 'applyHint';
+      entryId: string;
+      setId: string;
+      hint: { weightText: string; repsText: string; secText: string; distText: string };
+      /** true: replace what's typed (tap on PREVIOUS); false: fill only empty fields */
+      overwrite: boolean;
+      /** also mark the row done if it is valid afterwards */
+      complete: boolean;
+    }
   | { type: 'checkAllValid' }
   | {
       type: 'setMeta';
@@ -386,6 +396,28 @@ export function draftReducer(draft: DraftWorkout, action: DraftAction): DraftWor
           sets: entry.sets.map((s) => (s.id === action.setId ? { ...s, done: nextDone } : s)),
         });
       });
+
+    case 'applyHint':
+      return updateEntry(draft, action.entryId, (entry) =>
+        touch(entry, {
+          sets: entry.sets.map((row) => {
+            if (row.id !== action.setId) return row;
+            const pick = (current: string, hinted: string) =>
+              action.overwrite || current.trim() === '' ? hinted : current;
+            const filled: DraftSet = {
+              ...row,
+              weightText: pick(row.weightText, action.hint.weightText),
+              repsText: pick(row.repsText, action.hint.repsText),
+              secText: pick(row.secText, action.hint.secText),
+              distText: pick(row.distText, action.hint.distText),
+              done: false,
+            };
+            return action.complete && isRowComplete(entry.exercise.type, filled, draft.unit)
+              ? { ...filled, done: true }
+              : filled;
+          }),
+        }),
+      );
 
     case 'cycleKind':
       return updateEntry(draft, action.entryId, (entry) =>

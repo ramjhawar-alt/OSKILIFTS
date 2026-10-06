@@ -4,6 +4,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SetRow } from './SetRow';
 import { isRowComplete, type DraftAction, type DraftEntry } from '../domain/draft';
 import type { WeightUnit } from '../domain/units';
+import { hintForRow } from '../domain/history';
+import type { SetData } from '../types/workout';
 
 const HEADERS: Record<DraftEntry['exercise']['type'], (unit: WeightUnit) => string[]> = {
   weight_reps: (unit) => [`WEIGHT (${unit})`, 'REPS'],
@@ -16,11 +18,13 @@ export interface ExerciseCardProps {
   entry: DraftEntry;
   unit: WeightUnit;
   dispatch: React.Dispatch<DraftAction>;
+  /** Sets from the last earlier session of this exercise (stable reference), if any. */
+  previousSets: SetData[] | null;
   onReplace: (entryId: string) => void;
   onRemove: (entryId: string) => void;
 }
 
-const ExerciseCardBase = ({ entry, unit, dispatch, onReplace, onRemove }: ExerciseCardProps) => {
+const ExerciseCardBase = ({ entry, unit, dispatch, previousSets, onReplace, onRemove }: ExerciseCardProps) => {
   let working = 0;
   const headers = HEADERS[entry.exercise.type](unit);
 
@@ -51,6 +55,7 @@ const ExerciseCardBase = ({ entry, unit, dispatch, onReplace, onRemove }: Exerci
 
       <View style={styles.columns}>
         <Text style={[styles.columnLabel, styles.setColumn]}>SET</Text>
+        <Text style={[styles.columnLabel, styles.previousColumn]}>PREVIOUS</Text>
         {headers.map((label) => (
           <Text key={label} style={[styles.columnLabel, styles.flexColumn]}>
             {label}
@@ -59,7 +64,7 @@ const ExerciseCardBase = ({ entry, unit, dispatch, onReplace, onRemove }: Exerci
         <Text style={[styles.columnLabel, styles.checkColumn]}>✓</Text>
       </View>
 
-      {entry.sets.map((set) => {
+      {entry.sets.map((set, rowIndex) => {
         if (set.kind !== 'warmup') working += 1;
         return (
           <SetRow
@@ -69,6 +74,11 @@ const ExerciseCardBase = ({ entry, unit, dispatch, onReplace, onRemove }: Exerci
             workingNumber={working}
             type={entry.exercise.type}
             complete={isRowComplete(entry.exercise.type, set, unit)}
+            hint={
+              previousSets
+                ? hintForRow(previousSets, entry.sets, rowIndex, entry.exercise.type, unit)
+                : null
+            }
             dispatch={dispatch}
           />
         );
@@ -121,6 +131,7 @@ const styles = StyleSheet.create({
   columns: { flexDirection: 'row', gap: 8, paddingHorizontal: 4 },
   columnLabel: { fontSize: 11, fontWeight: '700', color: '#94a3b8', textAlign: 'center' },
   setColumn: { width: 36 },
+  previousColumn: { width: 62 },
   flexColumn: { flex: 1 },
   checkColumn: { width: 40 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
