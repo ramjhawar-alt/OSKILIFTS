@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "web:build": "expo export --platform web && node scripts/inject-supabase-config.js",
     "server": "node server/index.js",
-    "test:sql": "node server/tests/local/run.mjs && node server/tests/local/backfill_check.mjs",
+    "test:sql": "node server/tests/local/run.mjs && node server/tests/local/backfill_check.mjs && node server/tests/local/limits_backfill_check.mjs",
     "test:unit": "node --import tsx --test \"src/domain/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
