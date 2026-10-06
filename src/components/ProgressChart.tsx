@@ -1,11 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 
 import { buildChartModel } from '../domain/chart';
 import type { ProgressPoint } from '../domain/prs';
 
 const HEIGHT = 220;
+const FONT = Platform.select({
+  web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  default: undefined,
+});
 const PADDING = { left: 48, right: 14, top: 14, bottom: 28 };
 const HIT = 36;
 
@@ -16,10 +20,15 @@ function shortDate(time: number): string {
 export const ProgressChart = ({
   data,
   formatValue,
+  formatTick,
   summary,
 }: {
+  /** Values already in the viewer's display unit, so axis ticks land on round numbers. */
   data: ProgressPoint[];
+  /** Full text for tooltips and screen readers, e.g. "215.5 lb". */
   formatValue: (value: number) => string;
+  /** Compact text for axis labels, e.g. "215.5". */
+  formatTick: (value: number) => string;
   /** Spoken summary for screen readers, e.g. "Estimated 1RM, 12 sessions, 185 to 225 lb". */
   summary: string;
 }) => {
@@ -44,8 +53,8 @@ export const ProgressChart = ({
             {model.yTicks.map((tick) => (
               <React.Fragment key={tick.value}>
                 <Line x1={PADDING.left} x2={width - PADDING.right} y1={tick.y} y2={tick.y} stroke="#e2e8f0" strokeWidth={1} />
-                <SvgText x={PADDING.left - 6} y={tick.y + 4} fontSize={11} fill="#64748b" textAnchor="end">
-                  {formatValue(tick.value)}
+                <SvgText x={PADDING.left - 6} y={tick.y + 4} fontSize={11} fontFamily={FONT} fill="#64748b" textAnchor="end">
+                  {formatTick(tick.value)}
                 </SvgText>
               </React.Fragment>
             ))}
@@ -55,6 +64,7 @@ export const ProgressChart = ({
                 x={label.x}
                 y={HEIGHT - 8}
                 fontSize={11}
+                fontFamily={FONT}
                 fill="#64748b"
                 textAnchor={i === 0 && model.xLabels.length > 1 ? 'start' : i === model.xLabels.length - 1 && model.xLabels.length > 1 ? 'end' : 'middle'}
               >

@@ -11,7 +11,7 @@ import { filterRange, type Range } from '../domain/chart';
 import { formatExerciseEntry } from '../domain/format';
 import type { Session } from '../domain/history';
 import { computeRecords, metricsFor, progressSeries, type ProgressMetric, type SetRecord } from '../domain/prs';
-import { formatWeightValue, formatWeight } from '../domain/units';
+import { formatWeight, toDisplayValue } from '../domain/units';
 import { getHistory } from '../services/historyCache';
 import type { RootStackParamList } from '../types/navigation';
 import { getDateFromDateString } from '../utils/workoutFormat';
@@ -60,9 +60,21 @@ export const ExerciseDetailScreen = () => {
   );
   const visible = useMemo(() => filterRange(series, range, Date.now()), [series, range]);
 
+  // The chart works in display units so its round-number ticks are round for the viewer.
+  const chartData = useMemo(
+    () =>
+      metric === 'reps'
+        ? visible
+        : visible.map((point) => ({ ...point, value: toDisplayValue(point.value, unit) })),
+    [visible, metric, unit],
+  );
+  const formatTick = useCallback(
+    (value: number) => String(Math.round(value * 10) / 10),
+    [],
+  );
   const formatMetric = useCallback(
-    (value: number) => (metric === 'reps' ? String(Math.round(value)) : formatWeightValue(value, unit)),
-    [metric, unit],
+    (value: number) => (metric === 'reps' ? `${Math.round(value)} reps` : `${formatTick(value)} ${unit}`),
+    [metric, unit, formatTick],
   );
 
   if (!sessions) {
@@ -89,7 +101,7 @@ export const ExerciseDetailScreen = () => {
 
   const summary = metric
     ? `${METRIC_LABEL[metric]}, ${visible.length} sessions${
-        visible.length > 0 ? `, from ${formatMetric(visible[0].value)} to ${formatMetric(visible[visible.length - 1].value)}` : ''
+        chartData.length > 0 ? `, from ${formatMetric(chartData[0].value)} to ${formatMetric(chartData[chartData.length - 1].value)}` : ''
       }`
     : '';
 
@@ -129,7 +141,7 @@ export const ExerciseDetailScreen = () => {
               </View>
             </View>
             {visible.length >= 2 ? (
-              <ProgressChart data={visible} formatValue={formatMetric} summary={summary} />
+              <ProgressChart data={chartData} formatValue={formatMetric} formatTick={formatTick} summary={summary} />
             ) : (
               <Text style={styles.chartEmpty}>
                 {series.length < 2
