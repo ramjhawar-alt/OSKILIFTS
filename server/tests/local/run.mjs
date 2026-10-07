@@ -28,9 +28,10 @@ async function applyFile(label, path) {
 
 await applyFile('stub auth schema', join(here, 'stub_auth.sql'));
 
-// 001 predates auth and is unrelated to the social schema; skip it locally.
+// 001 only creates the server-side capacity_snapshots table; it has no auth
+// dependency, so apply it too (the security audit checks that table as well).
 const migrations = readdirSync(migrationsDir)
-  .filter((f) => /^\d+_.*\.sql$/.test(f) && !f.startsWith('001_'))
+  .filter((f) => /^\d+_.*\.sql$/.test(f))
   .sort();
 for (const file of migrations) {
   await applyFile(`migration ${file}`, join(migrationsDir, file));
@@ -38,7 +39,11 @@ for (const file of migrations) {
 }
 
 if (runTests) {
-  const tests = readdirSync(testsDir).filter((f) => f.endsWith('.sql')).sort();
+  // `--only=<file>` runs a single test file (used to check one test in isolation).
+  const only = process.argv.find((arg) => arg.startsWith('--only='))?.slice('--only='.length);
+  const tests = readdirSync(testsDir)
+    .filter((f) => f.endsWith('.sql') && (!only || f === only))
+    .sort();
   for (const file of tests) {
     await applyFile(`test ${file}`, join(testsDir, file));
   }

@@ -80,8 +80,11 @@ select pg_temp.expect_rows($q$update public.workouts set notes = 'pwned'$q$, 0, 
 select pg_temp.expect_rows($q$delete from public.workouts$q$, 0, 'bob cannot delete alice''s workout');
 
 select pg_temp.as_anon();
+-- anon has no privileges at all on these tables (stricter than "RLS shows it nothing"; migration 016)
 do $$ begin
-  assert (select count(*) from public.workouts) = 0, 'anon sees no workouts';
+  begin perform count(*) from public.workouts; raise exception 'anon could read workouts'; exception when insufficient_privilege then null; end;
+  begin perform count(*) from public.custom_exercises; raise exception 'anon could read custom_exercises'; exception when insufficient_privilege then null; end;
+  begin perform count(*) from public.custom_day_types; raise exception 'anon could read custom_day_types'; exception when insufficient_privilege then null; end;
 end $$;
 
 select pg_temp.as_admin();
