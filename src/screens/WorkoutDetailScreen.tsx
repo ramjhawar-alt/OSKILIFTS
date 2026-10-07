@@ -13,6 +13,7 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { RootStackParamList } from '../types/navigation';
 import {
   getWorkoutById,
+  getWorkouts,
   deleteWorkout,
 } from '../services/workoutStorage';
 import type { Workout } from '../types/workout';
@@ -23,6 +24,10 @@ import { PrChips } from '../components/PrChips';
 import { NameRoutineModal } from '../components/NameRoutineModal';
 import { routineEntriesFromWorkout } from '../domain/routines';
 import { createRoutine } from '../services/routineService';
+import { ShareWorkoutModal } from '../components/ShareWorkoutModal';
+import { useProfile } from '../contexts/ProfileContext';
+import { buildShareCard, type ShareCardModel } from '../domain/shareCard';
+import { calculateWorkoutStreak, getBearStage } from '../services/bearStreakService';
 
 type WorkoutDetailNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -33,6 +38,8 @@ export const WorkoutDetailScreen = () => {
   const navigation = useNavigation<WorkoutDetailNavigationProp>();
   const unit = useWeightUnit();
   const [namingRoutine, setNamingRoutine] = useState(false);
+  const [shareModel, setShareModel] = useState<ShareCardModel | null>(null);
+  const { profile } = useProfile();
   const route = useRoute();
   const workoutId = (route.params as { workoutId: string }).workoutId;
 
@@ -73,6 +80,21 @@ export const WorkoutDetailScreen = () => {
     } catch (error) {
       showMessage('Couldn’t save routine', error instanceof Error ? error.message : 'Please try again.');
     }
+  };
+
+  const handleShare = async () => {
+    if (!workout) return;
+    // The bear on the card reflects the current streak; fall back to the first
+    // stage if history can't be read.
+    const all = await getWorkouts().catch(() => []);
+    setShareModel(
+      buildShareCard({
+        workout,
+        unit,
+        username: profile?.username,
+        bearStage: getBearStage(calculateWorkoutStreak(all)),
+      }),
+    );
   };
 
   const handleDelete = async () => {
@@ -207,10 +229,16 @@ export const WorkoutDetailScreen = () => {
           </TouchableOpacity>
         </View>
 
+        <TouchableOpacity style={styles.shareButton} onPress={handleShare} accessibilityRole="button">
+          <Text style={styles.shareButtonText}>Share workout</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.routineButton} onPress={() => setNamingRoutine(true)} accessibilityRole="button">
           <Text style={styles.routineButtonText}>Save as routine</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <ShareWorkoutModal model={shareModel} onClose={() => setShareModel(null)} />
 
       <NameRoutineModal
         visible={namingRoutine}
@@ -224,6 +252,14 @@ export const WorkoutDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  shareButton: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#003262',
+  },
+  shareButtonText: { color: '#FDB515', fontSize: 16, fontWeight: '700' },
   routineButton: {
     marginTop: 12,
     padding: 14,
