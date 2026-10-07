@@ -20,6 +20,7 @@ import { getPeakHours, type PeakHoursData } from '../services/peakHoursService';
 import { PeakHoursChart } from '../components/PeakHoursChart';
 import { OskiBear } from '../components/OskiBear';
 import { RsfHeadingCard } from '../components/RsfHeadingCard';
+import { RsfPresenceCard } from '../components/RsfPresenceCard';
 import { calculateWorkoutStreak } from '../services/bearStreakService';
 import { getWorkouts } from '../services/workoutStorage';
 import type { WeightRoomHours, WeightRoomStatus } from '../types/api';
@@ -240,6 +241,8 @@ export const HomeScreen = () => {
               : null
           }
         />
+
+        <RsfPresenceCard />
 
         <OskiBear streak={streak} totalWorkouts={totalWorkouts || workouts.length} />
 

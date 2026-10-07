@@ -1,6 +1,14 @@
 {
   "expo": {
     "name": "OSKILIFTS",
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "OSKILIFTS checks whether you are at the RSF, only while the app is open, so your friends can see that you are there. Your exact location is never sent or saved."
+        }
+      ]
+    ],
     "slug": "OSKILIFTS",
     "version": "1.0.0",
     "orientation": "portrait",

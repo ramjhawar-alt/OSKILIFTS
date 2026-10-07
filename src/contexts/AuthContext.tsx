@@ -123,6 +123,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Best effort: stop showing "at the RSF" while we can still authenticate.
+    try {
+      await supabase.rpc('clear_at_rsf');
+    } catch {
+      // The server also expires it on its own within 25 minutes.
+    }
     const { error } = await supabase.auth.signOut();
     if (error) throw new Error(error.message);
   }, []);

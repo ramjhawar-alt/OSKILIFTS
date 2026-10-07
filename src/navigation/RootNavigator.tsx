@@ -28,6 +28,7 @@ import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ExerciseDetailScreen } from '../screens/ExerciseDetailScreen';
 import { HeaderLink } from '../components/HeaderLink';
 import { RequestsProvider, useRequests } from '../contexts/RequestsContext';
+import { RsfPresenceProvider } from '../contexts/RsfPresenceContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../contexts/ProfileContext';
 import { isProfileComplete } from '../types/social';
@@ -280,7 +281,9 @@ const TabsWithBadge = () => {
 
 const MainTabs = () => (
   <RequestsProvider>
-    <TabsWithBadge />
+    <RsfPresenceProvider>
+      <TabsWithBadge />
+    </RsfPresenceProvider>
   </RequestsProvider>
 );
 
