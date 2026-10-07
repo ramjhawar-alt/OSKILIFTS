@@ -131,6 +131,15 @@ const HoopersStack = () => {
         component={HoopersScreen}
         options={{ title: 'HOOPERS' }}
       />
+      <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'Profile' }} />
+      <Stack.Screen
+        name="FollowList"
+        component={FollowListScreen}
+        options={({ route }) => ({
+          title: route.params.kind === 'followers' ? 'Followers' : 'Following',
+        })}
+      />
+      <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: 'Comments' }} />
     </Stack.Navigator>
   );
 };
