@@ -167,6 +167,10 @@ export const UserProfileScreen = () => {
 
   const isSelf = summary.relationship === 'self';
   const canSeeWorkouts = summary.workoutCount !== null;
+  // Same rule the server enforces for get_connections: yourself or people you follow.
+  const canSeeLists = isSelf || summary.relationship === 'following';
+  const openList = (kind: 'followers' | 'following') =>
+    navigation.push('FollowList', { userId: summary.id, kind, username: summary.username });
 
   return (
     <ScreenContainer>
@@ -189,8 +193,16 @@ export const UserProfileScreen = () => {
           <Text style={styles.username}>@{summary.username}</Text>
 
           <View style={styles.stats}>
-            <Stat label="Followers" value={summary.followerCount} />
-            <Stat label="Following" value={summary.followingCount} />
+            <Stat
+              label="Followers"
+              value={summary.followerCount}
+              onPress={canSeeLists ? () => openList('followers') : undefined}
+            />
+            <Stat
+              label="Following"
+              value={summary.followingCount}
+              onPress={canSeeLists ? () => openList('following') : undefined}
+            />
             {canSeeWorkouts ? <Stat label="Workouts" value={summary.workoutCount ?? 0} /> : null}
             {streak !== null ? <Stat label="Day streak" value={streak} /> : null}
           </View>
@@ -304,12 +316,33 @@ export const UserProfileScreen = () => {
   );
 };
 
-const Stat = ({ label, value }: { label: string; value: number }) => (
-  <View style={styles.stat}>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
+const Stat = ({
+  label,
+  value,
+  onPress,
+}: {
+  label: string;
+  value: number;
+  onPress?: () => void;
+}) => {
+  const content = (
+    <>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </>
+  );
+  if (!onPress) return <View style={styles.stat}>{content}</View>;
+  return (
+    <TouchableOpacity
+      style={styles.stat}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${value} ${label.toLowerCase()}, view list`}
+    >
+      {content}
+    </TouchableOpacity>
+  );
+};
 
 const MenuRow = ({
   label,

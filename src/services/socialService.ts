@@ -4,6 +4,8 @@ import { TERMS_VERSION } from '../config/legal';
 import type { WeightUnit } from '../domain/units';
 import type {
   BlockedUser,
+  ConnectionKind,
+  ConnectionUser,
   FeedItem,
   FollowRequest,
   Profile,
@@ -165,6 +167,43 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary 
     workoutCount: row.workout_count === null ? null : Number(row.workout_count),
     workoutDates: row.workout_dates ?? null,
   };
+}
+
+export const CONNECTIONS_PAGE_SIZE = 50;
+
+/**
+ * One page of someone's followers or following. The server only answers for
+ * yourself or someone you follow (everyone else gets an empty list), and hides
+ * anyone blocked in either direction.
+ */
+export async function getConnections(
+  userId: string,
+  kind: ConnectionKind,
+  cursor?: { createdAt: string; id: string },
+): Promise<ConnectionUser[]> {
+  const { data, error } = await supabase.rpc('get_connections', {
+    p_user: userId,
+    p_kind: kind,
+    p_limit: CONNECTIONS_PAGE_SIZE,
+    p_before_created_at: cursor?.createdAt ?? null,
+    p_before_id: cursor?.id ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(
+    (row: {
+      id: string;
+      username: string;
+      display_name: string | null;
+      relationship: Relationship;
+      created_at: string;
+    }) => ({
+      id: row.id,
+      username: row.username,
+      displayName: row.display_name,
+      relationship: row.relationship,
+      createdAt: row.created_at,
+    }),
+  );
 }
 
 // ---------------------------------------------------------------------------

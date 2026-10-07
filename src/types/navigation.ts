@@ -10,6 +10,7 @@ export type RootStackParamList = {
   SearchUsers: undefined;
   UserProfile: { userId?: string } | undefined;
   Connections: { initialTab?: 'requests' | 'blocked' } | undefined;
+  FollowList: { userId: string; kind: 'followers' | 'following'; username?: string | null };
   Guidelines: undefined;
   Exercises: undefined;
   Routines: undefined;

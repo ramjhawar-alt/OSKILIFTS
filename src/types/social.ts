@@ -33,6 +33,17 @@ export interface SearchResult {
   relationship: Relationship;
 }
 
+export type ConnectionKind = 'followers' | 'following';
+
+export interface ConnectionUser {
+  id: string;
+  username: string;
+  displayName: string | null;
+  relationship: Relationship;
+  // Raw string from the server; pass it back unchanged as the next cursor.
+  createdAt: string;
+}
+
 export interface FollowRequest {
   followerId: string;
   username: string | null;
