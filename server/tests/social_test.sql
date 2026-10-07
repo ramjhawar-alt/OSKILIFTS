@@ -84,7 +84,12 @@ do $$ begin
 end $$;
 select pg_temp.expect_fail($q$insert into public.follows (follower_id, followee_id) values ('b0000000-0000-0000-0000-00000000000b', 'a0000000-0000-0000-0000-00000000000a')$q$, 'duplicate request');
 select pg_temp.expect_fail($q$insert into public.follows (follower_id, followee_id) values ('b0000000-0000-0000-0000-00000000000b', 'b0000000-0000-0000-0000-00000000000b')$q$, 'cannot follow yourself');
-select pg_temp.expect_fail($q$insert into public.follows (follower_id, followee_id, status) values ('b0000000-0000-0000-0000-00000000000b', 'c0000000-0000-0000-0000-00000000000c', 'accepted')$q$, 'cannot self-approve on insert');
+-- A client cannot pick its own status: asking for 'accepted' on a private account yields 'pending'.
+insert into public.follows (follower_id, followee_id, status) values ('b0000000-0000-0000-0000-00000000000b', 'c0000000-0000-0000-0000-00000000000c', 'accepted');
+do $$ begin
+  assert (select status from public.follows where followee_id = 'c0000000-0000-0000-0000-00000000000c') = 'pending', 'cannot self-approve on insert: status is forced to pending';
+end $$;
+delete from public.follows where followee_id = 'c0000000-0000-0000-0000-00000000000c';
 select pg_temp.expect_fail($q$insert into public.follows (follower_id, followee_id) values ('c0000000-0000-0000-0000-00000000000c', 'a0000000-0000-0000-0000-00000000000a')$q$, 'cannot request as someone else');
 select pg_temp.expect_rows($q$update public.follows set status = 'accepted'$q$, 0, 'follower cannot accept their own request');
 
