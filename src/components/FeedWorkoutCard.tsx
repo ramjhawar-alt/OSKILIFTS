@@ -4,6 +4,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Avatar } from './Avatar';
 import { PrChips } from './PrChips';
 import { useWeightUnit } from '../contexts/ProfileContext';
+import { commentCountLabel } from '../domain/comments';
 import type { FeedItem } from '../types/social';
 import { formatExerciseEntry, getDateFromISOString } from '../utils/workoutFormat';
 
@@ -13,11 +14,13 @@ export const FeedWorkoutCard = ({
   item,
   onPressAuthor,
   onToggleLike,
+  onOpenComments,
   onMore,
 }: {
   item: FeedItem;
   onPressAuthor: (userId: string) => void;
   onToggleLike?: (item: FeedItem) => void;
+  onOpenComments?: (item: FeedItem) => void;
   onMore?: (item: FeedItem) => void;
 }) => {
   const unit = useWeightUnit();
@@ -83,17 +86,31 @@ export const FeedWorkoutCard = ({
 
       {item.notes ? <Text style={styles.notes}>{item.notes}</Text> : null}
 
-      {onToggleLike ? (
-        <TouchableOpacity
-          style={styles.likeRow}
-          onPress={() => onToggleLike(item)}
-          accessibilityRole="button"
-          accessibilityState={{ selected: item.likedByMe }}
-        >
-          <Text style={[styles.likeText, item.likedByMe && styles.liked]}>
-            {item.likedByMe ? '♥' : '♡'} {item.likeCount}
-          </Text>
-        </TouchableOpacity>
+      {onToggleLike || onOpenComments ? (
+        <View style={styles.reactions}>
+          {onToggleLike ? (
+            <TouchableOpacity
+              style={styles.likeRow}
+              onPress={() => onToggleLike(item)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: item.likedByMe }}
+            >
+              <Text style={[styles.likeText, item.likedByMe && styles.liked]}>
+                {item.likedByMe ? '♥' : '♡'} {item.likeCount}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+          {onOpenComments ? (
+            <TouchableOpacity
+              style={styles.likeRow}
+              onPress={() => onOpenComments(item)}
+              accessibilityRole="button"
+              accessibilityLabel={commentCountLabel(item.commentCount) ?? 'Add a comment'}
+            >
+              <Text style={styles.likeText}>💬 {item.commentCount > 0 ? item.commentCount : 'Comment'}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
@@ -143,6 +160,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#334155',
   },
+  reactions: { flexDirection: 'row', gap: 20 },
   likeRow: { paddingTop: 4, alignSelf: 'flex-start' },
   likeText: { fontSize: 16, color: '#64748b', fontWeight: '600' },
   liked: { color: '#dc2626' },

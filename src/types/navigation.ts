@@ -11,6 +11,7 @@ export type RootStackParamList = {
   UserProfile: { userId?: string } | undefined;
   Connections: { initialTab?: 'requests' | 'blocked' } | undefined;
   FollowList: { userId: string; kind: 'followers' | 'following'; username?: string | null };
+  Comments: { workoutId: string; canOpenProfiles?: boolean };
   Guidelines: undefined;
   Exercises: undefined;
   Routines: undefined;

@@ -5,7 +5,7 @@ import { PRIVACY_URL, SUPPORT_EMAIL, TERMS_URL } from '../config/legal';
 
 const RULES = [
   'Be respectful. No harassment, bullying, threats, hate speech or discrimination.',
-  'Keep it appropriate. No sexual, graphic or violent content in usernames, display names or workout notes.',
+  'Keep it appropriate. No sexual, graphic or violent content in usernames, display names, workout notes or comments.',
   'Be yourself. No impersonating other people or Cal/RecWell staff.',
   'Respect privacy. Don’t share anyone else’s personal information.',
   'No spam, scams, or attempts to mislead other users.',

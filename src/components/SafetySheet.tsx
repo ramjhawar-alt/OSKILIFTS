@@ -21,9 +21,27 @@ import { confirmAction } from '../utils/alert';
 
 export type SafetyTarget =
   | { kind: 'workout'; workoutId: string; userId: string; username: string | null }
-  | { kind: 'profile'; userId: string; username: string | null };
+  | { kind: 'profile'; userId: string; username: string | null }
+  | { kind: 'comment'; commentId: string; userId: string; username: string | null };
 
 type Mode = 'menu' | 'report' | 'done';
+
+const REPORT_NOUN: Record<SafetyTarget['kind'], string> = {
+  workout: 'this workout',
+  profile: 'this profile',
+  comment: 'this comment',
+};
+
+function reportTargetId(target: SafetyTarget): string {
+  switch (target.kind) {
+    case 'workout':
+      return target.workoutId;
+    case 'comment':
+      return target.commentId;
+    default:
+      return target.userId;
+  }
+}
 
 // Report / block sheet. Built on Modal (not Alert) so it works on the web build.
 export const SafetySheet = ({
@@ -85,7 +103,7 @@ export const SafetySheet = ({
     try {
       await submitReport(
         target.kind,
-        target.kind === 'workout' ? target.workoutId : target.userId,
+        reportTargetId(target),
         reason,
         details,
       );
@@ -111,7 +129,7 @@ export const SafetySheet = ({
                 <Text style={styles.title}>{handle}</Text>
                 <TouchableOpacity style={styles.row} onPress={() => setMode('report')}>
                   <Text style={styles.rowText}>
-                    Report {target.kind === 'workout' ? 'this workout' : 'this profile'}
+                    Report {REPORT_NOUN[target.kind]}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.row} onPress={handleBlock} disabled={busy}>

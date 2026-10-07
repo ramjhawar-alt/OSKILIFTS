@@ -22,6 +22,7 @@ import { SearchUsersScreen } from '../screens/SearchUsersScreen';
 import { UserProfileScreen } from '../screens/UserProfileScreen';
 import { ConnectionsScreen } from '../screens/ConnectionsScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
+import { CommentsScreen } from '../screens/CommentsScreen';
 import { ExercisesScreen } from '../screens/ExercisesScreen';
 import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ExerciseDetailScreen } from '../screens/ExerciseDetailScreen';
@@ -103,6 +104,7 @@ const WorkoutsStack = () => {
         component={WorkoutDetailScreen}
         options={{ title: 'Workout Details' }}
       />
+      <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: 'Comments' }} />
     </Stack.Navigator>
   );
 };
@@ -165,6 +167,7 @@ const FeedStack = () => {
           title: route.params.kind === 'followers' ? 'Followers' : 'Following',
         })}
       />
+      <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: 'Comments' }} />
       <Stack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
     </Stack.Navigator>
   );

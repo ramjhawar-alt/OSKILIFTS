@@ -24,6 +24,8 @@ import { PrChips } from '../components/PrChips';
 import { NameRoutineModal } from '../components/NameRoutineModal';
 import { routineEntriesFromWorkout } from '../domain/routines';
 import { createRoutine } from '../services/routineService';
+import { commentCountLabel } from '../domain/comments';
+import { getCommentCounts } from '../services/socialService';
 import { ShareWorkoutModal } from '../components/ShareWorkoutModal';
 import { useProfile } from '../contexts/ProfileContext';
 import { buildShareCard, type ShareCardModel } from '../domain/shareCard';
@@ -39,6 +41,7 @@ export const WorkoutDetailScreen = () => {
   const unit = useWeightUnit();
   const [namingRoutine, setNamingRoutine] = useState(false);
   const [shareModel, setShareModel] = useState<ShareCardModel | null>(null);
+  const [commentCount, setCommentCount] = useState(0);
   const { profile } = useProfile();
   const route = useRoute();
   const workoutId = (route.params as { workoutId: string }).workoutId;
@@ -64,6 +67,15 @@ export const WorkoutDetailScreen = () => {
   useEffect(() => {
     loadWorkout();
   }, [loadWorkout]);
+
+  // Refresh the count whenever we come back from reading the comments.
+  useEffect(() => {
+    const refresh = () => {
+      getCommentCounts([workoutId]).then((counts) => setCommentCount(counts[workoutId] ?? 0));
+    };
+    refresh();
+    return navigation.addListener('focus', refresh);
+  }, [navigation, workoutId]);
 
   const handleEdit = () => {
     if (workout) {
@@ -229,6 +241,16 @@ export const WorkoutDetailScreen = () => {
           </TouchableOpacity>
         </View>
 
+        <TouchableOpacity
+          style={styles.commentsButton}
+          onPress={() => navigation.navigate('Comments', { workoutId })}
+          accessibilityRole="button"
+        >
+          <Text style={styles.commentsButtonText}>
+            {commentCountLabel(commentCount) ? `💬 ${commentCountLabel(commentCount)}` : '💬 Comments'}
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.shareButton} onPress={handleShare} accessibilityRole="button">
           <Text style={styles.shareButtonText}>Share workout</Text>
         </TouchableOpacity>
@@ -252,6 +274,16 @@ export const WorkoutDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  commentsButton: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  commentsButtonText: { color: '#334155', fontSize: 16, fontWeight: '600' },
   shareButton: {
     marginTop: 12,
     padding: 14,

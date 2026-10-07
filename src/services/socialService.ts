@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { normalizeEntries } from '../domain/entry';
 import { TERMS_VERSION } from '../config/legal';
+import { friendlyCommentError } from '../domain/comments';
 import type { WeightUnit } from '../domain/units';
 import type {
   BlockedUser,
@@ -12,6 +13,7 @@ import type {
   ProfileSummary,
   Relationship,
   SearchResult,
+  WorkoutComment,
 } from '../types/social';
 
 const UNIQUE_VIOLATION = '23505';
@@ -320,6 +322,7 @@ export async function getFeed(
     createdAt: row.created_at,
     likeCount: Number(row.like_count),
     likedByMe: Boolean(row.liked_by_me),
+    commentCount: 0,
   }));
 }
 
@@ -343,6 +346,80 @@ export async function unlikeWorkout(workoutId: string): Promise<void> {
     .eq('workout_id', workoutId)
     .eq('user_id', me);
   if (error) throw new Error(error.message);
+}
+
+// ---------------------------------------------------------------------------
+// comments
+// ---------------------------------------------------------------------------
+export const COMMENTS_PAGE_SIZE = 30;
+
+interface CommentRow {
+  id: string;
+  user_id: string;
+  username: string;
+  display_name: string | null;
+  body: string;
+  created_at: string;
+  can_delete: boolean;
+}
+
+function rowToComment(row: CommentRow): WorkoutComment {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    username: row.username,
+    displayName: row.display_name,
+    body: row.body,
+    createdAt: row.created_at,
+    canDelete: Boolean(row.can_delete),
+  };
+}
+
+/** Oldest first. Pass the last comment's createdAt/id to get the next page. */
+export async function getComments(
+  workoutId: string,
+  cursor?: { createdAt: string; id: string },
+): Promise<WorkoutComment[]> {
+  const { data, error } = await supabase.rpc('get_comments', {
+    p_workout: workoutId,
+    p_limit: COMMENTS_PAGE_SIZE,
+    p_after_created_at: cursor?.createdAt ?? null,
+    p_after_id: cursor?.id ?? null,
+  });
+  if (error) throw new Error(friendlyCommentError(error.message));
+  return (data ?? []).map(rowToComment);
+}
+
+export async function addComment(workoutId: string, body: string): Promise<WorkoutComment> {
+  const { data, error } = await supabase.rpc('add_comment', { p_workout: workoutId, p_body: body });
+  if (error) throw new Error(friendlyCommentError(error.message));
+  const row = (data ?? [])[0];
+  if (!row) throw new Error('Your comment couldn’t be posted.');
+  return rowToComment(row);
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_comment', { p_comment: commentId });
+  if (error) throw new Error(friendlyCommentError(error.message));
+}
+
+/**
+ * Comment counts for a page of workouts, keyed by workout id. Never throws: a
+ * missing count must not take the feed down (e.g. before migration 009 is run).
+ */
+export async function getCommentCounts(workoutIds: string[]): Promise<Record<string, number>> {
+  if (workoutIds.length === 0) return {};
+  try {
+    const { data, error } = await supabase.rpc('get_comment_counts', {
+      p_workout_ids: workoutIds.slice(0, 50),
+    });
+    if (error) return {};
+    const counts: Record<string, number> = {};
+    for (const row of data ?? []) counts[row.workout_id] = Number(row.comment_count);
+    return counts;
+  } catch {
+    return {};
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -402,7 +479,7 @@ export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
 ];
 
 export async function submitReport(
-  targetType: 'workout' | 'profile',
+  targetType: 'workout' | 'profile' | 'comment',
   targetId: string,
   reason: ReportReason,
   details?: string,

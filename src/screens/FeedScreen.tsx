@@ -17,6 +17,7 @@ import { useRequests } from '../contexts/RequestsContext';
 import { SafetySheet, type SafetyTarget } from '../components/SafetySheet';
 import {
   FEED_PAGE_SIZE,
+  getCommentCounts,
   getFeed,
   likeWorkout,
   unlikeWorkout,
@@ -25,6 +26,12 @@ import type { RootStackParamList } from '../types/navigation';
 import type { FeedItem } from '../types/social';
 
 type FeedNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Feed'>;
+
+// Comment counts come from a second call; if it fails the feed still shows.
+async function withCommentCounts(page: FeedItem[]): Promise<FeedItem[]> {
+  const counts = await getCommentCounts(page.map((item) => item.id));
+  return page.map((item) => ({ ...item, commentCount: counts[item.id] ?? 0 }));
+}
 
 export const FeedScreen = () => {
   const navigation = useNavigation<FeedNavigationProp>();
@@ -41,7 +48,7 @@ export const FeedScreen = () => {
 
   const loadFirstPage = useCallback(async () => {
     try {
-      const page = await getFeed();
+      const page = await withCommentCounts(await getFeed());
       setItems(page);
       setHasMore(page.length === FEED_PAGE_SIZE);
       setError(null);
@@ -71,7 +78,7 @@ export const FeedScreen = () => {
     setLoadingMore(true);
     try {
       const last = items[items.length - 1];
-      const page = await getFeed({ createdAt: last.createdAt, id: last.id });
+      const page = await withCommentCounts(await getFeed({ createdAt: last.createdAt, id: last.id }));
       setItems((current) => {
         const seen = new Set(current.map((item) => item.id));
         return [...current, ...page.filter((item) => !seen.has(item.id))];
@@ -135,6 +142,9 @@ export const FeedScreen = () => {
             item={item}
             onPressAuthor={openProfile}
             onToggleLike={toggleLike}
+            onOpenComments={(entry) =>
+              navigation.navigate('Comments', { workoutId: entry.id, canOpenProfiles: true })
+            }
             onMore={(entry) =>
               setSafetyTarget({
                 kind: 'workout',

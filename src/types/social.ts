@@ -65,6 +65,19 @@ export interface FeedItem {
   createdAt: string;
   likeCount: number;
   likedByMe: boolean;
+  // Filled in by a second call after the feed page loads; 0 until then.
+  commentCount: number;
+}
+
+export interface WorkoutComment {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string | null;
+  body: string;
+  // Raw string from the server; pass it back unchanged as the next cursor.
+  createdAt: string;
+  canDelete: boolean;
 }
 
 export interface BlockedUser {
