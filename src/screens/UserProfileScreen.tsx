@@ -47,7 +47,7 @@ export const UserProfileScreen = () => {
   const navigation = useNavigation<ProfileNavigationProp>();
   const route = useRoute();
   const { user, signOut } = useAuth();
-  const { pendingCount, refreshPending } = useRequests();
+  const { pendingCount, refreshPending, isAdmin, adminOpenCount } = useRequests();
   const { profile, setProfile } = useProfile();
 
   const routeUserId = (route.params as { userId?: string } | undefined)?.userId;
@@ -461,6 +461,13 @@ export const UserProfileScreen = () => {
               badge={pendingCount}
               onPress={() => navigation.navigate('Connections', { initialTab: 'requests' })}
             />
+            {isAdmin ? (
+              <MenuRow
+                label="Moderation"
+                badge={adminOpenCount}
+                onPress={() => navigation.navigate('Moderation')}
+              />
+            ) : null}
             <MenuRow label="Find people" onPress={() => navigation.navigate('SearchUsers')} />
             <MenuRow
               label="Blocked users"

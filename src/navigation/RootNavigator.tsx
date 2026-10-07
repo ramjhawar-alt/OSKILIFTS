@@ -23,6 +23,7 @@ import { UserProfileScreen } from '../screens/UserProfileScreen';
 import { ConnectionsScreen } from '../screens/ConnectionsScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
 import { CommentsScreen } from '../screens/CommentsScreen';
+import { ModerationScreen } from '../screens/ModerationScreen';
 import { ExercisesScreen } from '../screens/ExercisesScreen';
 import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ExerciseDetailScreen } from '../screens/ExerciseDetailScreen';
@@ -147,8 +148,8 @@ const HoopersStack = () => {
 
 // Feed Tab Stack
 const FeedHeaderLeft = ({ onPress }: { onPress: () => void }) => {
-  const { pendingCount } = useRequests();
-  return <HeaderLink label="Me" badge={pendingCount} onPress={onPress} />;
+  const { pendingCount, adminOpenCount } = useRequests();
+  return <HeaderLink label="Me" badge={pendingCount + adminOpenCount} onPress={onPress} />;
 };
 
 const FeedStack = () => {
@@ -178,6 +179,7 @@ const FeedStack = () => {
         })}
       />
       <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: 'Comments' }} />
+      <Stack.Screen name="Moderation" component={ModerationScreen} options={{ title: 'Moderation' }} />
       <Stack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
     </Stack.Navigator>
   );
