@@ -1,6 +1,6 @@
 // Bump TERMS_VERSION whenever terms.html / the guidelines change in a way users
 // must re-accept; the onboarding gate keys off profiles.terms_version.
-export const TERMS_VERSION = '2026-10-04';
+export const TERMS_VERSION = '2026-10-07';
 
 export const WEB_ORIGIN = 'https://oskilifts.com';
 export const TERMS_URL = `${WEB_ORIGIN}/terms.html`;

@@ -13,11 +13,23 @@ export const RelationshipButton = ({
   relationship,
   busy,
   onPress,
+  friends,
+  followBack,
 }: {
   relationship: Exclude<Relationship, 'self'>;
   busy?: boolean;
   onPress: () => void;
+  /** Mutual follows: shows "Friends" instead of "Following". */
+  friends?: boolean;
+  /** They follow me and I don't follow them: shows "Follow back". */
+  followBack?: boolean;
 }) => {
+  const label =
+    relationship === 'following' && friends
+      ? 'Friends'
+      : relationship === 'none' && followBack
+        ? 'Follow back'
+        : LABELS[relationship];
   const primary = relationship === 'none';
   return (
     <TouchableOpacity
@@ -30,7 +42,7 @@ export const RelationshipButton = ({
         <ActivityIndicator size="small" color={primary ? '#fff' : '#2563eb'} />
       ) : (
         <Text style={[styles.text, primary ? styles.primaryText : styles.secondaryText]}>
-          {LABELS[relationship]}
+          {label}
         </Text>
       )}
     </TouchableOpacity>

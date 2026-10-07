@@ -16,12 +16,15 @@ export const FeedWorkoutCard = ({
   onToggleLike,
   onOpenComments,
   onMore,
+  hideAuthor,
 }: {
   item: FeedItem;
   onPressAuthor: (userId: string) => void;
   onToggleLike?: (item: FeedItem) => void;
   onOpenComments?: (item: FeedItem) => void;
   onMore?: (item: FeedItem) => void;
+  /** On a profile page every card is by the same person. */
+  hideAuthor?: boolean;
 }) => {
   const unit = useWeightUnit();
   const [expanded, setExpanded] = useState(false);
@@ -36,21 +39,30 @@ export const FeedWorkoutCard = ({
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.author}
-          onPress={() => onPressAuthor(item.userId)}
-          accessibilityRole="button"
-        >
-          <Avatar name={item.displayName} username={item.username} />
+        {hideAuthor ? (
           <View style={styles.authorText}>
             <Text style={styles.name} numberOfLines={1}>
-              {item.displayName || item.username}
+              {date}
             </Text>
-            <Text style={styles.meta} numberOfLines={1}>
-              @{item.username} · {date}
-            </Text>
+            {item.visibility === 'private' ? <Text style={styles.meta}>Only me</Text> : null}
           </View>
-        </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.author}
+            onPress={() => onPressAuthor(item.userId)}
+            accessibilityRole="button"
+          >
+            <Avatar name={item.displayName} username={item.username} />
+            <View style={styles.authorText}>
+              <Text style={styles.name} numberOfLines={1}>
+                {item.displayName || item.username}
+              </Text>
+              <Text style={styles.meta} numberOfLines={1}>
+                @{item.username} · {date}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
         {onMore ? (
           <TouchableOpacity onPress={() => onMore(item)} accessibilityLabel="More options">
             <Text style={styles.more}>•••</Text>

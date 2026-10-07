@@ -6,6 +6,7 @@ export interface Profile {
   displayName: string | null;
   termsAcceptedAt: string | null;
   weightUnit: WeightUnit;
+  isPublic: boolean;
 }
 
 export function isProfileComplete(profile: Profile): boolean {
@@ -24,6 +25,9 @@ export interface ProfileSummary {
   // Only present for yourself or people you follow.
   workoutCount: number | null;
   workoutDates: string[] | null;
+  isPublic: boolean;
+  // They follow me (accepted). With relationship 'following' this means friends.
+  followsYou: boolean;
 }
 
 export interface SearchResult {
@@ -67,6 +71,8 @@ export interface FeedItem {
   likedByMe: boolean;
   // Filled in by a second call after the feed page loads; 0 until then.
   commentCount: number;
+  // Only set on profile lists, where your own only-me workouts also appear.
+  visibility?: 'followers' | 'private';
 }
 
 export interface WorkoutComment {

@@ -110,8 +110,8 @@ export const FollowListScreen = () => {
       setBusyId(user.id);
       try {
         if (user.relationship === 'none') {
-          await followUser(user.id);
-          setRelationship(user.id, 'pending_out');
+          // Public accounts accept right away; private ones become a request.
+          setRelationship(user.id, await followUser(user.id));
         } else {
           const following = user.relationship === 'following';
           const confirmed = await confirmAction({

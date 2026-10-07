@@ -21,7 +21,7 @@ import { NameRoutineModal } from '../components/NameRoutineModal';
 import { RestTimerBar } from '../components/RestTimerBar';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useAuth } from '../contexts/AuthContext';
-import { useWeightUnit } from '../contexts/ProfileContext';
+import { useProfile, useWeightUnit } from '../contexts/ProfileContext';
 import { isValidDateString, localDateString, toStoredWorkoutDate } from '../domain/dates';
 import {
   convertDraftUnit,
@@ -77,6 +77,7 @@ export const LogWorkoutScreen = () => {
   const navigation = useNavigation<LogWorkoutNavigationProp>();
   const route = useRoute();
   const unit = useWeightUnit();
+  const { profile } = useProfile();
   const { user } = useAuth();
   const userId = user?.id ?? '';
   const params = route.params as
@@ -520,7 +521,7 @@ export const LogWorkoutScreen = () => {
             <View style={styles.visibilityRow}>
               {(
                 [
-                  { value: 'followers', label: 'Followers' },
+                  { value: 'followers', label: profile?.isPublic ? 'Everyone' : 'Followers' },
                   { value: 'private', label: 'Only me' },
                 ] as { value: WorkoutVisibility; label: string }[]
               ).map((option) => (
@@ -539,7 +540,9 @@ export const LogWorkoutScreen = () => {
             </View>
             <Text style={styles.visibilityHint}>
               {draft.visibility === 'followers'
-                ? 'Shown in your approved followers’ feeds, including your notes.'
+                ? profile?.isPublic
+                  ? 'Your account is public: anyone at Berkeley can see this, including your notes, and it can appear on Explore.'
+                  : 'Shown in your approved followers’ feeds, including your notes.'
                 : 'Only you can see this workout.'}
             </Text>
           </View>

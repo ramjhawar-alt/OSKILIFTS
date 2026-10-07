@@ -67,8 +67,8 @@ export const SearchUsersScreen = () => {
       setBusyId(result.id);
       try {
         if (result.relationship === 'none') {
-          await followUser(result.id);
-          setRelationship(result.id, 'pending_out');
+          // Public accounts accept right away; private ones become a request.
+          setRelationship(result.id, await followUser(result.id));
         } else {
           const confirmed = await confirmAction({
             title: result.relationship === 'following' ? 'Unfollow?' : 'Cancel request?',

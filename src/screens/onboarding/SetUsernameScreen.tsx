@@ -25,6 +25,8 @@ export const SetUsernameScreen = ({ navigation }: Props) => {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '');
   const [agreed, setAgreed] = useState(false);
+  // Private is preselected: nobody becomes public without choosing it.
+  const [isPublic, setIsPublic] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +36,7 @@ export const SetUsernameScreen = ({ navigation }: Props) => {
     try {
       const updated = hasUsername
         ? await acceptTerms()
-        : await claimProfile(username, displayName);
+        : await claimProfile(username, displayName, isPublic);
       // The gate in RootNavigator swaps to the main app once this is complete.
       setProfile(updated);
     } catch (err) {
@@ -51,7 +53,7 @@ export const SetUsernameScreen = ({ navigation }: Props) => {
       title={hasUsername ? 'Review our terms' : 'Pick your username'}
       subtitle={
         hasUsername
-          ? 'We added community terms. Please review and accept to keep using OSKILIFTS.'
+          ? 'We updated our terms: accounts can now be Public or Private (yours stays Private), and there is a new Explore feed. Please review and accept to keep using OSKILIFTS.'
           : 'This is how other Berkeley students will find you. Usernames can’t be changed later.'
       }
     >
@@ -71,6 +73,35 @@ export const SetUsernameScreen = ({ navigation }: Props) => {
             autoCapitalize="words"
             maxLength={40}
           />
+          <View style={styles.choiceGroup} accessibilityRole="radiogroup">
+            <Text style={styles.choiceTitle}>Who can follow you?</Text>
+            {(
+              [
+                {
+                  value: false,
+                  title: 'Private',
+                  body: 'People send a request and you approve them. Only approved followers see your workouts.',
+                },
+                {
+                  value: true,
+                  title: 'Public',
+                  body: 'Anyone at Berkeley can follow you and see the workouts you share, and they can appear on Explore.',
+                },
+              ] as const
+            ).map((option) => (
+              <TouchableOpacity
+                key={option.title}
+                style={[styles.choice, isPublic === option.value && styles.choiceSelected]}
+                onPress={() => setIsPublic(option.value)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isPublic === option.value }}
+              >
+                <Text style={styles.choiceName}>{option.title}</Text>
+                <Text style={styles.choiceBody}>{option.body}</Text>
+              </TouchableOpacity>
+            ))}
+            <Text style={styles.choiceHint}>You can change this any time from your profile.</Text>
+          </View>
         </>
       ) : null}
 
@@ -113,6 +144,20 @@ export const SetUsernameScreen = ({ navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
+  choiceGroup: { gap: 8 },
+  choiceTitle: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
+  choice: {
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 12,
+    gap: 2,
+  },
+  choiceSelected: { borderColor: '#1d4ed8', backgroundColor: '#eff6ff' },
+  choiceName: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
+  choiceBody: { fontSize: 13, color: '#475569', lineHeight: 18 },
+  choiceHint: { fontSize: 12, color: '#64748b' },
   agreeRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 4 },
   box: {
     width: 22,

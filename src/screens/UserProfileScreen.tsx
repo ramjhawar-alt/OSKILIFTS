@@ -13,8 +13,9 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Avatar } from '../components/Avatar';
+import { FeedWorkoutCard } from '../components/FeedWorkoutCard';
 import { RelationshipButton } from '../components/RelationshipButton';
-import { SafetySheet } from '../components/SafetySheet';
+import { SafetySheet, type SafetyTarget } from '../components/SafetySheet';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../contexts/ProfileContext';
@@ -22,16 +23,22 @@ import { useRequests } from '../contexts/RequestsContext';
 import { SUPPORT_EMAIL } from '../config/legal';
 import { calculateWorkoutStreak } from '../services/bearStreakService';
 import {
+  FEED_PAGE_SIZE,
   acceptFollowRequest,
+  attachCommentCounts,
   deleteMyAccount,
   setWeightUnit,
+  setAccountPublic,
   followUser,
   getProfileSummary,
+  getUserWorkouts,
+  likeWorkout,
   removeFollower,
   unfollowUser,
+  unlikeWorkout,
 } from '../services/socialService';
 import type { RootStackParamList } from '../types/navigation';
-import type { ProfileSummary } from '../types/social';
+import type { FeedItem, ProfileSummary } from '../types/social';
 import { confirmAction, showMessage } from '../utils/alert';
 
 type ProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'UserProfile'>;
@@ -51,12 +58,24 @@ export const UserProfileScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [safetyOpen, setSafetyOpen] = useState(false);
+  const [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null);
+  const [workouts, setWorkouts] = useState<FeedItem[]>([]);
+  const [hasMoreWorkouts, setHasMoreWorkouts] = useState(false);
+  const [loadingMoreWorkouts, setLoadingMoreWorkouts] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      setSummary(await getProfileSummary(userId));
+      const loaded = await getProfileSummary(userId);
+      setSummary(loaded);
       setError(null);
+      if (loaded && loaded.workoutCount !== null) {
+        const page = await attachCommentCounts(await getUserWorkouts(userId));
+        setWorkouts(page);
+        setHasMoreWorkouts(page.length >= FEED_PAGE_SIZE);
+      } else {
+        setWorkouts([]);
+        setHasMoreWorkouts(false);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load this profile.');
     } finally {
@@ -85,6 +104,70 @@ export const UserProfileScreen = () => {
     [summary?.workoutDates],
   );
 
+  const loadMoreWorkouts = useCallback(async () => {
+    if (loadingMoreWorkouts || !hasMoreWorkouts || workouts.length === 0) return;
+    const last = workouts[workouts.length - 1];
+    setLoadingMoreWorkouts(true);
+    try {
+      const page = await attachCommentCounts(
+        await getUserWorkouts(userId, { createdAt: last.createdAt, id: last.id }),
+      );
+      setWorkouts((current) => {
+        const seen = new Set(current.map((item) => item.id));
+        return [...current, ...page.filter((item) => !seen.has(item.id))];
+      });
+      setHasMoreWorkouts(page.length >= FEED_PAGE_SIZE);
+    } catch (err) {
+      showMessage('Error', err instanceof Error ? err.message : 'Unable to load more workouts.');
+    } finally {
+      setLoadingMoreWorkouts(false);
+    }
+  }, [hasMoreWorkouts, loadingMoreWorkouts, userId, workouts]);
+
+  const toggleLike = useCallback(async (item: FeedItem) => {
+    const nextLiked = !item.likedByMe;
+    const apply = (liked: boolean, delta: number) =>
+      setWorkouts((current) =>
+        current.map((entry) =>
+          entry.id === item.id
+            ? { ...entry, likedByMe: liked, likeCount: Math.max(0, entry.likeCount + delta) }
+            : entry,
+        ),
+      );
+    apply(nextLiked, nextLiked ? 1 : -1);
+    try {
+      if (nextLiked) await likeWorkout(item.id);
+      else await unlikeWorkout(item.id);
+    } catch (err) {
+      apply(item.likedByMe, nextLiked ? -1 : 1);
+      showMessage('Error', err instanceof Error ? err.message : 'Unable to update your like.');
+    }
+  }, []);
+
+  const changeVisibility = useCallback(
+    async (makePublic: boolean) => {
+      if (!profile || profile.isPublic === makePublic) return;
+      const confirmed = await confirmAction({
+        title: makePublic ? 'Make your account public?' : 'Make your account private?',
+        message: makePublic
+          ? 'Anyone at Berkeley will be able to follow you without approval, see your profile and followers, and see the workouts you share. Your shared workouts can appear on Explore. Requests waiting on you will be approved. Workouts marked Only me stay hidden.'
+          : 'Only followers you approve will see your shared workouts. People who already follow you keep following.',
+        confirmLabel: makePublic ? 'Make public' : 'Make private',
+      });
+      if (!confirmed) return;
+      const previous = profile;
+      setProfile({ ...profile, isPublic: makePublic }); // optimistic
+      try {
+        await setAccountPublic(makePublic);
+        await load();
+      } catch (err) {
+        setProfile(previous);
+        showMessage('Couldn’t change your account', err instanceof Error ? err.message : 'Please try again.');
+      }
+    },
+    [load, profile, setProfile],
+  );
+
   const run = useCallback(
     async (action: () => Promise<void>) => {
       setBusy(true);
@@ -104,7 +187,9 @@ export const UserProfileScreen = () => {
   const handleRelationshipPress = useCallback(async () => {
     if (!summary) return;
     if (summary.relationship === 'none') {
-      await run(() => followUser(summary.id));
+      await run(async () => {
+        await followUser(summary.id);
+      });
     } else if (summary.relationship === 'pending_out' || summary.relationship === 'following') {
       const following = summary.relationship === 'following';
       const confirmed = await confirmAction({
@@ -191,6 +276,18 @@ export const UserProfileScreen = () => {
           <Avatar name={summary.displayName} username={summary.username} size={72} />
           <Text style={styles.name}>{summary.displayName || summary.username}</Text>
           <Text style={styles.username}>@{summary.username}</Text>
+          <View style={styles.badges}>
+            <View style={[styles.badge2, summary.isPublic ? styles.badgePublic : styles.badgePrivate]}>
+              <Text style={[styles.badge2Text, summary.isPublic ? styles.badgePublicText : styles.badgePrivateText]}>
+                {summary.isPublic ? 'Public' : 'Private'}
+              </Text>
+            </View>
+            {summary.relationship === 'following' && summary.followsYou ? (
+              <View style={[styles.badge2, styles.badgeFriends]}>
+                <Text style={[styles.badge2Text, styles.badgeFriendsText]}>Friends</Text>
+              </View>
+            ) : null}
+          </View>
 
           <View style={styles.stats}>
             <Stat
@@ -212,6 +309,8 @@ export const UserProfileScreen = () => {
               relationship={summary.relationship as Exclude<typeof summary.relationship, 'self' | 'pending_in'>}
               busy={busy}
               onPress={handleRelationshipPress}
+              friends={summary.relationship === 'following' && summary.followsYou}
+              followBack={summary.relationship === 'none' && summary.followsYou}
             />
           ) : null}
 
@@ -243,15 +342,92 @@ export const UserProfileScreen = () => {
             <Text style={styles.noticeText}>
               {summary.relationship === 'pending_out'
                 ? 'Your request is waiting for approval. You’ll see their workouts once they accept.'
-                : 'Follow this person to see their workouts once they approve you.'}
+                : 'Send a follow request to see their workouts once they approve you.'}
             </Text>
           </View>
         ) : null}
 
+        {canSeeWorkouts ? (
+          <View style={styles.workoutsSection}>
+            <Text style={styles.sectionTitle}>Workouts</Text>
+            {workouts.length === 0 ? (
+              <Text style={styles.empty}>
+                {isSelf ? 'You haven’t logged a workout yet.' : 'No shared workouts yet.'}
+              </Text>
+            ) : (
+              workouts.map((item) => (
+                <FeedWorkoutCard
+                  key={item.id}
+                  item={item}
+                  hideAuthor
+                  onPressAuthor={() => undefined}
+                  onToggleLike={toggleLike}
+                  onOpenComments={(entry) =>
+                    navigation.navigate('Comments', { workoutId: entry.id, canOpenProfiles: true })
+                  }
+                  onMore={
+                    isSelf
+                      ? undefined
+                      : (entry) =>
+                          setSafetyTarget({
+                            kind: 'workout',
+                            workoutId: entry.id,
+                            userId: entry.userId,
+                            username: entry.username,
+                          })
+                  }
+                />
+              ))
+            )}
+            {hasMoreWorkouts ? (
+              <TouchableOpacity style={styles.moreButton} onPress={loadMoreWorkouts} disabled={loadingMoreWorkouts}>
+                {loadingMoreWorkouts ? (
+                  <ActivityIndicator color="#2563eb" />
+                ) : (
+                  <Text style={styles.moreButtonText}>Show more</Text>
+                )}
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
+
         {!isSelf ? (
-          <TouchableOpacity onPress={() => setSafetyOpen(true)} style={styles.reportLink}>
+          <TouchableOpacity
+            onPress={() =>
+              setSafetyTarget({ kind: 'profile', userId: summary.id, username: summary.username })
+            }
+            style={styles.reportLink}
+          >
             <Text style={styles.reportLinkText}>Report or block</Text>
           </TouchableOpacity>
+        ) : null}
+
+        {isSelf && profile ? (
+          <View style={styles.unitsRow}>
+            <View style={styles.visibilityText}>
+              <Text style={styles.menuLabel}>Account</Text>
+              <Text style={styles.unitsHint}>
+                {profile.isPublic
+                  ? 'Public: anyone at Berkeley can follow you and see your shared workouts'
+                  : 'Private: people need your approval to follow you'}
+              </Text>
+            </View>
+            <View style={styles.unitsToggle}>
+              {([false, true] as const).map((makePublic) => (
+                <TouchableOpacity
+                  key={String(makePublic)}
+                  style={[styles.unitsOption, profile.isPublic === makePublic && styles.unitsOptionActive]}
+                  onPress={() => changeVisibility(makePublic)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: profile.isPublic === makePublic }}
+                >
+                  <Text style={[styles.unitsText, profile.isPublic === makePublic && styles.unitsTextActive]}>
+                    {makePublic ? 'Public' : 'Private'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         ) : null}
 
         {isSelf && profile ? (
@@ -304,12 +480,8 @@ export const UserProfileScreen = () => {
         ) : null}
       </ScrollView>
       <SafetySheet
-        target={
-          safetyOpen && !isSelf
-            ? { kind: 'profile', userId: summary.id, username: summary.username }
-            : null
-        }
-        onClose={() => setSafetyOpen(false)}
+        target={isSelf ? null : safetyTarget}
+        onClose={() => setSafetyTarget(null)}
         onBlocked={() => navigation.goBack()}
       />
     </ScreenContainer>
@@ -384,6 +556,20 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 22, fontWeight: '700', color: '#0f172a', marginTop: 4 },
   username: { fontSize: 15, color: '#64748b' },
+  badges: { flexDirection: 'row', gap: 8 },
+  badge2: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  badge2Text: { fontSize: 12, fontWeight: '700' },
+  badgePublic: { backgroundColor: '#dcfce7' },
+  badgePublicText: { color: '#15803d' },
+  badgePrivate: { backgroundColor: '#f1f5f9' },
+  badgePrivateText: { color: '#475569' },
+  badgeFriends: { backgroundColor: '#fef3c7' },
+  badgeFriendsText: { color: '#92400e' },
+  visibilityText: { flex: 1, paddingRight: 12 },
+  workoutsSection: { gap: 4 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginBottom: 8 },
+  moreButton: { alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 20 },
+  moreButtonText: { color: '#2563eb', fontSize: 15, fontWeight: '600' },
   stats: { flexDirection: 'row', gap: 24, marginVertical: 12 },
   stat: { alignItems: 'center' },
   statValue: { fontSize: 20, fontWeight: '700', color: '#003262' },

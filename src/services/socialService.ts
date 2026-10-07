@@ -26,6 +26,8 @@ interface ProfileRow {
   terms_accepted_at: string | null;
   // Absent until migration 006 has been run.
   weight_unit?: string | null;
+  // Absent until migration 011 has been run.
+  is_public?: boolean | null;
 }
 
 function rowToProfile(row: ProfileRow): Profile {
@@ -35,6 +37,7 @@ function rowToProfile(row: ProfileRow): Profile {
     displayName: row.display_name,
     termsAcceptedAt: row.terms_accepted_at,
     weightUnit: row.weight_unit === 'kg' ? 'kg' : 'lb',
+    isPublic: row.is_public === true,
   };
 }
 
@@ -62,6 +65,7 @@ export const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 export async function claimProfile(
   username: string,
   displayName: string,
+  isPublic = false,
 ): Promise<Profile> {
   const userId = await requireUserId();
   const cleanUsername = username.trim().toLowerCase();
@@ -82,6 +86,8 @@ export async function claimProfile(
       username: cleanUsername,
       display_name: cleanDisplayName,
       terms_version: TERMS_VERSION,
+      // Only sent when opting in, so signing up still works before migration 011.
+      ...(isPublic ? { is_public: true } : {}),
     })
     .eq('id', userId)
     .is('username', null)
@@ -116,6 +122,13 @@ export async function setWeightUnit(unit: WeightUnit): Promise<void> {
     .from('profiles')
     .update({ weight_unit: unit })
     .eq('id', userId);
+  if (error) throw new Error(friendlyProfileError(error));
+}
+
+/** Switches the account between Public and Private. */
+export async function setAccountPublic(isPublic: boolean): Promise<void> {
+  const userId = await requireUserId();
+  const { error } = await supabase.from('profiles').update({ is_public: isPublic }).eq('id', userId);
   if (error) throw new Error(friendlyProfileError(error));
 }
 
@@ -168,6 +181,8 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary 
     relationship: row.relationship,
     workoutCount: row.workout_count === null ? null : Number(row.workout_count),
     workoutDates: row.workout_dates ?? null,
+    isPublic: row.is_public === true,
+    followsYou: row.follows_you === true,
   };
 }
 
@@ -222,15 +237,31 @@ function friendlyFollowError(error: { code?: string; message: string }): string 
   return error.message;
 }
 
-export async function followUser(userId: string): Promise<void> {
+/**
+ * Follows (public accounts accept instantly) or requests (private accounts).
+ * Resolves to what actually happened so the UI never has to guess.
+ */
+export async function followUser(userId: string): Promise<'following' | 'pending_out'> {
   const me = await requireUserId();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('follows')
-    .insert({ follower_id: me, followee_id: userId });
-  // Already requested/following: nothing to do.
-  if (error && error.code !== UNIQUE_VIOLATION) {
+    .insert({ follower_id: me, followee_id: userId })
+    .select('status')
+    .single();
+  if (error) {
+    // Already requested/following: report the existing state.
+    if (error.code === UNIQUE_VIOLATION) {
+      const { data: existing } = await supabase
+        .from('follows')
+        .select('status')
+        .eq('follower_id', me)
+        .eq('followee_id', userId)
+        .maybeSingle();
+      return existing?.status === 'accepted' ? 'following' : 'pending_out';
+    }
     throw new Error(friendlyFollowError(error));
   }
+  return data?.status === 'accepted' ? 'following' : 'pending_out';
 }
 
 /** Unfollow, or cancel a pending request. */
@@ -300,16 +331,23 @@ export async function getIncomingRequestCount(): Promise<number> {
 // ---------------------------------------------------------------------------
 export const FEED_PAGE_SIZE = 20;
 
-export async function getFeed(
-  cursor?: { createdAt: string; id: string },
-): Promise<FeedItem[]> {
-  const { data, error } = await supabase.rpc('get_feed', {
-    p_limit: FEED_PAGE_SIZE,
-    p_before_created_at: cursor?.createdAt ?? null,
-    p_before_id: cursor?.id ?? null,
-  });
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((row: any) => ({
+interface FeedRow {
+  id: string;
+  user_id: string;
+  username: string | null;
+  display_name: string | null;
+  date: string;
+  day_type: { name: string; isCustom: boolean };
+  exercises: unknown;
+  notes: string | null;
+  created_at: string;
+  like_count: number | string;
+  liked_by_me: boolean;
+  visibility?: 'followers' | 'private';
+}
+
+function rowToFeedItem(row: FeedRow): FeedItem {
+  return {
     id: row.id,
     userId: row.user_id,
     username: row.username,
@@ -323,7 +361,44 @@ export async function getFeed(
     likeCount: Number(row.like_count),
     likedByMe: Boolean(row.liked_by_me),
     commentCount: 0,
-  }));
+    ...(row.visibility ? { visibility: row.visibility } : {}),
+  };
+}
+
+type FeedCursor = { createdAt: string; id: string };
+
+/** People you follow, newest first. */
+export async function getFeed(cursor?: FeedCursor): Promise<FeedItem[]> {
+  const { data, error } = await supabase.rpc('get_feed', {
+    p_limit: FEED_PAGE_SIZE,
+    p_before_created_at: cursor?.createdAt ?? null,
+    p_before_id: cursor?.id ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(rowToFeedItem);
+}
+
+/** Recent shared workouts from public accounts. */
+export async function getExplore(cursor?: FeedCursor): Promise<FeedItem[]> {
+  const { data, error } = await supabase.rpc('get_explore', {
+    p_limit: FEED_PAGE_SIZE,
+    p_before_created_at: cursor?.createdAt ?? null,
+    p_before_id: cursor?.id ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(rowToFeedItem);
+}
+
+/** The workouts on someone's profile page, limited to what the server says you may see. */
+export async function getUserWorkouts(userId: string, cursor?: FeedCursor): Promise<FeedItem[]> {
+  const { data, error } = await supabase.rpc('get_user_workouts', {
+    p_user: userId,
+    p_limit: FEED_PAGE_SIZE,
+    p_before_created_at: cursor?.createdAt ?? null,
+    p_before_id: cursor?.id ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(rowToFeedItem);
 }
 
 // ---------------------------------------------------------------------------
@@ -420,6 +495,12 @@ export async function getCommentCounts(workoutIds: string[]): Promise<Record<str
   } catch {
     return {};
   }
+}
+
+/** Fills in commentCount for a page of feed items. Never throws. */
+export async function attachCommentCounts(page: FeedItem[]): Promise<FeedItem[]> {
+  const counts = await getCommentCounts(page.map((item) => item.id));
+  return page.map((item) => ({ ...item, commentCount: counts[item.id] ?? 0 }));
 }
 
 // ---------------------------------------------------------------------------
