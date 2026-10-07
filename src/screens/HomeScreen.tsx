@@ -20,6 +20,7 @@ import { getPeakHours, type PeakHoursData } from '../services/peakHoursService';
 import { PeakHoursChart } from '../components/PeakHoursChart';
 import { OskiBear } from '../components/OskiBear';
 import { RsfHeadingCard } from '../components/RsfHeadingCard';
+import { WeeklyGoalCard } from '../components/WeeklyGoalCard';
 import { LeaderboardCard } from '../components/LeaderboardCard';
 import { RsfPresenceCard } from '../components/RsfPresenceCard';
 import { calculateWorkoutStreak } from '../services/bearStreakService';
@@ -234,6 +235,8 @@ export const HomeScreen = () => {
             {renderHours(status.hours ?? [])}
           </View>
         ) : null}
+
+        <WeeklyGoalCard workoutDates={workouts.map((workout) => workout.date)} />
 
         <RsfHeadingCard
           crowd={
