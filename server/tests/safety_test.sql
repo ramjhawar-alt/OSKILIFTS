@@ -115,7 +115,7 @@ select public.submit_report('profile', 'a0000000-0000-0000-0000-00000000000a', '
 select pg_temp.expect_fail_msg($q$select public.submit_report('workout', 'e2000000-0000-0000-0000-0000000000e2', 'spam')$q$, 'report_target_not_found', 'cannot report a workout you cannot see');
 select pg_temp.expect_fail_msg($q$select public.submit_report('profile', 'b0000000-0000-0000-0000-00000000000b', 'spam')$q$, 'cannot_report_self', 'cannot report yourself');
 select pg_temp.expect_fail_msg($q$select public.submit_report('profile', '00000000-0000-0000-0000-000000000099', 'spam')$q$, 'report_target_not_found', 'unknown profile');
-select pg_temp.expect_fail_msg($q$select public.submit_report('comment', gen_random_uuid(), 'spam')$q$, 'invalid_target_type', 'bad target type');
+select pg_temp.expect_fail_msg($q$select public.submit_report('message', gen_random_uuid(), 'spam')$q$, 'invalid_target_type', 'bad target type');
 select pg_temp.expect_fail($q$select public.submit_report('profile', 'a0000000-0000-0000-0000-00000000000a', 'because')$q$, 'reason must be from the enum');
 select pg_temp.expect_fail($q$select public.submit_report('profile', 'c0000000-0000-0000-0000-00000000000c', 'spam', repeat('x', 1001))$q$, 'details length cap');
 
