@@ -7,14 +7,6 @@ const {
   fetchGroupFitnessSchedule,
   getPacificISODate,
 } = require('./rsfService');
-const {
-  checkIn,
-  checkOut,
-  getActiveCount,
-  getCrowdednessStatus,
-  cleanupExpired,
-  isCheckedIn,
-} = require('./hoopersService');
 const { storeCapacitySnapshot, getRecentCapacityRows } = require('./dataCollectionService');
 const { analyzePeakHours } = require('./peakHoursAnalytics');
 require('dotenv').config();
@@ -104,26 +96,6 @@ app.get('/api', (_req, res) => {
       },
       {
         method: 'GET',
-        path: '/api/hoopers',
-        description: 'Current hoopers crowd estimate',
-      },
-      {
-        method: 'POST',
-        path: '/api/hoopers/checkin',
-        description: 'Check in a user by userId',
-      },
-      {
-        method: 'POST',
-        path: '/api/hoopers/checkout',
-        description: 'Check out a user by userId',
-      },
-      {
-        method: 'GET',
-        path: '/api/hoopers/status/:userId',
-        description: 'Check whether a user is currently checked in',
-      },
-      {
-        method: 'GET',
         path: '/api/peak-hours',
         description: 'Peak-hours analytics from collected snapshots',
       },
@@ -174,91 +146,6 @@ app.get('/api/classes', async (req, res) => {
     console.error('Error fetching class schedule:', error);
     res.status(error.status || 500).json({
       error: 'Failed to fetch class schedule',
-      details: error.message,
-    });
-  }
-});
-
-// HOOPERS API endpoints
-app.get('/api/hoopers', (_req, res) => {
-  try {
-    cleanupExpired();
-    const count = getActiveCount();
-    const status = getCrowdednessStatus(count);
-    // Add cache headers for client-side caching (short cache since this changes frequently)
-    res.setHeader('Cache-Control', 'public, max-age=30'); // Cache for 30 seconds
-    res.json({ count, status });
-  } catch (error) {
-    console.error('Error fetching hoopers status:', error);
-    res.status(500).json({
-      error: 'Failed to fetch hoopers status',
-      details: error.message,
-    });
-  }
-});
-
-app.post('/api/hoopers/checkin', (req, res) => {
-  try {
-    const { userId } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
-    }
-    
-    const result = checkIn(userId);
-    const count = getActiveCount();
-    const status = getCrowdednessStatus(count);
-    
-    res.json({
-      success: true,
-      userId: result.userId,
-      checkedInAt: result.checkedInAt,
-      count,
-      status,
-    });
-  } catch (error) {
-    console.error('Error checking in:', error);
-    res.status(500).json({
-      error: 'Failed to check in',
-      details: error.message,
-    });
-  }
-});
-
-app.post('/api/hoopers/checkout', (req, res) => {
-  try {
-    const { userId } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
-    }
-    
-    const wasCheckedIn = checkOut(userId);
-    const count = getActiveCount();
-    const status = getCrowdednessStatus(count);
-    
-    res.json({
-      success: true,
-      wasCheckedIn,
-      count,
-      status,
-    });
-  } catch (error) {
-    console.error('Error checking out:', error);
-    res.status(500).json({
-      error: 'Failed to check out',
-      details: error.message,
-    });
-  }
-});
-
-app.get('/api/hoopers/status/:userId', (req, res) => {
-  try {
-    const { userId } = req.params;
-    const checkedIn = isCheckedIn(userId);
-    res.json({ checkedIn });
-  } catch (error) {
-    console.error('Error checking status:', error);
-    res.status(500).json({
-      error: 'Failed to check status',
       details: error.message,
     });
   }
@@ -350,11 +237,6 @@ app.use((err, req, res, next) => {
     next(err);
   }
 });
-
-// Cleanup expired check-ins every 5 minutes
-setInterval(() => {
-  cleanupExpired();
-}, 5 * 60 * 1000);
 
 // Scheduled capacity data collection for peak hours analysis
 // Collects data every 5 minutes to track RSF weight room crowdedness patterns
