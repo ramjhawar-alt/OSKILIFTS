@@ -1,10 +1,11 @@
 import { forwardRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+
+import { BEAR_IMAGES } from '../config/bearImages';
 
 import { SHARE_CARD_HEIGHT, SHARE_CARD_WIDTH, type ShareCardModel } from '../domain/shareCard';
 import { inviteLabel } from '../domain/invite';
 import { getBearStageName } from '../services/bearStreakService';
-import { OskiBearLiftingSVG } from './OskiBearLiftingSVG';
 
 const BLUE = '#003262';
 const BLUE_LIGHT = '#0b4a85';
@@ -15,7 +16,7 @@ const GOLD = '#FDB515';
  * captured to a PNG. Plain views and text only, so it renders the same on web
  * and native.
  */
-export const ShareCard = forwardRef<View, { model: ShareCardModel }>(({ model }, ref) => (
+export const ShareCard = forwardRef<View, { model: ShareCardModel; onBearLoaded?: () => void }>(({ model, onBearLoaded }, ref) => (
   <View ref={ref} collapsable={false} style={styles.card}>
     <View style={styles.topRow}>
       <Text style={styles.brand}>OSKILIFTS</Text>
@@ -23,9 +24,14 @@ export const ShareCard = forwardRef<View, { model: ShareCardModel }>(({ model },
     </View>
 
     <View style={styles.bearPanel}>
-      {/* The scene scales to its parent, so give it a box with its 1.6:1 shape. */}
       <View style={styles.bearScene}>
-        <OskiBearLiftingSVG size={1} stage={model.bearStage} />
+        <Image
+          source={BEAR_IMAGES[Math.min(10, Math.max(1, model.bearStage))].source}
+          style={styles.bearImage}
+          resizeMode="cover"
+          onLoad={onBearLoaded}
+          onError={onBearLoaded}
+        />
       </View>
       <Text style={styles.bearName}>{getBearStageName(model.bearStage)}</Text>
     </View>
@@ -99,7 +105,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingBottom: 20,
   },
-  bearScene: { width: 840, height: 525 },
+  bearScene: { width: 720, height: 540, marginTop: 20, borderRadius: 32, overflow: 'hidden' },
+  bearImage: { width: '100%', height: '100%' },
   bearName: { color: GOLD, fontSize: 40, fontWeight: '700', letterSpacing: 2, marginTop: 16 },
   titleBlock: { gap: 8 },
   title: { color: '#fff', fontSize: 100, fontWeight: '800' },

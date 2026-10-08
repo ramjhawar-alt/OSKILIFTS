@@ -14,7 +14,7 @@ frames exist; otherwise it uses the squash fallback).
 | `<name>_oski_nose.png` | across the nose and mouth |
 | `<name>_oski_bottom.png` | at the collarbone, under the chin |
 
-Baby Oski is done. Lessons from making it:
+Baby and Small Oski are done. Lessons from making them:
 - Describe bar heights by body landmarks, not pixels. The model can't hit coordinates, and
   landmarks scale to each bear's size.
 - Edit the master every time, one image at a time. Editing its own previous output makes the

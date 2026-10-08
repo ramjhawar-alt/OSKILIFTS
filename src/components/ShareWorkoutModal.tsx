@@ -33,14 +33,18 @@ export const ShareWorkoutModal = ({
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [bearReady, setBearReady] = useState(false);
   const visible = model !== null;
 
   useEffect(() => {
     setImageUri(null);
     setFailed(false);
-    if (!model) return undefined;
+    if (!model) {
+      setBearReady(false);
+      return undefined;
+    }
     let active = true;
-    // Give the card (and its SVG bear) a moment to lay out before capturing.
+    // Wait for the bear picture (or give up after a few seconds), then a beat to lay out.
     const timer = setTimeout(async () => {
       try {
         const uri = await captureShareCard(cardRef);
@@ -49,12 +53,12 @@ export const ShareWorkoutModal = ({
         console.error('Share card capture failed:', error);
         if (active) setFailed(true);
       }
-    }, 350);
+    }, bearReady ? 250 : 3500);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [model]);
+  }, [model, bearReady]);
 
   const handleShare = useCallback(async () => {
     if (!imageUri || !model) return;
@@ -105,7 +109,7 @@ export const ShareWorkoutModal = ({
         {/* Drawn at full size but out of sight; captureRef reads this view. */}
         {model ? (
           <View pointerEvents="none" style={styles.offscreen}>
-            <ShareCard ref={cardRef} model={model} />
+            <ShareCard ref={cardRef} model={model} onBearLoaded={() => setBearReady(true)} />
           </View>
         ) : null}
       </View>

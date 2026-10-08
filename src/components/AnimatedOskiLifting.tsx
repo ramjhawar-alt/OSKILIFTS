@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import { BEAR_ASPECT, BEAR_IMAGES, BearArt } from '../config/bearImages';
-import { OVERHEAD_PRESS, PRESS_REP_MS, PRESS_STEPS } from '../config/oskiAnimation';
+import { PRESS_REP_MS, PRESS_STEPS } from '../config/oskiAnimation';
 import { barKnots, fadeWindows } from '../domain/pressFrames';
 import { getBearStageName } from '../services/bearStreakService';
 
@@ -21,15 +21,16 @@ interface AnimatedOskiLiftingProps {
 
 /**
  * Oski doing a shoulder press, looping. A stage that has press pictures (lockout to bottom)
- * flips through them, so the arms really bend. A stage without them squashes its
- * single picture toward the ground instead (the ground stays put; the strip above the
- * picture is filled with its own sky colour while he is lowered).
+ * flips through them, so the arms really bend. A stage without them shows its single
+ * picture with a slow idle breath (the ground stays put).
  */
-const SquashPress: React.FC<{ art: BearArt; stage: number }> = ({ art, stage }) => {
+const BOB_MS = 3200;
+const BOB_AMOUNT = 0.016; // +/-1.6% of the picture height: a slow breath, not a bounce
+
+const IdleBob: React.FC<{ art: BearArt; stage: number }> = ({ art, stage }) => {
   const [box, setBox] = useState({ width: 0, height: 0 });
   const [reduceMotion, setReduceMotion] = useState(false);
-  // 0 = locked out overhead, 1 = bar at the shoulders
-  const lowered = useRef(new Animated.Value(0)).current;
+  const breath = useRef(new Animated.Value(0)).current; // 0 = settled, 1 = chest up
 
   useEffect(() => {
     let alive = true;
@@ -42,30 +43,18 @@ const SquashPress: React.FC<{ art: BearArt; stage: number }> = ({ art, stage }) 
   }, []);
 
   useEffect(() => {
-    lowered.setValue(0);
+    breath.setValue(0);
     if (reduceMotion) return undefined;
     const native = Platform.OS !== 'web';
-    const rep = Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
-        Animated.delay(OVERHEAD_PRESS.duration * 0.15), // hold at the top
-        Animated.timing(lowered, {
-          toValue: 1,
-          duration: OVERHEAD_PRESS.duration * 0.35, // controlled lowering
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: native,
-        }),
-        Animated.delay(OVERHEAD_PRESS.duration * 0.1), // pause at the shoulders
-        Animated.timing(lowered, {
-          toValue: 0,
-          duration: OVERHEAD_PRESS.duration * 0.4, // drive it up
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: native,
-        }),
+        Animated.timing(breath, { toValue: 1, duration: BOB_MS / 2, easing: Easing.inOut(Easing.sin), useNativeDriver: native }),
+        Animated.timing(breath, { toValue: 0, duration: BOB_MS / 2, easing: Easing.inOut(Easing.sin), useNativeDriver: native }),
       ]),
     );
-    rep.start();
-    return () => rep.stop();
-  }, [lowered, reduceMotion]);
+    loop.start();
+    return () => loop.stop();
+  }, [breath, reduceMotion]);
 
   const onLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -75,10 +64,9 @@ const SquashPress: React.FC<{ art: BearArt; stage: number }> = ({ art, stage }) 
   // Fit the 4:3 picture inside the available space.
   const width = Math.min(box.width, box.height * BEAR_ASPECT);
   const height = width / BEAR_ASPECT;
-  const range = OVERHEAD_PRESS.movementRange;
-
-  const scaleY = lowered.interpolate({ inputRange: [0, 1], outputRange: [1, 1 - range] });
-  const scaleX = lowered.interpolate({ inputRange: [0, 1], outputRange: [1, 1 + range * 0.35] });
+  // Scale about the bottom edge so the ground stays put and the bear rises and settles.
+  const scaleY = breath.interpolate({ inputRange: [0, 1], outputRange: [1 - BOB_AMOUNT, 1 + BOB_AMOUNT] });
+  const scaleX = breath.interpolate({ inputRange: [0, 1], outputRange: [1 + BOB_AMOUNT / 3, 1 - BOB_AMOUNT / 3] });
 
   return (
     <View style={[styles.container, { backgroundColor: art.sky }]} onLayout={onLayout}>
@@ -87,7 +75,6 @@ const SquashPress: React.FC<{ art: BearArt; stage: number }> = ({ art, stage }) 
           style={{
             width,
             height,
-            // scale about the bottom edge: move it to the centre, scale, move it back
             transform: [{ translateY: height / 2 }, { scaleX }, { scaleY }, { translateY: -height / 2 }],
           }}
         >
@@ -95,7 +82,7 @@ const SquashPress: React.FC<{ art: BearArt; stage: number }> = ({ art, stage }) 
             source={art.source}
             style={styles.image}
             resizeMode="contain"
-            accessibilityLabel={`${getBearStageName(stage)} doing a shoulder press`}
+            accessibilityLabel={`${getBearStageName(stage)}`}
           />
         </Animated.View>
       ) : null}
@@ -183,7 +170,7 @@ export const AnimatedOskiLifting: React.FC<AnimatedOskiLiftingProps> = ({ stage 
   return art.frames && art.frames.length >= 2 ? (
     <FlipbookPress art={art} frames={art.frames} stage={clamped} />
   ) : (
-    <SquashPress art={art} stage={clamped} />
+    <IdleBob art={art} stage={clamped} />
   );
 };
 

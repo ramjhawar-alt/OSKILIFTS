@@ -25,7 +25,9 @@ import { InviteCard } from '../components/InviteCard';
 import { LeaderboardCard } from '../components/LeaderboardCard';
 import { RecapCard } from '../components/RecapCard';
 import { RsfPresenceCard } from '../components/RsfPresenceCard';
-import { calculateWorkoutStreak } from '../services/bearStreakService';
+import { LevelUpModal } from '../components/LevelUpModal';
+import { decideLevelUp, levelUpKey } from '../domain/levelUp';
+import { calculateWorkoutStreak, getBearStage } from '../services/bearStreakService';
 import { getWorkouts } from '../services/workoutStorage';
 import type { WeightRoomHours, WeightRoomStatus } from '../types/api';
 import type { Workout } from '../types/workout';
@@ -50,6 +52,9 @@ export const HomeScreen = () => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [streak, setStreak] = useState(0);
   const [totalWorkouts, setTotalWorkouts] = useState(0);
+  // Only real workout data can level you up (not the bear-preview override).
+  const [realStreakLoaded, setRealStreakLoaded] = useState(false);
+  const [levelUpStage, setLevelUpStage] = useState<number | null>(null);
   const [peakHours, setPeakHours] = useState<PeakHoursData | null>(null);
   const [peakHoursLoading, setPeakHoursLoading] = useState(true);
 
@@ -103,6 +108,7 @@ export const HomeScreen = () => {
         // Use debug values
         setStreak(parseInt(debugStreak, 10));
         setTotalWorkouts(parseInt(debugTotalWorkouts || '10', 10));
+        setRealStreakLoaded(false);
       } else {
         // Use real workout data
         const allWorkouts = await getWorkouts();
@@ -110,11 +116,31 @@ export const HomeScreen = () => {
         const currentStreak = calculateWorkoutStreak(allWorkouts);
         setStreak(currentStreak);
         setTotalWorkouts(allWorkouts.length);
+        setRealStreakLoaded(true);
       }
     } catch (error) {
       console.error('Error loading workouts for bear:', error);
     }
   }, []);
+
+  // Show the level-up screen the first time this person reaches a new highest stage.
+  useEffect(() => {
+    if (!realStreakLoaded || !user?.id) return undefined;
+    let active = true;
+    (async () => {
+      try {
+        const key = levelUpKey(user.id);
+        const decision = decideLevelUp(await AsyncStorage.getItem(key), getBearStage(streak));
+        await AsyncStorage.setItem(key, String(decision.remember));
+        if (active && decision.celebrate) setLevelUpStage(decision.remember);
+      } catch {
+        // the celebration is a nicety; never block the home screen on it
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [realStreakLoaded, streak, user?.id]);
 
   // Load cached data immediately on mount
   useEffect(() => {
@@ -257,6 +283,8 @@ export const HomeScreen = () => {
         <LeaderboardCard />
 
         <OskiBear streak={streak} totalWorkouts={totalWorkouts || workouts.length} />
+
+        <LevelUpModal stage={levelUpStage} onClose={() => setLevelUpStage(null)} />
 
         <PeakHoursChart data={peakHours} loading={peakHoursLoading} />
       </ScrollView>
