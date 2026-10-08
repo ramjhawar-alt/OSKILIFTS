@@ -36,3 +36,14 @@ test('there is a picture for exactly the stages the app has', () => {
   const config = readFileSync(join(ROOT, 'src', 'config', 'bearImages.ts'), 'utf8');
   assert.equal((config.match(/source: require/g) || []).length, 10);
 });
+
+test('every picture the config points at exists, and press frames come as a full set', () => {
+  const config = readFileSync(join(ROOT, 'src', 'config', 'bearImages.ts'), 'utf8');
+  const paths = [...config.matchAll(/require\('\.\.\/\.\.\/(assets\/bears\/[^']+)'\)/g)].map((m) => m[1]);
+  assert.ok(paths.length >= 10);
+  for (const path of paths) assert.ok(statSync(join(ROOT, path)).size > 20_000, path);
+  for (const path of paths.filter((p) => p.endsWith('-mid.jpg'))) {
+    assert.ok(paths.includes(path.replace('-mid.jpg', '-bottom.jpg')), `${path} has a bottom frame`);
+    assert.ok(paths.includes(path.replace('-mid.jpg', '.jpg')), `${path} has a lockout frame`);
+  }
+});
