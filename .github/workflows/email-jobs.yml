@@ -1,0 +1,61 @@
+# Wakes the Render server on a schedule so it sends the weekly recap and the daily
+# admin alert. Needs ONE repository secret: JOB_SECRET (the same value as the
+# JOB_SECRET environment variable on Render). Run it by hand from the Actions tab
+# ("Run workflow") to test.
+name: Email jobs
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'    # weekly recap: Sunday evening Pacific (02:00 UTC Monday)
+    - cron: '30 17 * * *'  # admin alert: every day, mid-morning Pacific
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which job to run now
+        type: choice
+        options:
+          - weekly-digest
+          - admin-alert
+        default: admin-alert
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Pick the job
+        id: which
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT_JOB: ${{ github.event.inputs.job }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "job=$INPUT_JOB" >> "$GITHUB_OUTPUT"
+          elif [ "$SCHEDULE" = "0 2 * * 1" ]; then
+            echo "job=weekly-digest" >> "$GITHUB_OUTPUT"
+          else
+            echo "job=admin-alert" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Call the server
+        env:
+          JOB: ${{ steps.which.outputs.job }}
+          JOB_SECRET: ${{ secrets.JOB_SECRET }}
+          API_URL: https://oskilifts.onrender.com
+        run: |
+          if [ -z "$JOB_SECRET" ]; then
+            echo "JOB_SECRET is not set as a repository secret" >&2
+            exit 1
+          fi
+          # The free Render server may be asleep; retry while it wakes up. Repeated
+          # calls are safe: the server never emails the same person twice in a run
+          # or within six days.
+          curl --fail-with-body --silent --show-error \
+            --max-time 180 --retry 4 --retry-delay 25 --retry-all-errors \
+            -X POST -H "x-job-secret: $JOB_SECRET" \
+            "$API_URL/api/jobs/$JOB"
+          echo

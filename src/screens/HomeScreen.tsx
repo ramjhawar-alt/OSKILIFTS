@@ -22,6 +22,7 @@ import { OskiBear } from '../components/OskiBear';
 import { RsfHeadingCard } from '../components/RsfHeadingCard';
 import { WeeklyGoalCard } from '../components/WeeklyGoalCard';
 import { LeaderboardCard } from '../components/LeaderboardCard';
+import { RecapCard } from '../components/RecapCard';
 import { RsfPresenceCard } from '../components/RsfPresenceCard';
 import { calculateWorkoutStreak } from '../services/bearStreakService';
 import { getWorkouts } from '../services/workoutStorage';
@@ -235,6 +236,8 @@ export const HomeScreen = () => {
             {renderHours(status.hours ?? [])}
           </View>
         ) : null}
+
+        <RecapCard />
 
         <WeeklyGoalCard workoutDates={workouts.map((workout) => workout.date)} />
 

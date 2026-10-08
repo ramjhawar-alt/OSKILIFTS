@@ -39,6 +39,7 @@ import {
 } from '../services/socialService';
 import type { RootStackParamList } from '../types/navigation';
 import type { FeedItem, ProfileSummary } from '../types/social';
+import { getEmailPrefs, setWeeklyDigest } from '../services/emailPrefsService';
 import { confirmAction, showMessage } from '../utils/alert';
 
 type ProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'UserProfile'>;
@@ -62,6 +63,7 @@ export const UserProfileScreen = () => {
   const [workouts, setWorkouts] = useState<FeedItem[]>([]);
   const [hasMoreWorkouts, setHasMoreWorkouts] = useState(false);
   const [loadingMoreWorkouts, setLoadingMoreWorkouts] = useState(false);
+  const [recapOn, setRecapOn] = useState<boolean | null>(null); // null: not available yet
 
   const load = useCallback(async () => {
     try {
@@ -87,6 +89,7 @@ export const UserProfileScreen = () => {
     useCallback(() => {
       load();
       refreshPending();
+      getEmailPrefs().then((prefs) => setRecapOn(prefs ? prefs.weeklyDigest : null));
     }, [load, refreshPending]),
   );
 
@@ -216,6 +219,18 @@ export const UserProfileScreen = () => {
     },
     [profile, setProfile],
   );
+
+  const toggleRecap = useCallback(async () => {
+    if (recapOn === null) return;
+    const next = !recapOn;
+    setRecapOn(next); // optimistic
+    try {
+      await setWeeklyDigest(next);
+    } catch (err) {
+      setRecapOn(!next);
+      showMessage('Couldn’t change that', err instanceof Error ? err.message : 'Please try again.');
+    }
+  }, [recapOn]);
 
   const handleDeleteAccount = useCallback(async () => {
     const confirmed = await confirmAction({
@@ -430,6 +445,27 @@ export const UserProfileScreen = () => {
           </View>
         ) : null}
 
+        {isSelf && recapOn !== null ? (
+          <View style={styles.unitsRow}>
+            <View style={styles.visibilityText}>
+              <Text style={styles.menuLabel}>Weekly recap email</Text>
+              <Text style={styles.unitsHint}>
+                {recapOn ? 'On: one email on Sunday evenings, only if something happened' : 'Off: we never email you about activity'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.recapToggle, recapOn && styles.recapToggleOn]}
+              onPress={toggleRecap}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: recapOn }}
+              aria-checked={recapOn}
+              accessibilityLabel="Weekly recap email"
+            >
+              <Text style={[styles.recapToggleText, recapOn && styles.recapToggleTextOn]}>{recapOn ? 'On' : 'Off'}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {isSelf && profile ? (
           <View style={styles.unitsRow}>
             <View>
@@ -573,6 +609,19 @@ const styles = StyleSheet.create({
   badgeFriends: { backgroundColor: '#fef3c7' },
   badgeFriendsText: { color: '#92400e' },
   visibilityText: { flex: 1, paddingRight: 12 },
+  recapToggle: {
+    minWidth: 64,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  recapToggleOn: { backgroundColor: '#16a34a', borderColor: '#16a34a' },
+  recapToggleText: { fontSize: 14, fontWeight: '700', color: '#475569' },
+  recapToggleTextOn: { color: '#fff' },
   workoutsSection: { gap: 4 },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginBottom: 8 },
   moreButton: { alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 20 },
