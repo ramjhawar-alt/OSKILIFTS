@@ -54,7 +54,7 @@ export const OskiBear: React.FC<OskiBearProps> = ({ streak, totalWorkouts }) => 
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{streak}</Text>
           <Text style={styles.statLabel}>
-            {streak === 1 ? 'Day Streak' : 'Day Streak'}
+            Workout Streak
           </Text>
         </View>
         <View style={styles.statDivider} />
@@ -69,7 +69,7 @@ export const OskiBear: React.FC<OskiBearProps> = ({ streak, totalWorkouts }) => 
       {nextStageStreak !== null && (
         <View style={styles.progressContainer}>
           <Text style={styles.progressText}>
-            {nextStageStreak - streak} more day{nextStageStreak - streak !== 1 ? 's' : ''} to Stage {stage + 1}!
+            {nextStageStreak - streak} more workout{nextStageStreak - streak !== 1 ? 's' : ''} to Stage {stage + 1}!
           </Text>
         </View>
       )}

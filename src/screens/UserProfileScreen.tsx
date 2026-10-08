@@ -328,7 +328,7 @@ export const UserProfileScreen = () => {
               onPress={canSeeLists ? () => openList('following') : undefined}
             />
             {canSeeWorkouts ? <Stat label="Workouts" value={summary.workoutCount ?? 0} /> : null}
-            {streak !== null ? <Stat label="Day streak" value={streak} /> : null}
+            {streak !== null ? <Stat label="Workout streak" value={streak} /> : null}
           </View>
 
           {!isSelf && summary.relationship !== 'pending_in' ? (

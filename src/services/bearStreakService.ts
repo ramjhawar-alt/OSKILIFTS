@@ -1,93 +1,23 @@
+import { workoutStreak } from '../domain/streak';
 import type { Workout } from '../types/workout';
 
 /**
- * Calculate the current workout streak (consecutive days with at least one workout)
- * @param workouts - Array of all workouts, sorted by date
- * @returns Number of consecutive days with workouts
+ * The current workout streak: training days in a row, where up to two rest days
+ * between workouts don't break it (see src/domain/streak.ts).
  */
-export function calculateWorkoutStreak(workouts: Pick<Workout, 'date'>[]): number {
-  if (workouts.length === 0) {
-    return 0;
-  }
-
-  // Sort workouts by date (newest first)
-  const sortedWorkouts = [...workouts].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+export function calculateWorkoutStreak(
+  workouts: Pick<Workout, 'date'>[],
+  today?: string,
+): number {
+  return workoutStreak(
+    workouts.map((workout) => workout.date),
+    today,
   );
-
-  // Get unique dates (YYYY-MM-DD) from workouts
-  const workoutDates = new Set<string>();
-  sortedWorkouts.forEach((workout) => {
-    const dateStr = workout.date.split('T')[0]; // Extract YYYY-MM-DD
-    workoutDates.add(dateStr);
-  });
-
-  // Convert to sorted array of dates
-  const dates = Array.from(workoutDates)
-    .map((d) => new Date(d + 'T12:00:00.000Z'))
-    .sort((a, b) => b.getTime() - a.getTime());
-
-  if (dates.length === 0) {
-    return 0;
-  }
-
-  // Start from today and work backwards
-  const today = new Date();
-  today.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
-
-  // Check if today or yesterday has a workout
-  const todayStr = today.toISOString().split('T')[0];
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-  const mostRecentWorkoutDate = dates[0];
-  const mostRecentWorkoutStr = mostRecentWorkoutDate.toISOString().split('T')[0];
-
-  // If most recent workout is not today or yesterday, streak is broken
-  if (mostRecentWorkoutStr !== todayStr && mostRecentWorkoutStr !== yesterdayStr) {
-    return 0;
-  }
-
-  // Calculate consecutive days
-  let streak = 0;
-  let currentDate = new Date(today);
-
-  // If most recent workout was yesterday, start from yesterday
-  if (mostRecentWorkoutStr === yesterdayStr && mostRecentWorkoutStr !== todayStr) {
-    currentDate = new Date(yesterday);
-    streak = 1;
-  } else if (mostRecentWorkoutStr === todayStr) {
-    streak = 1;
-  }
-
-  // Check backwards for consecutive days
-  for (let i = 1; i < dates.length; i++) {
-    const expectedDate = new Date(currentDate);
-    expectedDate.setDate(expectedDate.getDate() - 1);
-    expectedDate.setHours(12, 0, 0, 0);
-
-    const workoutDate = new Date(dates[i]);
-    workoutDate.setHours(12, 0, 0, 0);
-
-    const expectedStr = expectedDate.toISOString().split('T')[0];
-    const workoutStr = workoutDate.toISOString().split('T')[0];
-
-    if (expectedStr === workoutStr) {
-      streak++;
-      currentDate = new Date(expectedDate);
-    } else {
-      // Gap found, streak is broken
-      break;
-    }
-  }
-
-  return streak;
 }
 
 /**
  * Get the bear stage (1-10) based on streak count
- * @param streak - Current workout streak in days
+ * @param streak - Current workout streak (training days)
  * @returns Bear stage number (1-10)
  */
 export function getBearStage(streak: number): number {
