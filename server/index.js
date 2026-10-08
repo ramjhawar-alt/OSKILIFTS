@@ -9,6 +9,9 @@ const {
 } = require('./rsfService');
 const { storeCapacitySnapshot, getRecentCapacityRows } = require('./dataCollectionService');
 const { analyzePeakHours } = require('./peakHoursAnalytics');
+const { getSupabase } = require('./supabaseClient');
+const { createEmailSender } = require('./emailService');
+const { registerEmailRoutes } = require('./emailRoutes');
 require('dotenv').config();
 
 const PORT = process.env.PORT || 4000;
@@ -64,6 +67,21 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Email jobs (weekly recap, admin alert) and the unsubscribe page. Triggered by a
+// scheduled GitHub Action with a shared secret; disabled unless JOB_SECRET is set.
+registerEmailRoutes(app, {
+  getSupabase,
+  send: createEmailSender({ apiKey: process.env.RESEND_API_KEY }),
+  jobSecret: () => process.env.JOB_SECRET,
+  config: {
+    apiUrl: (process.env.API_PUBLIC_URL || 'https://oskilifts.onrender.com').replace(/\/$/, ''),
+    appUrl: (process.env.APP_PUBLIC_URL || 'https://oskilifts.com').replace(/\/$/, ''),
+    fromDigest: process.env.EMAIL_FROM_DIGEST || 'OSKILIFTS <digest@oskilifts.com>',
+    fromAlerts: process.env.EMAIL_FROM_ALERTS || 'OSKILIFTS Alerts <alerts@oskilifts.com>',
+    replyTo: process.env.SUPPORT_EMAIL || 'ram_jhawar@berkeley.edu',
+  },
+});
 
 // Middleware to ensure API routes always return JSON
 app.use('/api', (req, res, next) => {
