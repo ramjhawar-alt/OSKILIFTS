@@ -79,6 +79,14 @@ on conflict do nothing;
 * If the free Render server is asleep the job retries while it wakes. The server never emails the same person
   twice within six days.
 
+## Mobile builds
+
+* Config: `app.json` (identifier `com.oskilifts.app`, version, location permission text) and `eas.json` (build profiles; production uses the Render URL).
+* Release builds (`!__DEV__`) always use `https://oskilifts.onrender.com` for the API, whatever `.env` says.
+* Try the app natively on a Mac: boot an iOS simulator, `expo start --localhost --port 8083`, then `xcrun simctl openurl booted exp://127.0.0.1:8083` (Expo Go).
+* Build: `eas build --profile preview --platform ios|android` (needs the Supabase values set as EAS env vars, see docs/OWNER_CHECKLIST.md).
+* Keep Expo patch versions current with `npx expo install --check`.
+
 ## Not built (decisions)
 
 * Gym-partner finder: only after 200+ users, and after a safety review.

@@ -55,6 +55,8 @@ const getNetworkIP = (): string | null => {
 // For iOS simulator, always use 127.0.0.1 (more reliable than localhost)
 // For physical devices, use network IP from Expo dev server or env var
 // For web, use localhost in dev, env var in production
+const PRODUCTION_API_URL = 'https://oskilifts.onrender.com';
+
 const getBaseUrl = () => {
   if (Platform.OS === 'web') {
     // For web: always use localhost in development (Expo web dev server)
@@ -75,6 +77,10 @@ const getBaseUrl = () => {
   }
 
   // For native platforms (iOS/Android)
+  // Release builds (App Store / Play Store) always use the production server over https,
+  // whatever a developer's local .env says (a LAN address would break the app for everyone).
+  if (!__DEV__) return PRODUCTION_API_URL;
+
   const networkIP = getNetworkIP();
   const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.hostUri || '';
   const debuggerHost = Constants.expoConfig?.debuggerHost || Constants.manifest?.debuggerHost || '';

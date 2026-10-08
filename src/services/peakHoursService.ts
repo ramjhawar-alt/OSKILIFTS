@@ -135,6 +135,8 @@ const getNetworkIP = (): string | null => {
   return null;
 };
 
+const PRODUCTION_API_URL = 'https://oskilifts.onrender.com';
+
 const getBaseUrl = () => {
   if (Platform.OS === 'web') {
     const isProduction =
@@ -150,6 +152,9 @@ const getBaseUrl = () => {
 
     return 'http://localhost:4000';
   }
+
+  // Release builds always use the production server over https (see api.ts).
+  if (!__DEV__) return PRODUCTION_API_URL;
 
   const networkIP = getNetworkIP();
   const hostUri =
