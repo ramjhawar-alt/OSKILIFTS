@@ -218,7 +218,7 @@ export const WorkoutsScreen = () => {
         <View style={styles.bearInfoCard}>
           <Text style={styles.bearInfoTitle}>Grow Your Oski Bear</Text>
           <Text style={styles.bearInfoText}>
-            The more workouts you log and the more consistent you are, the bigger your Oski bear will get! Every workout in your streak levels up your bear through 10 stages. Rest days are fine: take up to 2 days off in a row and your streak keeps going. Skip a third and it starts over.
+            The more workouts you log and the more consistent you are, the bigger your Oski bear will get! Every 10 workouts in your streak level up your bear, through 10 stages up to MAX OSKI at 90. Rest days are fine: take up to 2 days off in a row and your streak keeps going. Skip a third and it starts over.
           </Text>
         </View>
 

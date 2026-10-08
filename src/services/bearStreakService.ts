@@ -15,23 +15,19 @@ export function calculateWorkoutStreak(
   );
 }
 
+/** Workouts in the streak per bear stage: Baby Oski is 0-9, Small Oski 10-19, and so on. */
+export const WORKOUTS_PER_STAGE = 10;
+export const MAX_BEAR_STAGE = 10;
+
 /**
- * Get the bear stage (1-10) based on streak count
+ * Get the bear stage (1-10) based on streak count: one stage per 10 workouts,
+ * and MAX OSKI from 90 on.
  * @param streak - Current workout streak (training days)
  * @returns Bear stage number (1-10)
  */
 export function getBearStage(streak: number): number {
-  if (streak === 0) return 1;
-  if (streak <= 2) return 1;
-  if (streak <= 4) return 2;
-  if (streak <= 6) return 3;
-  if (streak <= 9) return 4;
-  if (streak <= 13) return 5;
-  if (streak <= 19) return 6;
-  if (streak <= 29) return 7;
-  if (streak <= 44) return 8;
-  if (streak <= 59) return 9;
-  return 10; // 60+ days
+  const n = Number.isFinite(streak) ? Math.max(0, Math.floor(streak)) : 0;
+  return Math.min(MAX_BEAR_STAGE, Math.floor(n / WORKOUTS_PER_STAGE) + 1);
 }
 
 /**
@@ -40,9 +36,8 @@ export function getBearStage(streak: number): number {
  * @returns Streak count needed for next stage, or null if max stage
  */
 export function getStreakForNextStage(currentStage: number): number | null {
-  const stageThresholds = [0, 3, 5, 7, 10, 14, 20, 30, 45, 60];
-  if (currentStage >= 10) return null;
-  return stageThresholds[currentStage];
+  if (currentStage >= MAX_BEAR_STAGE) return null;
+  return Math.max(1, Math.floor(currentStage)) * WORKOUTS_PER_STAGE;
 }
 
 /**

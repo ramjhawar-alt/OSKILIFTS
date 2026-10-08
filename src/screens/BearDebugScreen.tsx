@@ -13,7 +13,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { OskiBear } from '../components/OskiBear';
 import { AnimatedOskiLifting } from '../components/AnimatedOskiLifting';
-import { getBearStage, getBearStageName } from '../services/bearStreakService';
+import {
+  MAX_BEAR_STAGE,
+  WORKOUTS_PER_STAGE,
+  getBearStage,
+  getBearStageName,
+} from '../services/bearStreakService';
 
 const DEBUG_STREAK_KEY = '@oskilifts:debugStreak';
 const DEBUG_TOTAL_WORKOUTS_KEY = '@oskilifts:debugTotalWorkouts';
@@ -34,7 +39,7 @@ export const BearDebugScreen = () => {
       
       Alert.alert(
         'Debug Mode Applied',
-        `Home screen will now show Stage ${threshold.stage} (${threshold.min} day streak)`,
+        `Home screen will now show Stage ${threshold.stage} (${threshold.min} workout streak)`,
         [{ text: 'OK' }]
       );
     } catch (error) {
@@ -43,18 +48,17 @@ export const BearDebugScreen = () => {
     }
   };
 
-  const stageThresholds = [
-    { stage: 1, min: 0, max: 2, label: 'Stage 1: Baby Oski (0-2 days)' },
-    { stage: 2, min: 3, max: 4, label: 'Stage 2: Small Oski (3-4 days)' },
-    { stage: 3, min: 5, max: 6, label: 'Stage 3: Young Oski (5-6 days)' },
-    { stage: 4, min: 7, max: 9, label: 'Stage 4: Growing Oski (7-9 days)' },
-    { stage: 5, min: 10, max: 13, label: 'Stage 5: Strong Oski (10-13 days)' },
-    { stage: 6, min: 14, max: 19, label: 'Stage 6: Big Oski (14-19 days)' },
-    { stage: 7, min: 20, max: 29, label: 'Stage 7: Huge Oski (20-29 days)' },
-    { stage: 8, min: 30, max: 44, label: 'Stage 8: Massive Oski (30-44 days)' },
-    { stage: 9, min: 45, max: 59, label: 'Stage 9: Legendary Oski (45-59 days)' },
-    { stage: 10, min: 60, max: 100, label: 'Stage 10: MAX OSKI (60+ days)' },
-  ];
+  const stageThresholds = Array.from({ length: MAX_BEAR_STAGE }, (_, i) => {
+    const stage = i + 1;
+    const min = i * WORKOUTS_PER_STAGE;
+    const last = stage === MAX_BEAR_STAGE;
+    return {
+      stage,
+      min,
+      max: last ? 100 : min + WORKOUTS_PER_STAGE - 1,
+      label: `Stage ${stage}: ${getBearStageName(stage)} (${last ? `${min}+` : `${min}-${min + WORKOUTS_PER_STAGE - 1}`} workouts)`,
+    };
+  });
 
   const currentStage = getBearStage(selectedStreak);
   const totalWorkouts = Math.max(selectedStreak, 10); // Simulate total workouts
@@ -73,7 +77,7 @@ export const BearDebugScreen = () => {
         <View style={styles.previewSection}>
           <Text style={styles.sectionTitle}>Live Preview</Text>
           <Text style={styles.previewInfo}>
-            Streak: {selectedStreak} days → Stage {currentStage}/10
+            Streak: {selectedStreak} workouts → Stage {currentStage}/10
           </Text>
           <OskiBear streak={selectedStreak} totalWorkouts={totalWorkouts} />
         </View>
@@ -101,7 +105,7 @@ export const BearDebugScreen = () => {
                 keyboardType="numeric"
                 selectTextOnFocus
               />
-              <Text style={styles.streakLabel}>days</Text>
+              <Text style={styles.streakLabel}>workouts</Text>
             </View>
             <TouchableOpacity
               style={styles.streakButton}
