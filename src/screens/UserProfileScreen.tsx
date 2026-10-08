@@ -517,6 +517,7 @@ export const UserProfileScreen = () => {
               />
             ) : null}
             {isAdmin ? <MenuRow label="Metrics" onPress={() => navigation.navigate('Metrics')} /> : null}
+            {isAdmin ? <MenuRow label="Bear stages preview" onPress={() => navigation.navigate('BearDebug')} /> : null}
             <MenuRow label="Invite friends" onPress={inviteFriends} />
             <MenuRow label="Find people" onPress={() => navigation.navigate('SearchUsers')} />
             <MenuRow

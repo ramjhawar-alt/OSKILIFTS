@@ -70,11 +70,6 @@ const HomeStack = () => {
         component={ClassesScreen}
         options={{ title: 'RSF Classes' }}
       />
-      <Stack.Screen
-        name="BearDebug"
-        component={BearDebugScreen}
-        options={{ title: 'Bear Debug Preview' }}
-      />
     </Stack.Navigator>
   );
 };
@@ -184,6 +179,7 @@ const FeedStack = () => {
       <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: 'Comments' }} />
       <Stack.Screen name="Moderation" component={ModerationScreen} options={{ title: 'Moderation' }} />
       <Stack.Screen name="Metrics" component={MetricsScreen} options={{ title: 'Metrics' }} />
+      <Stack.Screen name="BearDebug" component={BearDebugScreen} options={{ title: 'Bear stages' }} />
       <Stack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
     </Stack.Navigator>
   );
