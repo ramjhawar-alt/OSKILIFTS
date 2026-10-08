@@ -182,11 +182,6 @@ export const BearDebugScreen = () => {
         <View style={styles.gallerySection}>
           <Text style={styles.sectionTitle}>All Stages Gallery</Text>
           {stageThresholds.map((threshold) => {
-            const sizeMultipliers: Record<number, number> = {
-              1: 0.5, 2: 0.6, 3: 0.7, 4: 0.8, 5: 0.9,
-              6: 1.0, 7: 1.1, 8: 1.2, 9: 1.3, 10: 1.5,
-            };
-            const bearSize = sizeMultipliers[threshold.stage] || 1.0;
             const stageName = getBearStageName(threshold.stage);
             
             return (
@@ -203,10 +198,9 @@ export const BearDebugScreen = () => {
                   </TouchableOpacity>
                 </View>
                 <View style={styles.stageArtContainer}>
-                  <AnimatedOskiLifting 
-                    size={bearSize} 
-                    stage={threshold.stage}
-                  />
+                  <View style={styles.stageArtBox}>
+                    <AnimatedOskiLifting stage={threshold.stage} />
+                  </View>
                 </View>
               </View>
             );
@@ -387,6 +381,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  stageArtBox: { width: '100%', height: 220 },
   stageArtContainer: {
     backgroundColor: '#f8fafc',
     borderRadius: 8,

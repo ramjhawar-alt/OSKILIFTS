@@ -1,85 +1,104 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, View, StyleSheet } from 'react-native';
-import { OskiBearLiftingSVG } from './OskiBearLiftingSVG';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  AccessibilityInfo,
+  Animated,
+  Easing,
+  Image,
+  LayoutChangeEvent,
+  Platform,
+  StyleSheet,
+  View,
+} from 'react-native';
+
+import { BEAR_ASPECT, BEAR_IMAGES } from '../config/bearImages';
 import { OVERHEAD_PRESS } from '../config/oskiAnimation';
+import { getBearStageName } from '../services/bearStreakService';
 
 interface AnimatedOskiLiftingProps {
-  size: number; // Scale multiplier (0.5 to 1.5)
-  stage: number; // Stage 1-10
+  stage: number; // 1-10
 }
 
-export const AnimatedOskiLifting: React.FC<AnimatedOskiLiftingProps> = ({
-  size,
-  stage,
-}) => {
-  const barbellY = useRef(new Animated.Value(-35)).current; // Start at overhead position
+/**
+ * The stage picture of Oski with a shoulder-press rep looping on it: he sinks to the
+ * shoulders (the picture squashes down toward the ground and widens a touch), pauses,
+ * presses back up to lockout, and holds. The ground stays put; the strip above the
+ * picture is filled with its own sky colour while he is lowered.
+ */
+export const AnimatedOskiLifting: React.FC<AnimatedOskiLiftingProps> = ({ stage }) => {
+  const art = BEAR_IMAGES[Math.min(10, Math.max(1, Math.round(stage) || 1))];
+  const [box, setBox] = useState({ width: 0, height: 0 });
+  const [reduceMotion, setReduceMotion] = useState(false);
+  // 0 = locked out overhead, 1 = bar at the shoulders
+  const lowered = useRef(new Animated.Value(0)).current;
 
-  // Overhead Press animation - only arms/barbell move, body stays still
   useEffect(() => {
-    const chestLevel = 15; // Arms at chest/shoulder level (relative to center) - full range of motion
-    const overheadLevel = -35; // Arms at overhead position
+    let alive = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((value) => alive && setReduceMotion(value))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-    // Reset animation value - start at overhead position
-    barbellY.setValue(overheadLevel);
-
-    const animate = () => {
+  useEffect(() => {
+    lowered.setValue(0);
+    if (reduceMotion) return undefined;
+    const native = Platform.OS !== 'web';
+    const rep = Animated.loop(
       Animated.sequence([
-        // Lower weight down (from overhead to chest level) - FULL REP
-        Animated.timing(barbellY, {
-          toValue: chestLevel,
-          duration: OVERHEAD_PRESS.duration * 0.35,
-          easing: Easing.in(Easing.quad), // Controlled lowering
-          useNativeDriver: false, // Must be false for passing to SVG
+        Animated.delay(OVERHEAD_PRESS.duration * 0.15), // hold at the top
+        Animated.timing(lowered, {
+          toValue: 1,
+          duration: OVERHEAD_PRESS.duration * 0.35, // controlled lowering
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: native,
         }),
-        // Brief pause at bottom
-        Animated.delay(OVERHEAD_PRESS.duration * 0.1),
-        // Push weight up (from chest to overhead) - FULL REP
-        Animated.timing(barbellY, {
-          toValue: overheadLevel,
-          duration: OVERHEAD_PRESS.duration * 0.4,
-          easing: Easing.out(Easing.quad), // Slight acceleration as pushing up
-          useNativeDriver: false,
+        Animated.delay(OVERHEAD_PRESS.duration * 0.1), // pause at the shoulders
+        Animated.timing(lowered, {
+          toValue: 0,
+          duration: OVERHEAD_PRESS.duration * 0.4, // drive it up
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: native,
         }),
-        // Hold at top briefly
-        Animated.delay(OVERHEAD_PRESS.duration * 0.15),
-      ]).start((finished) => {
-        // Loop continuously for reps
-        if (finished) {
-          animate();
-        }
-      });
-    };
+      ]),
+    );
+    rep.start();
+    return () => rep.stop();
+  }, [lowered, reduceMotion]);
 
-    // Start animation after a brief delay to ensure state is set
-    const timeoutId = setTimeout(() => {
-      animate();
-    }, 100);
+  const onLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setBox((current) => (current.width === width && current.height === height ? current : { width, height }));
+  };
 
-    // Cleanup function
-    return () => {
-      clearTimeout(timeoutId);
-      barbellY.stopAnimation();
-    };
-  }, [size, stage, barbellY]);
+  // Fit the 4:3 picture inside the available space.
+  const width = Math.min(box.width, box.height * BEAR_ASPECT);
+  const height = width / BEAR_ASPECT;
+  const range = OVERHEAD_PRESS.movementRange;
 
-  // Create interpolated value for SVG
-  const [currentBarbellY, setCurrentBarbellY] = React.useState(-35);
-
-  useEffect(() => {
-    // Set initial value
-    setCurrentBarbellY(barbellY._value);
-    
-    const listenerId = barbellY.addListener(({ value }) => {
-      setCurrentBarbellY(value);
-    });
-    return () => {
-      barbellY.removeListener(listenerId);
-    };
-  }, [barbellY]);
+  const scaleY = lowered.interpolate({ inputRange: [0, 1], outputRange: [1, 1 - range] });
+  const scaleX = lowered.interpolate({ inputRange: [0, 1], outputRange: [1, 1 + range * 0.35] });
 
   return (
-    <View style={styles.container}>
-      <OskiBearLiftingSVG size={size} stage={stage} barbellY={currentBarbellY} />
+    <View style={[styles.container, { backgroundColor: art.sky }]} onLayout={onLayout}>
+      {width > 0 ? (
+        <Animated.View
+          style={{
+            width,
+            height,
+            // scale about the bottom edge: move it to the centre, scale, move it back
+            transform: [{ translateY: height / 2 }, { scaleX }, { scaleY }, { translateY: -height / 2 }],
+          }}
+        >
+          <Image
+            source={art.source}
+            style={styles.image}
+            resizeMode="contain"
+            accessibilityLabel={`${getBearStageName(stage)} doing a shoulder press`}
+          />
+        </Animated.View>
+      ) : null}
     </View>
   );
 };
@@ -87,21 +106,10 @@ export const AnimatedOskiLifting: React.FC<AnimatedOskiLiftingProps> = ({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden', // Prevent spillover
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
     width: '100%',
     height: '100%',
-    maxWidth: '100%',
-    maxHeight: '100%',
   },
-  animatedContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden', // Prevent spillover
-    width: '100%',
-    height: '100%',
-    maxWidth: '100%',
-    maxHeight: '100%',
-  },
+  image: { width: '100%', height: '100%' },
 });
-

@@ -19,22 +19,6 @@ export const OskiBear: React.FC<OskiBearProps> = ({ streak, totalWorkouts }) => 
   const nextStageStreak = getStreakForNextStage(stage);
   const message = getMotivationalMessage(streak, stage);
 
-  // Calculate size multiplier based on stage - less aggressive at higher stages
-  // Capped at 1.3 instead of 1.5 to prevent taking up too much space
-  const sizeMultipliers: Record<number, number> = {
-    1: 0.5,
-    2: 0.6,
-    3: 0.7,
-    4: 0.8,
-    5: 0.9,
-    6: 1.0,
-    7: 1.08,
-    8: 1.15,
-    9: 1.22,
-    10: 1.3,
-  };
-  const bearSize = sizeMultipliers[stage] || 1.0;
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -46,7 +30,7 @@ export const OskiBear: React.FC<OskiBearProps> = ({ streak, totalWorkouts }) => 
 
       <View style={styles.bearDisplay}>
         <View style={styles.bearWrapper}>
-          <AnimatedOskiLifting size={bearSize} stage={stage} />
+          <AnimatedOskiLifting stage={stage} />
         </View>
       </View>
 
