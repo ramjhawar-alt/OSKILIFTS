@@ -2,14 +2,17 @@
 
 /**
  * The 4:3 picture for each bear stage (1-10) and the sky colour along its top edge.
- * `frames` (when present) are the shoulder-press poses: [lockout, middle, bottom].
+ * `frames` (when present) are the shoulder-press poses, lockout first and bottom last.
  */
 export const BEAR_ASPECT = 1024 / 768;
 
 export interface BearArt {
   source: number;
   sky: string;
-  frames?: [number, number, number];
+  /** lockout first, bottom last */
+  frames?: number[];
+  /** where the barbell is in each frame (pixels in the original), to time the animation */
+  bar?: number[];
 }
 
 export const BEAR_IMAGES: Record<number, BearArt> = {
@@ -19,8 +22,11 @@ export const BEAR_IMAGES: Record<number, BearArt> = {
     frames: [
       require('../../assets/bears/stage-01.jpg'),
       require('../../assets/bears/stage-01-mid.jpg'),
+      require('../../assets/bears/stage-01-eyes.jpg'),
+      require('../../assets/bears/stage-01-nose.jpg'),
       require('../../assets/bears/stage-01-bottom.jpg'),
     ],
+    bar: [496, 530, 609, 641, 684],
   },
   2: { source: require('../../assets/bears/stage-02.jpg'), sky: '#b5e5fd' },
   3: { source: require('../../assets/bears/stage-03.jpg'), sky: '#b7e3fc' },

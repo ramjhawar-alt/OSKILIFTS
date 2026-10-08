@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 
 import { BEAR_ASPECT, BEAR_IMAGES, BearArt } from '../config/bearImages';
-import { OVERHEAD_PRESS, PRESS_FADE, PRESS_REP_MS, PRESS_STEPS } from '../config/oskiAnimation';
+import { OVERHEAD_PRESS, PRESS_REP_MS, PRESS_STEPS } from '../config/oskiAnimation';
+import { barKnots, fadeWindows } from '../domain/pressFrames';
 import { getBearStageName } from '../services/bearStreakService';
 
 interface AnimatedOskiLiftingProps {
@@ -19,8 +20,8 @@ interface AnimatedOskiLiftingProps {
 }
 
 /**
- * Oski doing a shoulder press, looping. A stage that has press pictures (lockout, middle,
- * bottom) flips through them, so the arms really bend. A stage without them squashes its
+ * Oski doing a shoulder press, looping. A stage that has press pictures (lockout to bottom)
+ * flips through them, so the arms really bend. A stage without them squashes its
  * single picture toward the ground instead (the ground stays put; the strip above the
  * picture is filled with its own sky colour while he is lowered).
  */
@@ -102,11 +103,15 @@ const SquashPress: React.FC<{ art: BearArt; stage: number }> = ({ art, stage }) 
   );
 };
 
-/** Flips through the lockout, middle and bottom pictures. Later pictures fade in over earlier ones. */
-const FlipbookPress: React.FC<{ frames: [number, number, number]; stage: number }> = ({ frames, stage }) => {
+/** Flips through the press pictures, lockout to bottom. Later pictures fade in over earlier ones. */
+const FlipbookPress: React.FC<{ art: BearArt; frames: number[]; stage: number }> = ({ art, frames, stage }) => {
   const [reduceMotion, setReduceMotion] = useState(false);
-  // 0 = lockout, 1 = middle, 2 = bottom
+  // 0 = lockout, 1 = bottom, measured along the bar's real travel
   const position = useRef(new Animated.Value(0)).current;
+  const windows = useMemo(
+    () => fadeWindows(barKnots(art.bar && art.bar.length === frames.length ? art.bar : frames.map((_, i) => i))),
+    [art.bar, frames],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -152,15 +157,22 @@ const FlipbookPress: React.FC<{ frames: [number, number, number]; stage: number 
     return () => rep.stop();
   }, [position, reduceMotion]);
 
-  const middleOpacity = position.interpolate({ inputRange: PRESS_FADE.middle.input, outputRange: PRESS_FADE.middle.output });
-  const bottomOpacity = position.interpolate({ inputRange: PRESS_FADE.bottom.input, outputRange: PRESS_FADE.bottom.output });
   const label = `${getBearStageName(stage)} doing a shoulder press`;
 
   return (
     <View style={[styles.container, styles.flipbook]} accessible accessibilityLabel={label}>
       <Image source={frames[0]} style={styles.layer} resizeMode="contain" />
-      <Animated.Image source={frames[1]} style={[styles.layer, { opacity: middleOpacity }]} resizeMode="contain" />
-      <Animated.Image source={frames[2]} style={[styles.layer, { opacity: bottomOpacity }]} resizeMode="contain" />
+      {frames.slice(1).map((frame, i) => (
+        <Animated.Image
+          key={i}
+          source={frame}
+          style={[
+            styles.layer,
+            { opacity: position.interpolate({ inputRange: windows[i].input, outputRange: windows[i].output }) },
+          ]}
+          resizeMode="contain"
+        />
+      ))}
     </View>
   );
 };
@@ -168,8 +180,8 @@ const FlipbookPress: React.FC<{ frames: [number, number, number]; stage: number 
 export const AnimatedOskiLifting: React.FC<AnimatedOskiLiftingProps> = ({ stage }) => {
   const clamped = Math.min(10, Math.max(1, Math.round(stage) || 1));
   const art = BEAR_IMAGES[clamped];
-  return art.frames ? (
-    <FlipbookPress frames={art.frames} stage={clamped} />
+  return art.frames && art.frames.length >= 2 ? (
+    <FlipbookPress art={art} frames={art.frames} stage={clamped} />
   ) : (
     <SquashPress art={art} stage={clamped} />
   );

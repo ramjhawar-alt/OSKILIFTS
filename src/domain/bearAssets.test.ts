@@ -43,7 +43,12 @@ test('every picture the config points at exists, and press frames come as a full
   assert.ok(paths.length >= 10);
   for (const path of paths) assert.ok(statSync(join(ROOT, path)).size > 20_000, path);
   for (const path of paths.filter((p) => p.endsWith('-mid.jpg'))) {
-    assert.ok(paths.includes(path.replace('-mid.jpg', '-bottom.jpg')), `${path} has a bottom frame`);
+    for (const tag of ['eyes', 'nose', 'bottom']) {
+      assert.ok(paths.includes(path.replace('-mid.jpg', `-${tag}.jpg`)), `${path} has a ${tag} frame`);
+    }
     assert.ok(paths.includes(path.replace('-mid.jpg', '.jpg')), `${path} has a lockout frame`);
   }
+  // every stage with press frames also lists the bar height of each frame
+  const bars = [...config.matchAll(/bar: \[([^\]]+)\]/g)].map((m) => m[1].split(',').length);
+  for (const count of bars) assert.equal(count, 5);
 });
