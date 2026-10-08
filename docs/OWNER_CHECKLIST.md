@@ -16,8 +16,8 @@ Tick these off as you go. Claude keeps a copy of this list and will remind you.
 - [ ] **Check Supabase backups** on your plan, and decide whether to upgrade Render so the server doesn't sleep.
 - [ ] **Check UC trademark rules** for using "Oski" / "Berkeley" in the app name, icon and marketing (the University licenses its marks).
 
-## Before the stores: the app icon is still Expo's placeholder
-- [ ] **Design a real app icon** (1024x1024, no transparency; an Oski-bear-on-Berkeley-blue look would suit it). `assets/icon.png`, `assets/adaptive-icon.png` and `assets/splash-icon.png` are Expo's default grid-and-circles template right now. Apple and Google both reject placeholder icons.
+## App icon (done, but your call)
+- [x] A real icon is in place: Oski in his blue cap lifting a barbell on Berkeley gold (`assets/icon.png`, `adaptive-icon.png`, `splash-icon.png`, `favicon.png`). It is drawn by `assets/source/make_icons.py`, so it's easy to tweak and regenerate. If you'd rather have a professionally designed icon, replace those four files (1024x1024, no transparency for `icon.png`). It uses no Cal logo and no text, on purpose.
 
 ## Growth tools (built)
 - Invite links: every account has `oskilifts.com/u/<username>`. Share from Home ("Invite friends") or Me. The Instagram share card prints it too. Link previews show a branded image (`public/og-image.png`; swap in a nicer design any time).
