@@ -13,6 +13,7 @@ export type RootStackParamList = {
   FollowList: { userId: string; kind: 'followers' | 'following'; username?: string | null };
   Comments: { workoutId: string; canOpenProfiles?: boolean };
   Moderation: undefined;
+  Metrics: undefined;
   Guidelines: undefined;
   Exercises: undefined;
   Routines: undefined;

@@ -21,6 +21,7 @@ import { PeakHoursChart } from '../components/PeakHoursChart';
 import { OskiBear } from '../components/OskiBear';
 import { RsfHeadingCard } from '../components/RsfHeadingCard';
 import { WeeklyGoalCard } from '../components/WeeklyGoalCard';
+import { InviteCard } from '../components/InviteCard';
 import { LeaderboardCard } from '../components/LeaderboardCard';
 import { RecapCard } from '../components/RecapCard';
 import { RsfPresenceCard } from '../components/RsfPresenceCard';
@@ -236,6 +237,8 @@ export const HomeScreen = () => {
             {renderHours(status.hours ?? [])}
           </View>
         ) : null}
+
+        <InviteCard />
 
         <RecapCard />
 

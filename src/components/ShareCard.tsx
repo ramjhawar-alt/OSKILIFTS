@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { SHARE_CARD_HEIGHT, SHARE_CARD_WIDTH, type ShareCardModel } from '../domain/shareCard';
+import { inviteLabel } from '../domain/invite';
 import { getBearStageName } from '../services/bearStreakService';
 import { OskiBearLiftingSVG } from './OskiBearLiftingSVG';
 
@@ -70,7 +71,9 @@ export const ShareCard = forwardRef<View, { model: ShareCardModel }>(({ model },
       ))}
     </View>
 
-    <Text style={styles.footer}>oskilifts.com · built for Berkeley</Text>
+    <Text style={styles.footer}>
+      {model.handle ? inviteLabel(model.handle.replace(/^@/, '')) : 'oskilifts.com · built for Berkeley'}
+    </Text>
   </View>
 ));
 ShareCard.displayName = 'ShareCard';

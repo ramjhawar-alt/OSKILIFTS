@@ -16,6 +16,13 @@ Tick these off as you go. Claude keeps a copy of this list and will remind you.
 - [ ] **Check Supabase backups** on your plan, and decide whether to upgrade Render so the server doesn't sleep.
 - [ ] **Check UC trademark rules** for using "Oski" / "Berkeley" in the app name, icon and marketing (the University licenses its marks).
 
+## Before the stores: the app icon is still Expo's placeholder
+- [ ] **Design a real app icon** (1024x1024, no transparency; an Oski-bear-on-Berkeley-blue look would suit it). `assets/icon.png`, `assets/adaptive-icon.png` and `assets/splash-icon.png` are Expo's default grid-and-circles template right now. Apple and Google both reject placeholder icons.
+
+## Growth tools (built)
+- Invite links: every account has `oskilifts.com/u/<username>`. Share from Home ("Invite friends") or Me. The Instagram share card prints it too. Link previews show a branded image (`public/og-image.png`; swap in a nicer design any time).
+- Metrics: Me -> Metrics (admins only): users, weekly active vs last week, new-user funnel, per-day charts, invites, feature use.
+
 ## Mobile apps (iOS / Android), in order
 The app already runs natively (tested on an iPhone 17 Pro simulator: sign-in screen, share card + share sheet, "at the RSF" location prompt). What's left is shipping it:
 - [ ] **Confirm the app identifier `com.oskilifts.app`** (in `app.json`, for both iOS and Android). It is permanent once published; change it now if you want something else.

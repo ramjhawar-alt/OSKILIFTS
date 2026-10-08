@@ -40,6 +40,7 @@ import {
 import type { RootStackParamList } from '../types/navigation';
 import type { FeedItem, ProfileSummary } from '../types/social';
 import { getEmailPrefs, setWeeklyDigest } from '../services/emailPrefsService';
+import { markInviteShared, shareInvite } from '../services/inviteService';
 import { confirmAction, showMessage } from '../utils/alert';
 
 type ProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'UserProfile'>;
@@ -231,6 +232,17 @@ export const UserProfileScreen = () => {
       showMessage('Couldn’t change that', err instanceof Error ? err.message : 'Please try again.');
     }
   }, [recapOn]);
+
+  const inviteFriends = useCallback(async () => {
+    if (!summary?.username || !user) return;
+    try {
+      const result = await shareInvite(summary.username);
+      if (result !== 'cancelled') await markInviteShared(user.id);
+      if (result === 'copied') showMessage('Link copied', 'Paste it in a text or DM to a friend.');
+    } catch (err) {
+      showMessage('Couldn’t share', err instanceof Error ? err.message : 'Please try again.');
+    }
+  }, [summary?.username, user]);
 
   const handleDeleteAccount = useCallback(async () => {
     const confirmed = await confirmAction({
@@ -504,6 +516,8 @@ export const UserProfileScreen = () => {
                 onPress={() => navigation.navigate('Moderation')}
               />
             ) : null}
+            {isAdmin ? <MenuRow label="Metrics" onPress={() => navigation.navigate('Metrics')} /> : null}
+            <MenuRow label="Invite friends" onPress={inviteFriends} />
             <MenuRow label="Find people" onPress={() => navigation.navigate('SearchUsers')} />
             <MenuRow
               label="Blocked users"

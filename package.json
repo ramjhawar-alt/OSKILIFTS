@@ -7,7 +7,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "web:build": "expo export --platform web && node scripts/inject-supabase-config.js",
+    "web:build": "expo export --platform web && node scripts/inject-supabase-config.js && node scripts/inject-seo.js",
     "server": "node server/index.js",
     "test:sql": "node server/tests/local/run.mjs && node server/tests/local/backfill_check.mjs && node server/tests/local/limits_backfill_check.mjs",
     "test:unit": "node --import tsx --test \"src/domain/**/*.test.ts\" \"server/tests/unit/**/*.test.js\"",

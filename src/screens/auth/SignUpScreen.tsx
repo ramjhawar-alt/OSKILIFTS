@@ -9,6 +9,7 @@ import {
   AuthLayout,
   AuthLink,
 } from '../../components/AuthForm';
+import { InviteBanner } from '../../components/InviteBanner';
 import { useAuth } from '../../contexts/AuthContext';
 import { TERMS_URL } from '../../config/legal';
 import type { AuthStackParamList } from '../../types/navigation';
@@ -49,6 +50,7 @@ export const SignUpScreen = ({ navigation }: Props) => {
       title="Create your account"
       subtitle="Only @berkeley.edu emails can sign up. We'll email you a link to confirm it's yours."
     >
+      <InviteBanner />
       <AuthInput
         placeholder="you@berkeley.edu"
         value={email}

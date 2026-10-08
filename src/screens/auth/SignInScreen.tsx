@@ -8,6 +8,7 @@ import {
   AuthLayout,
   AuthLink,
 } from '../../components/AuthForm';
+import { InviteBanner } from '../../components/InviteBanner';
 import { useAuth } from '../../contexts/AuthContext';
 import type { AuthStackParamList } from '../../types/navigation';
 
@@ -37,6 +38,7 @@ export const SignInScreen = ({ navigation }: Props) => {
       title="Sign in"
       subtitle="OSKILIFTS is for UC Berkeley students. Use your @berkeley.edu email."
     >
+      <InviteBanner />
       <AuthInput
         placeholder="you@berkeley.edu"
         value={email}

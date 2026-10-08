@@ -23,13 +23,16 @@ import { UserProfileScreen } from '../screens/UserProfileScreen';
 import { ConnectionsScreen } from '../screens/ConnectionsScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
 import { CommentsScreen } from '../screens/CommentsScreen';
+import { MetricsScreen } from '../screens/MetricsScreen';
 import { ModerationScreen } from '../screens/ModerationScreen';
 import { ExercisesScreen } from '../screens/ExercisesScreen';
 import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ExerciseDetailScreen } from '../screens/ExerciseDetailScreen';
 import { HeaderLink } from '../components/HeaderLink';
 import { RequestsProvider, useRequests } from '../contexts/RequestsContext';
+import { InviteHandler } from '../components/InviteHandler';
 import { RsfPresenceProvider } from '../contexts/RsfPresenceContext';
+import { navigationRef } from './navigationRef';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../contexts/ProfileContext';
 import { isProfileComplete } from '../types/social';
@@ -180,6 +183,7 @@ const FeedStack = () => {
       />
       <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: 'Comments' }} />
       <Stack.Screen name="Moderation" component={ModerationScreen} options={{ title: 'Moderation' }} />
+      <Stack.Screen name="Metrics" component={MetricsScreen} options={{ title: 'Metrics' }} />
       <Stack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
     </Stack.Navigator>
   );
@@ -284,6 +288,7 @@ const TabsWithBadge = () => {
 const MainTabs = () => (
   <RequestsProvider>
     <RsfPresenceProvider>
+      <InviteHandler />
       <TabsWithBadge />
     </RsfPresenceProvider>
   </RequestsProvider>
@@ -309,7 +314,7 @@ export const RootNavigator = () => {
   }
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
       {content}
     </NavigationContainer>
   );
