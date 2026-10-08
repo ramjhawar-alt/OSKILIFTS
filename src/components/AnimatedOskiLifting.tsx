@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import { BEAR_ASPECT, BEAR_IMAGES, BearArt } from '../config/bearImages';
-import { OVERHEAD_PRESS, PRESS_STEPS } from '../config/oskiAnimation';
+import { OVERHEAD_PRESS, PRESS_FADE, PRESS_REP_MS, PRESS_STEPS } from '../config/oskiAnimation';
 import { getBearStageName } from '../services/bearStreakService';
 
 interface AnimatedOskiLiftingProps {
@@ -136,8 +136,13 @@ const FlipbookPress: React.FC<{ frames: [number, number, number]; stage: number 
         PRESS_STEPS.map((step) =>
           Animated.timing(position, {
             toValue: step.to,
-            duration: OVERHEAD_PRESS.duration * step.over,
-            easing: Easing.linear,
+            duration: PRESS_REP_MS * step.over,
+            easing:
+              step.ease === 'inOut'
+                ? Easing.inOut(Easing.sin)
+                : step.ease === 'out'
+                  ? Easing.out(Easing.quad)
+                  : Easing.linear,
             useNativeDriver: native,
           }),
         ),
@@ -147,8 +152,8 @@ const FlipbookPress: React.FC<{ frames: [number, number, number]; stage: number 
     return () => rep.stop();
   }, [position, reduceMotion]);
 
-  const middleOpacity = position.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 1, 1] });
-  const bottomOpacity = position.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 0, 1] });
+  const middleOpacity = position.interpolate({ inputRange: PRESS_FADE.middle.input, outputRange: PRESS_FADE.middle.output });
+  const bottomOpacity = position.interpolate({ inputRange: PRESS_FADE.bottom.input, outputRange: PRESS_FADE.bottom.output });
   const label = `${getBearStageName(stage)} doing a shoulder press`;
 
   return (
