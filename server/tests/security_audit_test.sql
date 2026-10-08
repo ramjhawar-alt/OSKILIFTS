@@ -11,6 +11,8 @@
 --   5. trigger functions cannot be called by app users
 --   6. every table exposed to signed-in users is covered by an explicit RLS policy
 --      (tables with RLS on and no policies are closed to everyone, which is fine)
+--   7. functions meant only for the Render server (service_role) cannot be called by
+--      signed-in users or anon
 -- Success = it finishes with no error. A failure names every offender.
 begin;
 
@@ -95,6 +97,19 @@ begin
     and has_function_privilege('authenticated', p.oid, 'execute');
   if offenders is not null then
     raise exception 'AUDIT 5: signed-in users can call trigger functions: %', offenders;
+  end if;
+
+  -- 7. server-only functions (email jobs) are not callable by app users
+  select string_agg(fn, ', ' order by fn) into offenders
+  from unnest(array[
+    'public.digest_candidates(integer)', 'public.digest_mark_sent(uuid)', 'public.digest_unsubscribe(uuid)',
+    'public.admin_alert_candidates()', 'public.admin_alert_mark_sent()'
+  ]) as fn
+  where to_regprocedure(fn) is not null
+    and (has_function_privilege('authenticated', to_regprocedure(fn), 'execute')
+         or has_function_privilege('anon', to_regprocedure(fn), 'execute'));
+  if offenders is not null then
+    raise exception 'AUDIT 7: server-only functions callable by app roles: %', offenders;
   end if;
 
   -- 6. every table that signed-in users CAN touch directly has at least one policy
