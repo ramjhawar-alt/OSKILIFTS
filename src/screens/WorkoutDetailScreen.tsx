@@ -288,9 +288,11 @@ const styles = StyleSheet.create({
   shareButton: {
     marginTop: 12,
     padding: 14,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: 'center',
-    backgroundColor: colors.gold,
+    backgroundColor: colors.goldSoft,
+    borderWidth: 1,
+    borderColor: colors.gold,
   },
   shareButtonText: { color: colors.gold, fontSize: 16, fontWeight: '700' },
   routineButton: {

@@ -91,9 +91,9 @@ export const WorkoutsScreen = () => {
     const date = workout.date.split('T')[0];
     acc[date] = {
       marked: true,
-      dotColor: '#2563eb',
+      dotColor: colors.gold,
       selected: date === selectedDate,
-      selectedColor: '#2563eb',
+      selectedColor: colors.gold,
     };
     return acc;
   }, {} as Record<string, any>);
@@ -102,7 +102,7 @@ export const WorkoutsScreen = () => {
   if (selectedDate && !markedDates[selectedDate]) {
     markedDates[selectedDate] = {
       selected: true,
-      selectedColor: '#2563eb',
+      selectedColor: colors.gold,
     };
   }
 
@@ -217,9 +217,8 @@ export const WorkoutsScreen = () => {
         </View>
 
         <View style={styles.bearInfoCard}>
-          <Text style={styles.bearInfoTitle}>Grow Your Oski Bear</Text>
           <Text style={styles.bearInfoText}>
-            The more workouts you log and the more consistent you are, the bigger your Oski bear will get! Every 10 workouts in your streak level up your bear, through 10 stages up to MAX OSKI at 90. Rest days are fine: take up to 2 days off in a row and your streak keeps going. Skip a third and it starts over.
+            Every 10 workouts in your streak levels up Oski, up to MAX OSKI at 90. Up to 2 rest days in a row keep it going.
           </Text>
         </View>
 
@@ -362,10 +361,10 @@ const styles = StyleSheet.create({
   },
   bearInfoCard: {
     backgroundColor: colors.goldSoft,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 2,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
     borderColor: colors.gold,
   },
   bearInfoTitle: {
@@ -377,9 +376,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   bearInfoText: {
-    fontSize: 15,
-    color: colors.textMuted,
-    lineHeight: 22,
+    fontSize: 13,
+    color: colors.text,
+    lineHeight: 19,
     textAlign: 'center',
   },
   calendar: {

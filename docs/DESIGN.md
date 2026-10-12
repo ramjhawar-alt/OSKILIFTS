@@ -27,5 +27,10 @@ Screens not yet redone still use their old light styling (`ScreenContainer`). Co
 Sign-in / sign-up / onboarding (`AuthLayout`: Oski lifting up top, gold focus ring, gold primary), and Log Workout:
 live stats (time, exercises, sets done), day-type chips, exercise cards with 48 pt inputs and haptic check-offs,
 collapsible Details (date, rest timer, notes, visibility, save as routine, discard), and a sticky bottom dock with the
-rest timer above one big **Finish workout** button. Remaining light screens: Feed, Me/profile, workout detail, history,
-exercises, routines, classes, hoopers, search, connections, moderation, metrics.
+rest timer above one big **Finish workout** button. 
+
+### Phase 3 (done)
+Every remaining screen is dark: `ScreenContainer` is now the dark shell (navy gradient, phone-width column), the navigation theme is dark,
+and Feed, Me, workout history/detail, exercises + PRs, routines, classes, Hoopers, search, connections, comments, moderation, metrics and
+the safety/share popups use the tokens. Me has a clean list menu with chevrons; the history calendar is themed gold. Rule of thumb for
+any new screen: `ScreenContainer` or `DarkScreen`, `Card`/`cardBase`, one solid gold `PrimaryButton`, outlined gold for secondary actions.

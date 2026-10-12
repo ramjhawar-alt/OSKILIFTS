@@ -42,7 +42,8 @@ import type { FeedItem, ProfileSummary } from '../types/social';
 import { getEmailPrefs, setWeeklyDigest } from '../services/emailPrefsService';
 import { markInviteShared, shareInvite } from '../services/inviteService';
 import { confirmAction, showMessage } from '../utils/alert';
-import { colors } from '../theme';
+import { Ionicons } from '@expo/vector-icons';
+import { cardBase, colors } from '../theme';
 
 type ProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'UserProfile'>;
 
@@ -591,11 +592,14 @@ const MenuRow = ({
 }) => (
   <TouchableOpacity style={styles.menuRow} onPress={onPress} accessibilityRole="button">
     <Text style={[styles.menuLabel, destructive && styles.menuDestructive]}>{label}</Text>
-    {badge ? (
-      <View style={styles.badge}>
-        <Text style={styles.badgeText}>{badge}</Text>
-      </View>
-    ) : null}
+    <View style={styles.menuRight}>
+      {badge ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      ) : null}
+      {!destructive ? <Ionicons name="chevron-forward" size={18} color={colors.textFaint} /> : null}
+    </View>
   </TouchableOpacity>
 );
 
@@ -604,18 +608,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 48, gap: 16 },
   empty: { color: colors.textMuted, fontSize: 15, textAlign: 'center', marginTop: 32 },
   error: { color: colors.danger, fontSize: 14 },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
+  card: { ...cardBase, alignItems: 'center', gap: 8 },
   name: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 4 },
   username: { fontSize: 15, color: colors.textMuted },
   badges: { flexDirection: 'row', gap: 8 },
@@ -645,10 +638,10 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 8 },
   moreButton: { alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 20 },
   moreButtonText: { color: colors.cyan, fontSize: 15, fontWeight: '600' },
-  stats: { flexDirection: 'row', gap: 24, marginVertical: 12 },
-  stat: { alignItems: 'center' },
-  statValue: { fontSize: 20, fontWeight: '700', color: colors.gold },
-  statLabel: { fontSize: 12, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  stats: { flexDirection: 'row', alignSelf: 'stretch', marginVertical: 12, gap: 4 },
+  stat: { flex: 1, alignItems: 'center' },
+  statValue: { fontSize: 24, fontWeight: '800', color: colors.gold, fontVariant: ['tabular-nums'] },
+  statLabel: { fontSize: 9, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1 },
   respondRow: { flexDirection: 'row', gap: 8, alignSelf: 'stretch' },
   accept: {
     flex: 1,
@@ -703,7 +696,7 @@ const styles = StyleSheet.create({
   unitsTextActive: { color: colors.cyan },
   menu: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
@@ -717,7 +710,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  menuLabel: { fontSize: 16, color: colors.text, fontWeight: '500' },
+  menuRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  menuLabel: { fontSize: 16, color: colors.text, fontWeight: '600' },
   menuDestructive: { color: colors.danger },
   badge: {
     backgroundColor: colors.danger,

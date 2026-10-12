@@ -94,19 +94,7 @@ const commonScreens = () => (
     <Stack.Screen name="BearDebug" component={BearDebugScreen} options={{ title: 'Bear stages' }} />
     <Stack.Screen name="FriendsAtRsf" component={FriendsAtRsfScreen} options={{ title: 'At the RSF' }} />
     <Stack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
-    <Stack.Screen
-      name="Workouts"
-      component={WorkoutsScreen}
-      options={({ navigation }) => ({
-        title: 'Workout history',
-        headerRight: () => (
-          <View style={{ flexDirection: 'row' }}>
-            <HeaderLink label="Routines" onPress={() => navigation.navigate('Routines')} />
-            <HeaderLink label="Exercises" onPress={() => navigation.navigate('Exercises')} />
-          </View>
-        ),
-      })}
-    />
+    <Stack.Screen name="Workouts" component={WorkoutsScreen} options={{ title: 'History' }} />
     <Stack.Screen name="LogWorkout" component={LogWorkoutScreen} options={{ title: 'Log Workout' }} />
     <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} options={{ title: 'Workout Details' }} />
     <Stack.Screen name="Exercises" component={ExercisesScreen} options={{ title: 'Exercises' }} />
