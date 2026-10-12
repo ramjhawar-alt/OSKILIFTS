@@ -4,6 +4,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { DraftAction, DraftSet } from '../domain/draft';
 import type { SetHint } from '../domain/history';
 import type { ExerciseType } from '../types/workout';
+import { colors, radius } from '../theme';
+import { selectHaptic, successHaptic } from '../utils/haptics';
 
 const KIND_LETTER: Record<string, string> = { warmup: 'W', drop: 'D', failure: 'F' };
 
@@ -30,8 +32,11 @@ const SetRowBase = ({ entryId, set, workingNumber, type, complete, hint, dispatc
     // An incomplete row with a previous-session hint is completed from it
     // ("same as last time" in one tap); otherwise a normal toggle.
     if (!set.done && !complete && hint) {
+      successHaptic();
       dispatch({ type: 'applyHint', entryId, setId: set.id, hint, overwrite: false, complete: true });
     } else {
+      if (!set.done) successHaptic();
+      else selectHaptic();
       dispatch({ type: 'toggleDone', entryId, setId: set.id });
     }
   }, [dispatch, entryId, set.id, set.done, complete, hint]);
@@ -58,10 +63,11 @@ const SetRowBase = ({ entryId, set, workingNumber, type, complete, hint, dispatc
       value={value}
       onChangeText={(text) => patch(key, text)}
       placeholder={placeholder}
-      placeholderTextColor={hint ? '#94a3b8' : '#cbd5e1'}
+      placeholderTextColor={hint ? colors.textMuted : colors.textFaint}
       inputMode={mode}
       keyboardType={mode === 'decimal' ? 'decimal-pad' : mode === 'numeric' ? 'number-pad' : 'numbers-and-punctuation'}
       selectTextOnFocus
+      selectionColor={colors.gold}
       maxLength={9}
       accessibilityLabel={accessibilityLabel}
     />
@@ -134,47 +140,48 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 4,
     paddingHorizontal: 4,
-    borderRadius: 8,
+    borderRadius: radius.md,
   },
-  rowDone: { backgroundColor: '#ecfdf5' },
+  rowDone: { backgroundColor: colors.successSoft },
   badge: {
     width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    height: 44,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceHi,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeSpecial: { backgroundColor: '#fef3c7' },
-  badgeText: { fontSize: 14, fontWeight: '700', color: '#475569' },
-  badgeTextSpecial: { color: '#b45309' },
-  previous: { width: 62, height: 40, alignItems: 'center', justifyContent: 'center' },
-  previousText: { fontSize: 12, fontWeight: '600', color: '#64748b' },
-  previousEmpty: { color: '#cbd5e1' },
+  badgeSpecial: { backgroundColor: colors.goldSoft },
+  badgeText: { fontSize: 14, fontWeight: '800', color: colors.textMuted },
+  badgeTextSpecial: { color: colors.gold },
+  previous: { width: 62, height: 44, alignItems: 'center', justifyContent: 'center' },
+  previousText: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  previousEmpty: { color: colors.textFaint },
   cell: { flex: 1 },
   input: {
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    height: 48,
+    borderRadius: radius.sm,
+    backgroundColor: colors.bgRaised,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
     paddingHorizontal: 4,
+    fontVariant: ['tabular-nums'],
   },
-  inputDone: { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' },
+  inputDone: { backgroundColor: colors.successSoft, borderColor: colors.success },
   check: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#e2e8f0',
+    width: 48,
+    height: 48,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceHi,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkDone: { backgroundColor: '#16a34a' },
+  checkDone: { backgroundColor: colors.success },
   checkDisabled: { opacity: 0.45 },
-  checkMark: { fontSize: 18, fontWeight: '800', color: '#64748b' },
-  checkMarkDone: { color: '#ffffff' },
+  checkMark: { fontSize: 20, fontWeight: '900', color: colors.textMuted },
+  checkMarkDone: { color: colors.onGold },
 });

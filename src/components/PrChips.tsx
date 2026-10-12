@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { PR_LABEL } from '../domain/prs';
 import type { PrKind } from '../types/workout';
+import { colors } from '../theme';
 
 export const PrChips = ({ prs }: { prs: PrKind[] }) => {
   if (prs.length === 0) return null;
@@ -18,6 +19,6 @@ export const PrChips = ({ prs }: { prs: PrKind[] }) => {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { backgroundColor: '#fef3c7', borderRadius: 10, paddingVertical: 2, paddingHorizontal: 8 },
-  text: { color: '#b45309', fontSize: 12, fontWeight: '700' },
+  chip: { backgroundColor: colors.goldSoft, borderRadius: 10, paddingVertical: 2, paddingHorizontal: 8 },
+  text: { color: colors.gold, fontSize: 12, fontWeight: '700' },
 });

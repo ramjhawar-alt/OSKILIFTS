@@ -11,6 +11,7 @@ import {
 } from '../../components/AuthForm';
 import { useAuth } from '../../contexts/AuthContext';
 import type { AuthStackParamList } from '../../types/navigation';
+import { colors } from '../../theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
 
@@ -69,5 +70,5 @@ export const ForgotPasswordScreen = ({ navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  success: { color: '#16a34a', fontSize: 14 },
+  success: { color: colors.success, fontSize: 14 },
 });

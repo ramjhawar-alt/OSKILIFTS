@@ -14,6 +14,7 @@ import { useProfile } from '../../contexts/ProfileContext';
 import { PRIVACY_URL, TERMS_URL } from '../../config/legal';
 import { acceptTerms, claimProfile } from '../../services/socialService';
 import type { OnboardingStackParamList } from '../../types/navigation';
+import { colors } from '../../theme';
 
 type Props = NativeStackScreenProps<OnboardingStackParamList, 'SetUsername'>;
 
@@ -145,33 +146,33 @@ export const SetUsernameScreen = ({ navigation }: Props) => {
 
 const styles = StyleSheet.create({
   choiceGroup: { gap: 8 },
-  choiceTitle: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
+  choiceTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
   choice: {
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#fff',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     gap: 2,
   },
-  choiceSelected: { borderColor: '#1d4ed8', backgroundColor: '#eff6ff' },
-  choiceName: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
-  choiceBody: { fontSize: 13, color: '#475569', lineHeight: 18 },
-  choiceHint: { fontSize: 12, color: '#64748b' },
+  choiceSelected: { borderColor: colors.gold, backgroundColor: colors.goldSoft },
+  choiceName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  choiceBody: { fontSize: 13, color: colors.textMuted, lineHeight: 18 },
+  choiceHint: { fontSize: 12, color: colors.textMuted },
   agreeRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 4 },
   box: {
     width: 22,
     height: 22,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: '#94a3b8',
-    backgroundColor: '#fff',
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
   },
-  boxChecked: { backgroundColor: '#1d4ed8', borderColor: '#1d4ed8' },
-  check: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  agreeText: { flex: 1, fontSize: 14, color: '#475569', lineHeight: 20 },
-  link: { color: '#1d4ed8', fontWeight: '600' },
+  boxChecked: { backgroundColor: colors.gold, borderColor: colors.gold },
+  check: { color: colors.onGold, fontSize: 14, fontWeight: '800' },
+  agreeText: { flex: 1, fontSize: 14, color: colors.textMuted, lineHeight: 20 },
+  link: { color: colors.cyan, fontWeight: '600' },
 });

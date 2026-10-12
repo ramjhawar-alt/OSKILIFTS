@@ -13,6 +13,7 @@ import {
   EXERCISE_TYPE_LABELS,
 } from '../domain/exerciseTypes';
 import type { ExerciseType } from '../types/workout';
+import { colors } from '../theme';
 
 type CustomExerciseModalProps = {
   visible: boolean;
@@ -103,47 +104,47 @@ export const CustomExerciseModal = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 10, 25, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 24,
     width: '100%',
     maxWidth: 400,
   },
-  title: { fontSize: 20, fontWeight: '700', color: '#0f172a', marginBottom: 16 },
+  title: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 16 },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 16,
   },
-  label: { fontSize: 14, fontWeight: '600', color: '#475569', marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', color: colors.textMuted, marginBottom: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
   chip: {
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
-  chipSelected: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  chipText: { fontSize: 14, fontWeight: '600', color: '#475569' },
-  chipTextSelected: { color: '#ffffff' },
+  chipSelected: { backgroundColor: colors.gold, borderColor: colors.gold },
+  chipText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
+  chipTextSelected: { color: colors.onGold },
   actions: { flexDirection: 'row', gap: 12 },
   button: { flex: 1, padding: 14, borderRadius: 8, alignItems: 'center' },
-  cancelButton: { backgroundColor: '#f1f5f9' },
-  cancelButtonText: { color: '#475569', fontSize: 16, fontWeight: '600' },
-  saveButton: { backgroundColor: '#2563eb' },
+  cancelButton: { backgroundColor: colors.surfaceHi },
+  cancelButtonText: { color: colors.textMuted, fontSize: 16, fontWeight: '600' },
+  saveButton: { backgroundColor: colors.gold },
   saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: colors.onGold, fontSize: 16, fontWeight: '600' },
 });

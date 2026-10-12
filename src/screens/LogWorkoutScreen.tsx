@@ -13,6 +13,9 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CustomDayTypeModal } from '../components/CustomDayTypeModal';
 import { ExerciseCard } from '../components/ExerciseCard';
@@ -20,6 +23,11 @@ import { ExerciseSearch } from '../components/ExerciseSearch';
 import { NameRoutineModal } from '../components/NameRoutineModal';
 import { RestTimerBar } from '../components/RestTimerBar';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { PrimaryButton } from '../components/ui/Button';
+import { MAX_CONTENT_WIDTH } from '../components/ui/DarkScreen';
+import { countDoneSets, formatElapsed } from '../domain/workoutClock';
+import { colors, radius, space, type as typeScale } from '../theme';
+import { tapHaptic } from '../utils/haptics';
 import { useAuth } from '../contexts/AuthContext';
 import { RsfLiftingBanner } from '../components/RsfLiftingBanner';
 import { useProfile, useWeightUnit } from '../contexts/ProfileContext';
@@ -74,6 +82,36 @@ type PickerMode = { kind: 'add' } | { kind: 'replace'; entryId: string } | null;
 
 const AUTOSAVE_MS = 400;
 
+/** Elapsed time, exercises and sets done: the workout at a glance, ticking once a second. */
+const WorkoutStats = ({ startedAt, entries }: { startedAt: number; entries: { sets: { done: boolean }[] }[] }) => {
+  const [clock, setClock] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <View style={styles.stats}>
+      <View style={styles.stat}>
+        <Ionicons name="timer-outline" size={18} color={colors.cyan} />
+        <Text style={styles.statValue}>{formatElapsed(clock - startedAt)}</Text>
+        <Text style={styles.statLabel}>TIME</Text>
+      </View>
+      <View style={styles.statDivider} />
+      <View style={styles.stat}>
+        <Ionicons name="barbell-outline" size={18} color={colors.cyan} />
+        <Text style={styles.statValue}>{entries.length}</Text>
+        <Text style={styles.statLabel}>{entries.length === 1 ? 'EXERCISE' : 'EXERCISES'}</Text>
+      </View>
+      <View style={styles.statDivider} />
+      <View style={styles.stat}>
+        <Ionicons name="checkmark-done" size={18} color={colors.success} />
+        <Text style={styles.statValue}>{countDoneSets(entries)}</Text>
+        <Text style={styles.statLabel}>SETS DONE</Text>
+      </View>
+    </View>
+  );
+};
+
 export const LogWorkoutScreen = () => {
   const navigation = useNavigation<LogWorkoutNavigationProp>();
   const route = useRoute();
@@ -97,6 +135,8 @@ export const LogWorkoutScreen = () => {
   const [saving, setSaving] = useState(false);
   const [dayTypes, setDayTypes] = useState<WorkoutDayType[]>([]);
   const [showDayTypeModal, setShowDayTypeModal] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const insets = useSafeAreaInsets();
   const [picker, setPicker] = useState<PickerMode>(null);
   const [namingRoutine, setNamingRoutine] = useState(false);
   const [history, setHistory] = useState<HistoryIndex | null>(null);
@@ -398,9 +438,18 @@ export const LogWorkoutScreen = () => {
   }
 
   const unchecked = countUncheckedWithData(draft);
+  const visibilityLabel =
+    draft.visibility === 'followers' ? (profile?.isPublic ? 'Everyone' : 'Followers') : 'Only me';
 
   return (
-    <ScreenContainer>
+    <View style={styles.root}>
+      <LinearGradient
+        colors={['#0A2347', colors.bg]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.45 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           style={styles.flex}
@@ -408,183 +457,226 @@ export const LogWorkoutScreen = () => {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           automaticallyAdjustKeyboardInsets
+          showsVerticalScrollIndicator={false}
         >
-          <RsfLiftingBanner />
-          <View style={styles.section}>
-            <Text style={styles.label}>Date</Text>
-            <TextInput
-              style={styles.input}
-              value={draft.date}
-              onChangeText={(date) => dispatch({ type: 'setMeta', patch: { date } })}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="#94a3b8"
-              maxLength={10}
-            />
-          </View>
+          <View style={styles.column}>
+            <RsfLiftingBanner />
+            <WorkoutStats startedAt={draft.startedAt} entries={draft.entries} />
 
-          <View style={styles.restRow}>
-            <Text style={styles.restLabel}>Rest timer</Text>
-            <TouchableOpacity
-              style={[styles.restToggle, restSettings.enabled && styles.restToggleOn]}
-              onPress={() => updateRestSettings({ ...restSettings, enabled: !restSettings.enabled })}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: restSettings.enabled }}
-            >
-              <Text style={[styles.restToggleText, restSettings.enabled && styles.restToggleTextOn]}>
-                {restSettings.enabled ? 'On' : 'Off'}
-              </Text>
-            </TouchableOpacity>
-            {restSettings.enabled ? (
+            <View>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Day type</Text>
+                <TouchableOpacity onPress={() => setShowDayTypeModal(true)} style={styles.addButton} accessibilityRole="button">
+                  <Text style={styles.addButtonText}>+ Custom</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                {dayTypes.map((dayType) => {
+                  const selected = draft.dayType?.name === dayType.name;
+                  return (
+                    <TouchableOpacity
+                      key={dayType.name}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => {
+                        tapHaptic();
+                        dispatch({ type: 'setMeta', patch: { dayType } });
+                      }}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{dayType.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            <View>
+              <Text style={styles.label}>Exercises</Text>
+              {draft.entries.length === 0 ? (
+                <View style={styles.emptyExercises}>
+                  <Ionicons name="barbell" size={34} color={colors.gold} />
+                  <Text style={styles.emptyTitle}>Start your workout</Text>
+                  <Text style={styles.emptyText}>Add an exercise, then log each set. Last time's numbers show up as hints.</Text>
+                </View>
+              ) : (
+                draft.entries.map((entry) => (
+                  <ExerciseCard
+                    key={entry.id}
+                    entry={entry}
+                    unit={draft.unit}
+                    dispatch={dispatch}
+                    previousSets={previousFor(entry.exercise.name)}
+                    onReplace={handleReplace}
+                    onRemove={handleRemove}
+                  />
+                ))
+              )}
               <TouchableOpacity
-                onPress={() => updateRestSettings({ ...restSettings, seconds: nextPreset(restSettings.seconds) })}
+                style={[styles.addExercise, draft.entries.length >= MAX_DRAFT_ENTRIES && styles.addExerciseDisabled]}
+                onPress={() => {
+                  tapHaptic();
+                  setPicker({ kind: 'add' });
+                }}
+                disabled={draft.entries.length >= MAX_DRAFT_ENTRIES}
                 accessibilityRole="button"
-                accessibilityLabel="Change rest duration"
               >
-                <Text style={styles.restDuration}>{formatRemaining(restSettings.seconds * 1000)} · change</Text>
+                <Ionicons name="add-circle" size={22} color={colors.gold} />
+                <Text style={styles.addExerciseText}>Add exercises</Text>
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.details}>
+              <TouchableOpacity
+                style={styles.detailsHeader}
+                onPress={() => {
+                  tapHaptic();
+                  setShowDetails((value) => !value);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showDetails }}
+              >
+                <View style={styles.flex}>
+                  <Text style={styles.detailsTitle}>Details</Text>
+                  <Text style={styles.detailsSummary} numberOfLines={1}>
+                    {draft.date} · {visibilityLabel} · Rest {restSettings.enabled ? formatRemaining(restSettings.seconds * 1000) : 'off'}
+                  </Text>
+                </View>
+                <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+
+              {showDetails ? (
+                <View style={styles.detailsBody}>
+                  <View>
+                    <Text style={styles.fieldLabel}>Date</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={draft.date}
+                      onChangeText={(date) => dispatch({ type: 'setMeta', patch: { date } })}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={colors.textFaint}
+                      selectionColor={colors.gold}
+                      maxLength={10}
+                    />
+                  </View>
+
+                  <View style={styles.restRow}>
+                    <Text style={styles.fieldLabel}>Rest timer</Text>
+                    <TouchableOpacity
+                      style={[styles.restToggle, restSettings.enabled && styles.restToggleOn]}
+                      onPress={() => updateRestSettings({ ...restSettings, enabled: !restSettings.enabled })}
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: restSettings.enabled }}
+                    >
+                      <Text style={[styles.restToggleText, restSettings.enabled && styles.restToggleTextOn]}>
+                        {restSettings.enabled ? 'On' : 'Off'}
+                      </Text>
+                    </TouchableOpacity>
+                    {restSettings.enabled ? (
+                      <TouchableOpacity
+                        onPress={() => updateRestSettings({ ...restSettings, seconds: nextPreset(restSettings.seconds) })}
+                        accessibilityRole="button"
+                        accessibilityLabel="Change rest duration"
+                      >
+                        <Text style={styles.restDuration}>{formatRemaining(restSettings.seconds * 1000)} · change</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+
+                  <View>
+                    <Text style={styles.fieldLabel}>Notes (optional)</Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      value={draft.notes}
+                      onChangeText={(notes) => dispatch({ type: 'setMeta', patch: { notes } })}
+                      placeholder="How did it feel?"
+                      placeholderTextColor={colors.textFaint}
+                      selectionColor={colors.gold}
+                      multiline
+                      numberOfLines={4}
+                      maxLength={2000}
+                      textAlignVertical="top"
+                    />
+                  </View>
+
+                  <View>
+                    <Text style={styles.fieldLabel}>Who can see this</Text>
+                    <View style={styles.visibilityRow}>
+                      {(
+                        [
+                          { value: 'followers', label: profile?.isPublic ? 'Everyone' : 'Followers' },
+                          { value: 'private', label: 'Only me' },
+                        ] as { value: WorkoutVisibility; label: string }[]
+                      ).map((option) => (
+                        <TouchableOpacity
+                          key={option.value}
+                          style={[styles.chip, draft.visibility === option.value && styles.chipSelected]}
+                          onPress={() => dispatch({ type: 'setMeta', patch: { visibility: option.value } })}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected: draft.visibility === option.value }}
+                        >
+                          <Text style={[styles.chipText, draft.visibility === option.value && styles.chipTextSelected]}>
+                            {option.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <Text style={styles.visibilityHint}>
+                      {draft.visibility === 'followers'
+                        ? profile?.isPublic
+                          ? 'Your account is public: anyone at Berkeley can see this, including your notes, and it can appear on Explore.'
+                          : 'Shown in your approved followers’ feeds, including your notes.'
+                        : 'Only you can see this workout.'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.moreActions}>
+                    {draft.entries.length > 0 ? (
+                      <TouchableOpacity onPress={() => setNamingRoutine(true)} accessibilityRole="button" style={styles.moreAction}>
+                        <Text style={styles.routineLink}>Save as routine</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                    {!draft.editingId && draftHasContent(draft) ? (
+                      <TouchableOpacity onPress={handleDiscard} accessibilityRole="button" style={styles.moreAction}>
+                        <Text style={styles.discardText}>Discard workout</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
+            </View>
+
+            {unchecked > 0 ? (
+              <View style={styles.warning}>
+                <Text style={styles.warningText}>
+                  {unchecked} set{unchecked === 1 ? '' : 's'} with numbers {unchecked === 1 ? 'isn’t' : 'aren’t'}{' '}
+                  checked and won’t be saved.
+                </Text>
+                <TouchableOpacity onPress={() => dispatch({ type: 'checkAllValid' })} accessibilityRole="button">
+                  <Text style={styles.warningAction}>Check all</Text>
+                </TouchableOpacity>
+              </View>
             ) : null}
           </View>
-          {rest.endsAt !== null ? (
-            <RestTimerBar
-              remainingMs={remainingMs(rest, now)}
-              onAdjust={(delta) => setRest((current) => adjustRest(current, Date.now(), delta))}
-              onSkip={() => setRest(idleTimer())}
-            />
-          ) : null}
-
-          <View style={[styles.section, styles.afterRest]}>
-            <View style={styles.labelRow}>
-              <Text style={styles.label}>Workout Day Type</Text>
-              <TouchableOpacity onPress={() => setShowDayTypeModal(true)} style={styles.addButton}>
-                <Text style={styles.addButtonText}>+ Custom</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {dayTypes.map((type) => {
-                const selected = draft.dayType?.name === type.name;
-                return (
-                  <TouchableOpacity
-                    key={type.name}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                    onPress={() => dispatch({ type: 'setMeta', patch: { dayType: type } })}
-                  >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{type.name}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>Exercises</Text>
-            {draft.entries.length === 0 ? (
-              <View style={styles.emptyExercises}>
-                <Text style={styles.emptyText}>No exercises yet. Add one to start logging sets.</Text>
-              </View>
-            ) : (
-              draft.entries.map((entry) => (
-                <ExerciseCard
-                  key={entry.id}
-                  entry={entry}
-                  unit={draft.unit}
-                  dispatch={dispatch}
-                  previousSets={previousFor(entry.exercise.name)}
-                  onReplace={handleReplace}
-                  onRemove={handleRemove}
-                />
-              ))
-            )}
-            <TouchableOpacity
-              style={[styles.addExercise, draft.entries.length >= MAX_DRAFT_ENTRIES && styles.addExerciseDisabled]}
-              onPress={() => setPicker({ kind: 'add' })}
-              disabled={draft.entries.length >= MAX_DRAFT_ENTRIES}
-            >
-              <Text style={styles.addExerciseText}>+ Add exercises</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>Notes (Optional)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={draft.notes}
-              onChangeText={(notes) => dispatch({ type: 'setMeta', patch: { notes } })}
-              placeholder="Add any notes about your workout..."
-              placeholderTextColor="#94a3b8"
-              multiline
-              numberOfLines={4}
-              maxLength={2000}
-              textAlignVertical="top"
-            />
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>Who can see this</Text>
-            <View style={styles.visibilityRow}>
-              {(
-                [
-                  { value: 'followers', label: profile?.isPublic ? 'Everyone' : 'Followers' },
-                  { value: 'private', label: 'Only me' },
-                ] as { value: WorkoutVisibility; label: string }[]
-              ).map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[styles.chip, draft.visibility === option.value && styles.chipSelected]}
-                  onPress={() => dispatch({ type: 'setMeta', patch: { visibility: option.value } })}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: draft.visibility === option.value }}
-                >
-                  <Text style={[styles.chipText, draft.visibility === option.value && styles.chipTextSelected]}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.visibilityHint}>
-              {draft.visibility === 'followers'
-                ? profile?.isPublic
-                  ? 'Your account is public: anyone at Berkeley can see this, including your notes, and it can appear on Explore.'
-                  : 'Shown in your approved followers’ feeds, including your notes.'
-                : 'Only you can see this workout.'}
-            </Text>
-          </View>
-
-          {unchecked > 0 ? (
-            <View style={styles.warning}>
-              <Text style={styles.warningText}>
-                {unchecked} set{unchecked === 1 ? '' : 's'} with numbers {unchecked === 1 ? 'isn’t' : 'aren’t'}{' '}
-                checked and won’t be saved.
-              </Text>
-              <TouchableOpacity onPress={() => dispatch({ type: 'checkAllValid' })} accessibilityRole="button">
-                <Text style={styles.warningAction}>Check all</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-
-          <TouchableOpacity
-            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text style={styles.saveButtonText}>{draft.editingId ? 'Save changes' : 'Save Workout'}</Text>
-            )}
-          </TouchableOpacity>
-
-          {draft.entries.length > 0 ? (
-            <TouchableOpacity style={styles.discard} onPress={() => setNamingRoutine(true)} accessibilityRole="button">
-              <Text style={styles.routineLink}>Save as routine</Text>
-            </TouchableOpacity>
-          ) : null}
-
-          {!draft.editingId && draftHasContent(draft) ? (
-            <TouchableOpacity style={styles.discard} onPress={handleDiscard} accessibilityRole="button">
-              <Text style={styles.discardText}>Discard workout</Text>
-            </TouchableOpacity>
-          ) : null}
         </ScrollView>
+
+        <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, space.md) }]}>
+          <View style={styles.dockInner}>
+            {rest.endsAt !== null ? (
+              <RestTimerBar
+                remainingMs={remainingMs(rest, now)}
+                onAdjust={(delta) => setRest((current) => adjustRest(current, Date.now(), delta))}
+                onSkip={() => setRest(idleTimer())}
+              />
+            ) : null}
+            <PrimaryButton
+              label={draft.editingId ? 'Save changes' : 'Finish workout'}
+              icon={<Ionicons name="checkmark-circle" size={22} color={colors.onGold} />}
+              onPress={handleSave}
+              busy={saving}
+            />
+          </View>
+        </View>
       </KeyboardAvoidingView>
 
       {picker ? (
@@ -609,90 +701,121 @@ export const LogWorkoutScreen = () => {
         onClose={() => setShowDayTypeModal(false)}
         onSave={handleAddCustomDayType}
       />
-    </ScreenContainer>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
-  content: { paddingBottom: 40 },
+  content: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.xl, alignItems: 'center' },
+  column: { width: '100%', maxWidth: MAX_CONTENT_WIDTH, gap: space.lg },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  section: { marginBottom: 24 },
-  afterRest: { marginTop: 16 },
-  restRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
-  restLabel: { fontSize: 14, fontWeight: '600', color: '#475569' },
-  restToggle: { paddingVertical: 4, paddingHorizontal: 12, borderRadius: 14, backgroundColor: '#f1f5f9' },
-  restToggleOn: { backgroundColor: '#dcfce7' },
-  restToggleText: { fontSize: 13, fontWeight: '700', color: '#64748b' },
-  restToggleTextOn: { color: '#15803d' },
-  restDuration: { fontSize: 13, fontWeight: '600', color: '#2563eb' },
-  label: { fontSize: 16, fontWeight: '600', color: '#0f172a', marginBottom: 8 },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  input: {
-    backgroundColor: '#ffffff',
+  stats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#0f172a',
+    borderColor: colors.border,
+    paddingVertical: space.md,
   },
-  textArea: { minHeight: 100, paddingTop: 12 },
-  visibilityRow: { flexDirection: 'row', gap: 8 },
-  visibilityHint: { fontSize: 13, color: '#64748b', marginTop: 8 },
+  stat: { flex: 1, alignItems: 'center', gap: 2 },
+  statValue: { fontSize: 22, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
+  statLabel: { ...typeScale.eyebrow, fontSize: 9, color: colors.textMuted, letterSpacing: 1.2 },
+  statDivider: { width: 1, height: 34, backgroundColor: colors.border },
+  label: { ...typeScale.heading, color: colors.text, marginBottom: space.sm },
+  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: space.sm },
+  fieldLabel: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 6 },
+  chips: { gap: space.sm, paddingRight: space.lg },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f1f5f9',
-    marginRight: 8,
+    paddingHorizontal: space.lg,
+    minHeight: 44,
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.borderStrong,
   },
-  chipSelected: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  chipText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-  chipTextSelected: { color: '#ffffff' },
-  addButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f1f5f9' },
-  addButtonText: { fontSize: 14, fontWeight: '600', color: '#2563eb' },
+  chipSelected: { backgroundColor: colors.gold, borderColor: colors.gold },
+  chipText: { fontSize: 14, fontWeight: '700', color: colors.textMuted },
+  chipTextSelected: { color: colors.onGold },
+  addButton: { paddingHorizontal: space.md, minHeight: 36, justifyContent: 'center' },
+  addButtonText: { fontSize: 14, fontWeight: '800', color: colors.gold },
   emptyExercises: {
-    padding: 20,
+    padding: space.xl,
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
+    gap: 6,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderStyle: 'dashed',
-    marginBottom: 12,
+    marginBottom: space.md,
   },
-  emptyText: { fontSize: 14, color: '#64748b' },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
+  emptyText: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
   addExercise: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    borderRadius: 10,
-    paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.goldSoft,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: radius.pill,
+    minHeight: 52,
   },
   addExerciseDisabled: { opacity: 0.5 },
-  addExerciseText: { color: '#2563eb', fontSize: 16, fontWeight: '700' },
-  warning: {
-    backgroundColor: '#fffbeb',
+  addExerciseText: { color: colors.gold, fontSize: 16, fontWeight: '800' },
+  details: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+  detailsHeader: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg, minHeight: 60 },
+  detailsTitle: { fontSize: 16, fontWeight: '800', color: colors.text },
+  detailsSummary: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  detailsBody: { gap: space.lg, paddingHorizontal: space.lg, paddingBottom: space.lg, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: space.lg },
+  input: {
+    backgroundColor: colors.bgRaised,
     borderWidth: 1,
-    borderColor: '#fde68a',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: space.md,
+    minHeight: 48,
+    fontSize: 16,
+    color: colors.text,
+  },
+  textArea: { minHeight: 100, paddingTop: space.md },
+  restRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  restToggle: { paddingHorizontal: space.md, minHeight: 36, justifyContent: 'center', borderRadius: radius.pill, backgroundColor: colors.surfaceHi },
+  restToggleOn: { backgroundColor: colors.successSoft },
+  restToggleText: { fontSize: 13, fontWeight: '800', color: colors.textMuted },
+  restToggleTextOn: { color: colors.success },
+  restDuration: { fontSize: 13, fontWeight: '700', color: colors.cyan },
+  visibilityRow: { flexDirection: 'row', gap: space.sm },
+  visibilityHint: { fontSize: 13, color: colors.textMuted, marginTop: space.sm, lineHeight: 18 },
+  moreActions: { flexDirection: 'row', justifyContent: 'space-between' },
+  moreAction: { minHeight: 44, justifyContent: 'center' },
+  routineLink: { color: colors.cyan, fontSize: 15, fontWeight: '700' },
+  discardText: { color: colors.danger, fontSize: 15, fontWeight: '700' },
+  warning: {
+    backgroundColor: colors.goldSoft,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: radius.md,
+    padding: space.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: space.md,
   },
-  warningText: { flex: 1, fontSize: 14, color: '#92400e' },
-  warningAction: { fontSize: 14, fontWeight: '700', color: '#2563eb' },
-  saveButton: { backgroundColor: '#2563eb', padding: 16, borderRadius: 8, alignItems: 'center' },
-  saveButtonDisabled: { opacity: 0.6 },
-  saveButtonText: { color: '#ffffff', fontSize: 18, fontWeight: '600' },
-  discard: { alignItems: 'center', paddingVertical: 16 },
-  discardText: { color: '#dc2626', fontSize: 15, fontWeight: '600' },
-  routineLink: { color: '#2563eb', fontSize: 15, fontWeight: '600' },
+  warningText: { flex: 1, fontSize: 14, color: colors.text },
+  warningAction: { fontSize: 14, fontWeight: '800', color: colors.gold },
+  dock: {
+    alignItems: 'center',
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    backgroundColor: 'rgba(5,11,22,0.96)',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  dockInner: { width: '100%', maxWidth: MAX_CONTENT_WIDTH, gap: space.sm },
 });

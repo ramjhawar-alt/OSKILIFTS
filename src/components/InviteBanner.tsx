@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { loadPendingInvite, onPendingInvite } from '../services/inviteService';
+import { colors } from '../theme';
 
 /** On the sign-in and sign-up screens: tells a visitor who invited them. */
 export const InviteBanner = () => {
@@ -33,13 +34,13 @@ export const InviteBanner = () => {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#fef3c7',
-    borderRadius: 12,
+    backgroundColor: colors.goldSoft,
+    borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#fde68a',
+    borderColor: colors.gold,
     gap: 2,
   },
-  title: { fontSize: 15, fontWeight: '800', color: '#78350f' },
-  body: { fontSize: 13, color: '#92400e' },
+  title: { fontSize: 15, fontWeight: '800', color: colors.gold },
+  body: { fontSize: 13, color: colors.gold },
 });

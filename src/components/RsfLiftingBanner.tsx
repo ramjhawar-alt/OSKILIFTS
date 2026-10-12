@@ -4,6 +4,7 @@ import { AnimatedOskiLifting } from './AnimatedOskiLifting';
 import { useRsfPresence } from '../contexts/RsfPresenceContext';
 import { useMyBearStage } from '../hooks/useMyBearStage';
 import { getBearStageName } from '../services/bearStreakService';
+import { colors } from '../theme';
 
 /** A small lifting Oski at the top of the logging screen, only while you're at the RSF. */
 export const RsfLiftingBanner = () => {
@@ -28,15 +29,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     padding: 10,
     marginBottom: 16,
   },
   art: { width: 112, height: 84, borderRadius: 10, overflow: 'hidden' },
   text: { flex: 1 },
-  title: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
-  sub: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  title: { fontSize: 15, fontWeight: '700', color: colors.text },
+  sub: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
 });

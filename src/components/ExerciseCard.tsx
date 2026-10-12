@@ -6,6 +6,8 @@ import { isRowComplete, type DraftAction, type DraftEntry } from '../domain/draf
 import type { WeightUnit } from '../domain/units';
 import { hintForRow } from '../domain/history';
 import type { SetData } from '../types/workout';
+import { colors, radius, space } from '../theme';
+import { tapHaptic } from '../utils/haptics';
 
 const HEADERS: Record<DraftEntry['exercise']['type'], (unit: WeightUnit) => string[]> = {
   weight_reps: (unit) => [`WEIGHT (${unit})`, 'REPS'],
@@ -55,7 +57,7 @@ const ExerciseCardBase = ({ entry, unit, dispatch, previousSets, onReplace, onRe
 
       <View style={styles.columns}>
         <Text style={[styles.columnLabel, styles.setColumn]}>SET</Text>
-        <Text style={[styles.columnLabel, styles.previousColumn]}>PREVIOUS</Text>
+        <Text style={[styles.columnLabel, styles.previousColumn]}>PREV</Text>
         {headers.map((label) => (
           <Text key={label} style={[styles.columnLabel, styles.flexColumn]}>
             {label}
@@ -87,7 +89,10 @@ const ExerciseCardBase = ({ entry, unit, dispatch, previousSets, onReplace, onRe
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.addSet}
-          onPress={() => dispatch({ type: 'addSet', entryId: entry.id })}
+          onPress={() => {
+            tapHaptic();
+            dispatch({ type: 'addSet', entryId: entry.id });
+          }}
           accessibilityRole="button"
         >
           <Text style={styles.addSetText}>+ Add set</Text>
@@ -109,33 +114,39 @@ export const ExerciseCard = memo(ExerciseCardBase);
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: space.md,
+    marginBottom: space.md,
     gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  header: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 4 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', gap: space.md, marginBottom: 4 },
   titleBlock: { flex: 1 },
-  name: { fontSize: 17, fontWeight: '700', color: '#0f172a' },
-  muscle: { fontSize: 13, color: '#64748b', marginTop: 2 },
-  headerActions: { alignItems: 'flex-end', gap: 6 },
-  link: { color: '#2563eb', fontSize: 14, fontWeight: '600' },
-  remove: { color: '#dc2626', fontSize: 14, fontWeight: '600' },
-  legacyNote: { fontSize: 12, color: '#64748b', backgroundColor: '#f8fafc', padding: 8, borderRadius: 6 },
+  name: { fontSize: 18, fontWeight: '800', color: colors.text, letterSpacing: -0.2 },
+  muscle: { fontSize: 12, color: colors.cyan, marginTop: 2, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  headerActions: { alignItems: 'flex-end', gap: 8 },
+  link: { color: colors.cyan, fontSize: 13, fontWeight: '700' },
+  remove: { color: colors.danger, fontSize: 13, fontWeight: '700' },
+  legacyNote: { fontSize: 12, color: colors.textMuted, backgroundColor: colors.surfaceHi, padding: 8, borderRadius: 8 },
   columns: { flexDirection: 'row', gap: 8, paddingHorizontal: 4 },
-  columnLabel: { fontSize: 11, fontWeight: '700', color: '#94a3b8', textAlign: 'center' },
+  columnLabel: { fontSize: 10, fontWeight: '800', color: colors.textFaint, textAlign: 'center', letterSpacing: 1 },
   setColumn: { width: 36 },
   previousColumn: { width: 62 },
   flexColumn: { flex: 1 },
-  checkColumn: { width: 40 },
+  checkColumn: { width: 48 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
-  addSet: { backgroundColor: '#f1f5f9', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
-  addSetText: { color: '#2563eb', fontSize: 14, fontWeight: '600' },
-  removeSet: { color: '#64748b', fontSize: 13, fontWeight: '600' },
+  addSet: {
+    backgroundColor: colors.goldSoft,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: radius.pill,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  addSetText: { color: colors.gold, fontSize: 14, fontWeight: '800' },
+  removeSet: { color: colors.textMuted, fontSize: 13, fontWeight: '600', padding: 8 },
 });

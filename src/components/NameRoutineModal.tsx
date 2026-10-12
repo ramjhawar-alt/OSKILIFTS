@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { MAX_ROUTINE_NAME } from '../domain/routines';
+import { colors } from '../theme';
 
 export const NameRoutineModal = ({
   visible,
@@ -43,7 +44,7 @@ export const NameRoutineModal = ({
           <TextInput
             style={styles.input}
             placeholder="Routine name"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.textFaint}
             value={name}
             onChangeText={setName}
             maxLength={MAX_ROUTINE_NAME}
@@ -69,24 +70,24 @@ export const NameRoutineModal = ({
 };
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  container: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 400 },
-  title: { fontSize: 20, fontWeight: '700', color: '#0f172a', marginBottom: 16 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,10,25,0.72)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  container: { backgroundColor: colors.surface, borderRadius: 16, padding: 24, width: '100%', maxWidth: 400 },
+  title: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 16 },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 20,
   },
   actions: { flexDirection: 'row', gap: 12 },
   button: { flex: 1, padding: 14, borderRadius: 8, alignItems: 'center' },
-  cancel: { backgroundColor: '#f1f5f9' },
-  cancelText: { color: '#475569', fontSize: 16, fontWeight: '600' },
-  save: { backgroundColor: '#2563eb' },
+  cancel: { backgroundColor: colors.surfaceHi },
+  cancelText: { color: colors.textMuted, fontSize: 16, fontWeight: '600' },
+  save: { backgroundColor: colors.gold },
   saveDisabled: { opacity: 0.5 },
-  saveText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveText: { color: colors.onGold, fontSize: 16, fontWeight: '600' },
 });

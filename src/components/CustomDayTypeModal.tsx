@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
+import { colors } from '../theme';
 
 type CustomDayTypeModalProps = {
   visible: boolean;
@@ -73,12 +74,12 @@ export const CustomDayTypeModal = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 10, 25, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 24,
     width: '80%',
@@ -87,16 +88,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 16,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     marginBottom: 20,
   },
   actions: {
@@ -110,18 +111,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
   },
   cancelButtonText: {
-    color: '#64748b',
+    color: colors.textMuted,
     fontSize: 16,
     fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
   },
   saveButtonText: {
-    color: '#ffffff',
+    color: colors.onGold,
     fontSize: 16,
     fontWeight: '600',
   },

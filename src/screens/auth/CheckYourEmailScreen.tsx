@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { AuthButton, AuthLayout } from '../../components/AuthForm';
 import type { AuthStackParamList } from '../../types/navigation';
+import { colors } from '../../theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'CheckYourEmail'>;
 
@@ -22,5 +23,5 @@ export const CheckYourEmailScreen = ({ navigation, route }: Props) => (
 );
 
 const styles = StyleSheet.create({
-  hint: { fontSize: 14, color: '#64748b' },
+  hint: { fontSize: 14, color: colors.textMuted },
 });

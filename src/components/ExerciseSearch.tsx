@@ -18,6 +18,7 @@ import { CustomExerciseModal } from './CustomExerciseModal';
 import { exerciseKey } from '../domain/entry';
 import { showMessage } from '../utils/alert';
 import type { Exercise, ExerciseType } from '../types/workout';
+import { colors } from '../theme';
 
 type ExerciseSearchProps = {
   visible: boolean;
@@ -117,7 +118,7 @@ export const ExerciseSearch = ({ visible, onClose, onPick, single }: ExerciseSea
           </View>
 
           {loading ? (
-            <ActivityIndicator style={styles.loader} color="#2563eb" />
+            <ActivityIndicator style={styles.loader} color={colors.gold} />
           ) : (
             <FlatList
               data={filtered}
@@ -175,9 +176,9 @@ export const ExerciseSearch = ({ visible, onClose, onPick, single }: ExerciseSea
 };
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,10,25,0.72)', justifyContent: 'flex-end' },
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -188,21 +189,21 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  title: { fontSize: 20, fontWeight: '700', color: '#0f172a' },
-  closeText: { fontSize: 16, color: '#2563eb', fontWeight: '600' },
+  title: { fontSize: 20, fontWeight: '700', color: colors.text },
+  closeText: { fontSize: 16, color: colors.cyan, fontWeight: '600' },
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   searchInput: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.text,
   },
-  customButton: { justifyContent: 'center', paddingHorizontal: 12, backgroundColor: '#f1f5f9', borderRadius: 8 },
-  customButtonText: { color: '#2563eb', fontSize: 14, fontWeight: '600' },
+  customButton: { justifyContent: 'center', paddingHorizontal: 12, backgroundColor: colors.surfaceHi, borderRadius: 8 },
+  customButtonText: { color: colors.cyan, fontSize: 14, fontWeight: '600' },
   loader: { marginVertical: 24 },
   list: { flexGrow: 0, flexShrink: 1 },
   item: {
@@ -211,27 +212,27 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: colors.border,
     marginBottom: 6,
   },
-  itemSelected: { backgroundColor: '#eff6ff', borderColor: '#2563eb' },
+  itemSelected: { backgroundColor: colors.goldSoft, borderColor: colors.gold },
   itemText: { flex: 1 },
-  itemName: { fontSize: 16, fontWeight: '600', color: '#0f172a' },
-  itemMeta: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  itemName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  itemMeta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: '#94a3b8',
+    borderColor: colors.borderStrong,
     textAlign: 'center',
     lineHeight: 21,
-    color: '#fff',
+    color: colors.onGold,
     fontWeight: '800',
   },
-  checkboxSelected: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  empty: { color: '#64748b', textAlign: 'center', marginTop: 24 },
-  doneButton: { backgroundColor: '#2563eb', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
+  checkboxSelected: { backgroundColor: colors.gold, borderColor: colors.gold },
+  empty: { color: colors.textMuted, textAlign: 'center', marginTop: 24 },
+  doneButton: { backgroundColor: colors.gold, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
   doneButtonDisabled: { opacity: 0.5 },
-  doneText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  doneText: { color: colors.onGold, fontSize: 16, fontWeight: '700' },
 });

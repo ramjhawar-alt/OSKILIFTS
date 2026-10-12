@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { formatRemaining } from '../domain/restTimer';
+import { colors, glow, radius, space } from '../theme';
 
 export const RestTimerBar = ({
   remainingMs,
@@ -39,18 +40,20 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#0f172a',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginTop: 8,
+    gap: space.md,
+    backgroundColor: colors.surfaceHi,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: radius.lg,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.lg,
+    ...glow(colors.gold, 0.25, 14),
   },
-  barOver: { backgroundColor: '#15803d' },
-  label: { color: '#cbd5e1', fontSize: 13, fontWeight: '600' },
-  time: { color: '#ffffff', fontSize: 22, fontWeight: '800', fontVariant: ['tabular-nums'], flex: 1 },
+  barOver: { backgroundColor: colors.successSoft, borderColor: colors.success },
+  label: { color: colors.textMuted, fontSize: 12, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase' },
+  time: { color: colors.text, fontSize: 28, fontWeight: '800', fontVariant: ['tabular-nums'], flex: 1 },
   actions: { flexDirection: 'row', gap: 8 },
-  button: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 },
-  skip: { backgroundColor: 'rgba(255,255,255,0.28)' },
-  buttonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  button: { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: radius.pill, minHeight: 40, paddingHorizontal: 14, justifyContent: 'center' },
+  skip: { backgroundColor: 'rgba(253,181,21,0.22)' },
+  buttonText: { color: colors.text, fontSize: 14, fontWeight: '800' },
 });

@@ -13,6 +13,7 @@ import { InviteBanner } from '../../components/InviteBanner';
 import { useAuth } from '../../contexts/AuthContext';
 import { TERMS_URL } from '../../config/legal';
 import type { AuthStackParamList } from '../../types/navigation';
+import { colors } from '../../theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
 
@@ -99,6 +100,6 @@ export const SignUpScreen = ({ navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  terms: { fontSize: 13, color: '#64748b' },
-  termsLink: { color: '#1d4ed8', fontWeight: '600' },
+  terms: { fontSize: 13, color: colors.textMuted },
+  termsLink: { color: colors.cyan, fontWeight: '600' },
 });

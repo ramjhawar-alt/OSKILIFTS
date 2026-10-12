@@ -22,3 +22,10 @@ in progress); the bar hides on that screen. Every tab's stack includes the share
 2. Phase 2: Log Workout screen. 3. Phase 3: Feed, Me/profile, other legacy screens (they are still light-themed, with a dark header).
 
 Screens not yet redone still use their old light styling (`ScreenContainer`). Convert them to `DarkScreen` + `Card` as they are redesigned.
+
+### Phase 2 (done)
+Sign-in / sign-up / onboarding (`AuthLayout`: Oski lifting up top, gold focus ring, gold primary), and Log Workout:
+live stats (time, exercises, sets done), day-type chips, exercise cards with 48 pt inputs and haptic check-offs,
+collapsible Details (date, rest timer, notes, visibility, save as routine, discard), and a sticky bottom dock with the
+rest timer above one big **Finish workout** button. Remaining light screens: Feed, Me/profile, workout detail, history,
+exercises, routines, classes, hoopers, search, connections, moderation, metrics.
