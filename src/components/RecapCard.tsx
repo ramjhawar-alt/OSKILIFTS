@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { getEmailPrefs, setWeeklyDigest, type EmailPrefs } from '../services/emailPrefsService';
 import { showMessage } from '../utils/alert';
+import { cardBase, colors } from '../theme';
 
 /** One-time, one-tap question on Home: want a Sunday recap email? Never shown again once answered. */
 export const RecapCard = () => {
@@ -42,7 +43,7 @@ export const RecapCard = () => {
       </Text>
       <View style={styles.row}>
         <TouchableOpacity style={styles.primary} onPress={() => answer(true)} disabled={busy} accessibilityRole="button">
-          {busy ? <ActivityIndicator color="#FDB515" /> : <Text style={styles.primaryText}>Yes, email me</Text>}
+          {busy ? <ActivityIndicator color={colors.gold} /> : <Text style={styles.primaryText}>Yes, email me</Text>}
         </TouchableOpacity>
         <TouchableOpacity style={styles.secondary} onPress={() => answer(false)} disabled={busy} accessibilityRole="button">
           <Text style={styles.secondaryText}>No thanks</Text>
@@ -53,28 +54,20 @@ export const RecapCard = () => {
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  title: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  body: { fontSize: 14, color: '#64748b', lineHeight: 20 },
+  card: { ...cardBase },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  body: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
   row: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  primary: { flex: 1, backgroundColor: '#003262', borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  primaryText: { color: '#FDB515', fontSize: 15, fontWeight: '700' },
+  primary: { flex: 1, backgroundColor: colors.goldSoft, borderWidth: 1, borderColor: colors.gold, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
+  primaryText: { color: colors.gold, fontSize: 15, fontWeight: '700' },
   secondary: {
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 10,
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
-  secondaryText: { color: '#475569', fontSize: 15, fontWeight: '600' },
+  secondaryText: { color: colors.textMuted, fontSize: 15, fontWeight: '600' },
 });

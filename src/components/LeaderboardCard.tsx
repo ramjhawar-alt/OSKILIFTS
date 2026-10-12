@@ -11,6 +11,7 @@ import {
   type LeaderboardState,
 } from '../services/leaderboardService';
 import { confirmAction, showMessage } from '../utils/alert';
+import { cardBase, colors } from '../theme';
 
 const CONSENT =
   'Friends who have joined will see how many days you trained each week, even if your workouts are Private. They won’t see which workouts, weights, or exercises. You’ll only see the board while you’re on it. You can leave any time.';
@@ -83,7 +84,7 @@ export const LeaderboardCard = () => {
             join.
           </Text>
           <TouchableOpacity style={styles.primary} onPress={join} disabled={busy} accessibilityRole="button">
-            {busy ? <ActivityIndicator color="#FDB515" /> : <Text style={styles.primaryText}>Join the leaderboard</Text>}
+            {busy ? <ActivityIndicator color={colors.gold} /> : <Text style={styles.primaryText}>Join the leaderboard</Text>}
           </TouchableOpacity>
         </>
       ) : (
@@ -118,31 +119,20 @@ export const LeaderboardCard = () => {
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    gap: 10,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 6,
-  },
+  card: { ...cardBase },
   header: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  title: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  week: { fontSize: 13, color: '#64748b' },
-  hint: { fontSize: 14, color: '#64748b' },
-  primary: { backgroundColor: '#003262', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  primaryText: { color: '#FDB515', fontSize: 16, fontWeight: '700' },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  week: { fontSize: 13, color: colors.textMuted },
+  hint: { fontSize: 14, color: colors.textMuted },
+  primary: { backgroundColor: colors.goldSoft, borderWidth: 1, borderColor: colors.gold, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  primaryText: { color: colors.gold, fontSize: 16, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 10 },
-  rowMe: { backgroundColor: '#eff6ff' },
-  rank: { width: 28, textAlign: 'center', fontSize: 16, fontWeight: '700', color: '#475569' },
+  rowMe: { backgroundColor: colors.surfaceHi },
+  rank: { width: 28, textAlign: 'center', fontSize: 16, fontWeight: '700', color: colors.textMuted },
   rowText: { flex: 1 },
-  name: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
-  meta: { fontSize: 12, color: '#64748b' },
-  days: { fontSize: 15, fontWeight: '700', color: '#003262' },
+  name: { fontSize: 15, fontWeight: '600', color: colors.text },
+  meta: { fontSize: 12, color: colors.textMuted },
+  days: { fontSize: 15, fontWeight: '700', color: colors.gold },
   leave: { alignSelf: 'flex-start', paddingVertical: 6 },
-  leaveText: { color: '#64748b', fontSize: 13, fontWeight: '600' },
+  leaveText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
 });

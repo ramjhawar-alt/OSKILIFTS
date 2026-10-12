@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AnimatedOskiLifting } from './AnimatedOskiLifting';
 import { stayLabel, type FriendAtRsf } from '../domain/rsfFriends';
 import { getBearStageName } from '../services/bearStreakService';
+import { colors } from '../theme';
 
 /** One friend at the RSF: their bear lifting, their name, and how long they've been there. */
 export const FriendAtRsfRow = ({
@@ -42,16 +43,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     padding: 10,
     marginBottom: 10,
   },
   art: { width: 128, height: 96, borderRadius: 10, overflow: 'hidden' },
   text: { flex: 1 },
-  name: { fontSize: 17, fontWeight: '700', color: '#0f172a' },
-  handle: { fontSize: 13, color: '#64748b', marginTop: 1 },
-  meta: { fontSize: 13, color: '#003262', fontWeight: '600', marginTop: 6 },
+  name: { fontSize: 17, fontWeight: '700', color: colors.text },
+  handle: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  meta: { fontSize: 13, color: colors.gold, fontWeight: '600', marginTop: 6 },
 });

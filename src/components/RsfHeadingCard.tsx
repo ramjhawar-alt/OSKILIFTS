@@ -17,6 +17,7 @@ import {
   type FriendHeading,
 } from '../services/rsfStatusService';
 import { showMessage } from '../utils/alert';
+import { cardBase, colors } from '../theme';
 
 const REFRESH_MS = 60_000;
 
@@ -86,13 +87,13 @@ export const RsfHeadingCard = ({ crowd }: { crowd: CrowdSnapshot | null }) => {
             <Text style={styles.activeMeta}>Friends can see this · {timeLeftLabel(myActive, now)}</Text>
           </View>
           <TouchableOpacity style={styles.secondary} onPress={toggle} disabled={busy} accessibilityRole="button">
-            {busy ? <ActivityIndicator color="#2563eb" /> : <Text style={styles.secondaryText}>Cancel</Text>}
+            {busy ? <ActivityIndicator color={colors.gold} /> : <Text style={styles.secondaryText}>Cancel</Text>}
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity style={styles.primary} onPress={toggle} disabled={busy} accessibilityRole="button">
           {busy ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.gold} />
           ) : (
             <Text style={styles.primaryText}>I’m heading to the RSF</Text>
           )}
@@ -126,42 +127,31 @@ export const RsfHeadingCard = ({ crowd }: { crowd: CrowdSnapshot | null }) => {
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    gap: 12,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 6,
-  },
-  title: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  crowd: { fontSize: 14, color: '#475569' },
-  primary: { backgroundColor: '#003262', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  primaryText: { color: '#FDB515', fontSize: 16, fontWeight: '700' },
+  card: { ...cardBase },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  crowd: { fontSize: 14, color: colors.textMuted },
+  primary: { backgroundColor: colors.goldSoft, borderWidth: 1, borderColor: colors.gold, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  primaryText: { color: colors.gold, fontSize: 16, fontWeight: '700' },
   activeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   activeText: { flex: 1 },
-  activeTitle: { fontSize: 16, fontWeight: '700', color: '#16a34a' },
-  activeMeta: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  activeTitle: { fontSize: 16, fontWeight: '700', color: colors.success },
+  activeMeta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   secondary: {
     minWidth: 84,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
-  secondaryText: { color: '#2563eb', fontWeight: '600', fontSize: 15 },
-  friends: { gap: 10, borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 },
-  friendsLine: { fontSize: 14, fontWeight: '600', color: '#0f172a' },
+  secondaryText: { color: colors.cyan, fontWeight: '600', fontSize: 15 },
+  friends: { gap: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
+  friendsLine: { fontSize: 14, fontWeight: '600', color: colors.text },
   friendRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   friendText: { flex: 1 },
-  friendName: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
-  friendMeta: { fontSize: 12, color: '#64748b' },
-  hint: { fontSize: 13, color: '#64748b' },
+  friendName: { fontSize: 15, fontWeight: '600', color: colors.text },
+  friendMeta: { fontSize: 12, color: colors.textMuted },
+  hint: { fontSize: 13, color: colors.textMuted },
 });

@@ -8,6 +8,7 @@ import { useRsfPresence, type PresenceStatus } from '../contexts/RsfPresenceCont
 import { stayLabel } from '../domain/rsfFriends';
 import type { RootStackParamList } from '../types/navigation';
 import { confirmAction, showMessage } from '../utils/alert';
+import { cardBase, colors } from '../theme';
 
 const CONSENT =
   'OSKILIFTS will check your location only while the app is open. If you’re at the RSF, your friends (people you follow who follow you back) can see that you’re there. Your exact location is never sent or saved, only “at the RSF”. Turn this off any time.';
@@ -118,7 +119,7 @@ export const RsfPresenceCard = () => {
           accessibilityLabel="Share when I’m at the RSF"
         >
           {busy ? (
-            <ActivityIndicator color={sharing ? '#fff' : '#2563eb'} />
+            <ActivityIndicator color={sharing ? colors.onGold : colors.gold} />
           ) : (
             <Text style={[styles.toggleText, sharing && styles.toggleTextOn]}>{sharing ? 'On' : 'Off'}</Text>
           )}
@@ -129,50 +130,39 @@ export const RsfPresenceCard = () => {
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    gap: 12,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 6,
-  },
+  card: { ...cardBase },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  title: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  seeAll: { fontSize: 13, fontWeight: '700', color: '#2563eb' },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  seeAll: { fontSize: 13, fontWeight: '700', color: colors.cyan },
   friends: { gap: 10 },
   friendRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   friendText: { flex: 1 },
-  friendName: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
-  friendMeta: { fontSize: 12, color: '#64748b' },
-  hint: { fontSize: 14, color: '#64748b' },
+  friendName: { fontSize: 15, fontWeight: '600', color: colors.text },
+  friendMeta: { fontSize: 12, color: colors.textMuted },
+  hint: { fontSize: 14, color: colors.textMuted },
   shareRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.border,
     paddingTop: 12,
   },
   shareText: { flex: 1 },
-  shareTitle: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
-  shareHint: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  shareTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
+  shareHint: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   toggle: {
     minWidth: 64,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 18,
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
-  toggleOn: { backgroundColor: '#16a34a', borderColor: '#16a34a' },
-  toggleText: { fontSize: 14, fontWeight: '700', color: '#475569' },
-  toggleTextOn: { color: '#fff' },
+  toggleOn: { backgroundColor: colors.success, borderColor: colors.success },
+  toggleText: { fontSize: 14, fontWeight: '700', color: colors.textMuted },
+  toggleTextOn: { color: colors.onGold },
 });

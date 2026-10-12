@@ -1,127 +1,81 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-} from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ScreenContainer } from '../components/ScreenContainer';
-import { RootStackParamList } from '../types/navigation';
-import { fetchWeightRoomStatus } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { getPeakHours, type PeakHoursData } from '../services/peakHoursService';
-import { PeakHoursChart } from '../components/PeakHoursChart';
-import { OskiBear } from '../components/OskiBear';
-import { RsfHeadingCard } from '../components/RsfHeadingCard';
-import { WeeklyGoalCard } from '../components/WeeklyGoalCard';
+
+import { Avatar } from '../components/Avatar';
 import { InviteCard } from '../components/InviteCard';
 import { LeaderboardCard } from '../components/LeaderboardCard';
-import { RecapCard } from '../components/RecapCard';
-import { RsfPresenceCard } from '../components/RsfPresenceCard';
 import { LevelUpModal } from '../components/LevelUpModal';
+import { OskiBear } from '../components/OskiBear';
+import { RecapCard } from '../components/RecapCard';
+import { RsfStrip } from '../components/RsfStrip';
+import { WeeklyGoalCard } from '../components/WeeklyGoalCard';
+import { PrimaryButton } from '../components/ui/Button';
+import { SectionTitle } from '../components/ui/Card';
+import { DarkScreen } from '../components/ui/DarkScreen';
+import { useAuth } from '../contexts/AuthContext';
+import { useProfile } from '../contexts/ProfileContext';
+import { draftHasContent } from '../domain/draft';
 import { decideLevelUp, levelUpKey } from '../domain/levelUp';
+import { useRsfData } from '../hooks/useRsfData';
+import { useStartWorkout } from '../hooks/useStartWorkout';
 import { calculateWorkoutStreak, getBearStage } from '../services/bearStreakService';
+import { loadDraft } from '../services/draftStorage';
 import { getWorkouts } from '../services/workoutStorage';
-import type { WeightRoomHours, WeightRoomStatus } from '../types/api';
+import { colors, type } from '../theme';
+import { RootStackParamList } from '../types/navigation';
 import type { Workout } from '../types/workout';
+import { successHaptic } from '../utils/haptics';
 
 const DEBUG_STREAK_KEY = '@oskilifts:debugStreak';
 const DEBUG_TOTAL_WORKOUTS_KEY = '@oskilifts:debugTotalWorkouts';
 
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
-const STATUS_COLORS = {
-  go: '#16a34a',
-  wait: '#dc2626',
-};
-
+/** Today: your bear and streak front and centre, the Log button under it, the RSF at a glance. */
 export const HomeScreen = () => {
   const navigation = useNavigation<HomeNavigationProp>();
-  const { user, signOut } = useAuth();
-  const [status, setStatus] = useState<WeightRoomStatus | null>(null);
-  const [loading, setLoading] = useState(false); // Start as false - cached data loads instantly
+  const { user } = useAuth();
+  const { profile } = useProfile();
+  const startWorkout = useStartWorkout();
+  const rsf = useRsfData();
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [streak, setStreak] = useState(0);
   const [totalWorkouts, setTotalWorkouts] = useState(0);
+  const [hasDraft, setHasDraft] = useState(false);
   // Only real workout data can level you up (not the bear-preview override).
   const [realStreakLoaded, setRealStreakLoaded] = useState(false);
   const [levelUpStage, setLevelUpStage] = useState<number | null>(null);
-  const [peakHours, setPeakHours] = useState<PeakHoursData | null>(null);
-  const [peakHoursLoading, setPeakHoursLoading] = useState(true);
-
-  const loadData = useCallback(async (showLoading: boolean = true) => {
-    try {
-      if (showLoading) {
-        setError(null);
-      }
-      // Always bypass the data-layer cache here: the mount effect already
-      // painted whatever was cached via loadCachedData() below, so this call
-      // is responsible for getting a genuinely fresh response into state
-      // (a background revalidation inside fetchWeightRoomStatus(true) would
-      // update the cache but never reach this component's state).
-      const data = await fetchWeightRoomStatus(false);
-      setStatus(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Unable to load capacity data.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const loadPeakHours = useCallback(async () => {
-    setPeakHoursLoading(true);
-    try {
-      const data = await getPeakHours();
-      setPeakHours(data);
-    } catch (error) {
-      console.error('Error loading peak hours:', error);
-      setPeakHours({
-        hasEnoughData: false,
-        hasData: false,
-        perDaySummary: {},
-        insights: [],
-        message: 'Unable to load peak hours data.',
-      });
-    } finally {
-      setPeakHoursLoading(false);
-    }
-  }, []);
 
   const loadWorkoutData = useCallback(async () => {
     try {
       // Check for debug override first
       const debugStreak = await AsyncStorage.getItem(DEBUG_STREAK_KEY);
       const debugTotalWorkouts = await AsyncStorage.getItem(DEBUG_TOTAL_WORKOUTS_KEY);
-      
+
       if (debugStreak !== null) {
-        // Use debug values
         setStreak(parseInt(debugStreak, 10));
         setTotalWorkouts(parseInt(debugTotalWorkouts || '10', 10));
         setRealStreakLoaded(false);
       } else {
-        // Use real workout data
         const allWorkouts = await getWorkouts();
         setWorkouts(allWorkouts);
-        const currentStreak = calculateWorkoutStreak(allWorkouts);
-        setStreak(currentStreak);
+        setStreak(calculateWorkoutStreak(allWorkouts));
         setTotalWorkouts(allWorkouts.length);
         setRealStreakLoaded(true);
+      }
+      if (user?.id) {
+        const draft = await loadDraft(user.id).catch(() => null);
+        setHasDraft(Boolean(draft && draftHasContent(draft)));
       }
     } catch (error) {
       console.error('Error loading workouts for bear:', error);
     }
-  }, []);
+  }, [user?.id]);
 
   // Show the level-up screen the first time this person reaches a new highest stage.
   useEffect(() => {
@@ -132,7 +86,10 @@ export const HomeScreen = () => {
         const key = levelUpKey(user.id);
         const decision = decideLevelUp(await AsyncStorage.getItem(key), getBearStage(streak));
         await AsyncStorage.setItem(key, String(decision.remember));
-        if (active && decision.celebrate) setLevelUpStage(decision.remember);
+        if (active && decision.celebrate) {
+          successHaptic();
+          setLevelUpStage(decision.remember);
+        }
       } catch {
         // the celebration is a nicety; never block the home screen on it
       }
@@ -142,291 +99,67 @@ export const HomeScreen = () => {
     };
   }, [realStreakLoaded, streak, user?.id]);
 
-  // Load cached data immediately on mount
-  useEffect(() => {
-    // Try to load cached data first (instant display)
-    const loadCachedData = async () => {
-      try {
-        const { getCached, CACHE_KEYS } = await import('../services/cache');
-        const cached = await getCached(CACHE_KEYS.WEIGHT_ROOM);
-        if (cached) {
-          setStatus(cached);
-        }
-      } catch (error) {
-        // Ignore cache errors
-      }
-    };
-    loadCachedData();
-    
-    // Then load fresh data (and refresh cache)
-    loadData(false); // Don't show loading spinner
-    loadWorkoutData();
-    loadPeakHours();
-  }, [loadData, loadWorkoutData, loadPeakHours]);
-
-  // Reload workout data when screen comes into focus (e.g., after saving a workout)
+  // Reload when the screen comes into focus (e.g., after saving a workout)
   useFocusEffect(
     useCallback(() => {
       loadWorkoutData();
-    }, [loadWorkoutData])
+    }, [loadWorkoutData]),
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadData(), loadWorkoutData(), loadPeakHours()]);
+    await Promise.all([rsf.refresh(), loadWorkoutData()]);
     setRefreshing(false);
-  }, [loadData, loadWorkoutData, loadPeakHours]);
-
-  const statusColor = useMemo(() => {
-    const label = status?.status?.toLowerCase() || '';
-    if (label.includes('wait')) {
-      return STATUS_COLORS.wait;
-    }
-    return STATUS_COLORS.go;
-  }, [status?.status]);
-
-  const percentText =
-    status?.percent !== null && status?.percent !== undefined
-      ? `${status.percent}%`
-      : '—';
-
-  const updatedLabel = status?.updatedAt
-    ? `Updated ${new Date(status.updatedAt).toLocaleTimeString()}`
-    : '';
-
-  const renderHours = (hours: WeightRoomHours[]) =>
-    hours.map((slot) => (
-      <View key={slot.label} style={styles.hoursRow}>
-        <Text style={styles.hoursLabel}>{slot.label}</Text>
-        <Text style={styles.hoursValue}>
-          {slot.open} – {slot.close}
-        </Text>
-      </View>
-    ));
+  }, [rsf, loadWorkoutData]);
 
   return (
-    <ScreenContainer>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.header}>
-          <View style={styles.accountRow}>
-            <Text style={styles.eyebrow}>UC Berkeley</Text>
-            <TouchableOpacity
-              onPress={() => signOut().catch((e) => console.error('Sign out failed:', e))}
-              accessibilityLabel={`Sign out ${user?.email ?? ''}`}
-            >
-              <Text style={styles.signOutText}>Sign out</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.title}>RSF Weight Room</Text>
+    <DarkScreen
+      scroll
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
+    >
+      <View style={styles.topBar}>
+        <View>
+          <Text style={styles.eyebrow}>UC BERKELEY</Text>
+          <Text style={styles.brand}>OSKILIFTS</Text>
         </View>
+        <TouchableOpacity
+          onPress={() => navigation.getParent()?.navigate('MeTab' as never)}
+          accessibilityRole="button"
+          accessibilityLabel="Open your profile"
+          hitSlop={8}
+        >
+          <Avatar name={profile?.displayName} username={profile?.username} size={42} />
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.statusPill, { backgroundColor: statusColor }]}>
-              <Text style={styles.statusPillText}>
-                {status?.status || 'Loading'}
-              </Text>
-            </View>
-            {updatedLabel ? (
-              <Text style={styles.timestamp}>{updatedLabel}</Text>
-            ) : null}
-          </View>
-
-          {loading ? (
-            <ActivityIndicator size="large" color="#0f172a" />
-          ) : error ? (
-            <Text style={styles.errorText}>{error}</Text>
-          ) : (
-            <>
-              <Text style={styles.capacityLabel}>Current Occupancy</Text>
-              <Text style={styles.capacityValue}>
-                {status?.occupancy ?? '—'}
-                {status?.capacity ? ` / ${status.capacity}` : ''}
-              </Text>
-              <Text style={styles.percentValue}>{percentText} full</Text>
-            </>
-          )}
-        </View>
-
-        {status && !status.isOpen ? (
-          <View style={styles.closedNotice}>
-            <Text style={styles.closedTitle}>
-              The RSF weight room is currently closed.
-            </Text>
-            <Text style={styles.closedSubtitle}>Regular hours</Text>
-            {renderHours(status.hours ?? [])}
-          </View>
-        ) : null}
-
-        <InviteCard />
-
-        <RecapCard />
-
-        <WeeklyGoalCard workoutDates={workouts.map((workout) => workout.date)} />
-
-        <RsfHeadingCard
-          crowd={
-            status
-              ? { status: status.status, isOpen: status.isOpen, percent: status.percent }
-              : null
-          }
+      <OskiBear streak={streak} totalWorkouts={totalWorkouts || workouts.length}>
+        <PrimaryButton
+          label={hasDraft ? 'Resume workout' : 'Log workout'}
+          icon={<Ionicons name={hasDraft ? 'play' : 'barbell'} size={22} color={colors.onGold} />}
+          onPress={startWorkout}
         />
+      </OskiBear>
 
-        <RsfPresenceCard />
+      <RsfStrip
+        status={rsf.status}
+        loading={rsf.loading}
+        onPress={() => navigation.getParent()?.navigate('RsfTab' as never)}
+      />
 
-        <LeaderboardCard />
+      <WeeklyGoalCard workoutDates={workouts.map((workout) => workout.date)} />
 
-        <OskiBear streak={streak} totalWorkouts={totalWorkouts || workouts.length} />
+      <SectionTitle title="With friends" />
+      <LeaderboardCard />
+      <RecapCard />
+      <InviteCard />
 
-        <LevelUpModal stage={levelUpStage} onClose={() => setLevelUpStage(null)} />
-
-        <PeakHoursChart data={peakHours} loading={peakHoursLoading} />
-      </ScrollView>
-    </ScreenContainer>
+      <LevelUpModal stage={levelUpStage} onClose={() => setLevelUpStage(null)} />
+    </DarkScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 48,
-  },
-  header: {
-    gap: 4,
-  },
-  accountRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  signOutText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1d4ed8',
-  },
-  eyebrow: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
-    textTransform: 'uppercase',
-    letterSpacing: 1.4,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#475569',
-  },
-  card: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 6,
-    gap: 12,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statusPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  statusPillText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: '#94a3b8',
-  },
-  capacityLabel: {
-    fontSize: 14,
-    color: '#64748b',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  capacityValue: {
-    fontSize: 48,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  percentValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  cardHint: {
-    fontSize: 14,
-    color: '#94a3b8',
-  },
-  errorText: {
-    color: '#dc2626',
-    fontSize: 14,
-  },
-  closedNotice: {
-    marginTop: 16,
-    backgroundColor: '#fef2f2',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    gap: 8,
-  },
-  closedTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#991b1b',
-  },
-  closedSubtitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#b91c1c',
-  },
-  hoursRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#fecaca',
-    paddingVertical: 6,
-  },
-  hoursLabel: {
-    fontSize: 14,
-    color: '#7f1d1d',
-    fontWeight: '600',
-  },
-  hoursValue: {
-    fontSize: 14,
-    color: '#7f1d1d',
-  },
-  link: {
-    marginTop: 32,
-    fontSize: 16,
-    color: '#2563eb',
-    fontWeight: '600',
-  },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  eyebrow: { ...type.eyebrow, color: colors.cyan },
+  brand: { fontSize: 30, fontWeight: '900', letterSpacing: 1.5, color: colors.gold, marginTop: 2 },
 });
-
-

@@ -1,5 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
+import { colors } from '../theme';
+
 export const HeaderLink = ({
   label,
   onPress,
@@ -19,5 +21,5 @@ export const HeaderLink = ({
 
 const styles = StyleSheet.create({
   button: { paddingHorizontal: 12, paddingVertical: 6 },
-  text: { color: '#2563eb', fontSize: 16, fontWeight: '600' },
+  text: { color: colors.gold, fontSize: 16, fontWeight: '700' },
 });

@@ -7,6 +7,7 @@ import { useProfile } from '../contexts/ProfileContext';
 import { inviteLabel } from '../domain/invite';
 import { hasSharedInvite, markInviteShared, shareInvite } from '../services/inviteService';
 import { showMessage } from '../utils/alert';
+import { cardBase, colors } from '../theme';
 
 /** On Home until the person has shared their link once (after that it lives under Me). */
 export const InviteCard = () => {
@@ -56,18 +57,10 @@ export const InviteCard = () => {
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#fde68a',
-  },
-  title: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  body: { fontSize: 14, color: '#64748b', lineHeight: 20 },
-  link: { fontSize: 14, fontWeight: '700', color: '#003262' },
-  primary: { backgroundColor: '#003262', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 4 },
-  primaryText: { color: '#FDB515', fontSize: 15, fontWeight: '700' },
+  card: { ...cardBase },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  body: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
+  link: { fontSize: 14, fontWeight: '700', color: colors.gold },
+  primary: { backgroundColor: colors.goldSoft, borderWidth: 1, borderColor: colors.gold, borderRadius: 14, paddingVertical: 12, alignItems: 'center', marginTop: 4 },
+  primaryText: { color: colors.gold, fontSize: 15, fontWeight: '700' },
 });

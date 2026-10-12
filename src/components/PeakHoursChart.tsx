@@ -15,6 +15,7 @@ import {
   pickHourTicks,
 } from '../data/rsfWeightRoomHours';
 import type { HourBucket, PeakHoursData } from '../services/peakHoursService';
+import { cardBase, colors } from '../theme';
 
 const SHORT_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const FULL_DAYS = [
@@ -40,7 +41,7 @@ function formatHourShort(hour: number): string {
 }
 
 function barColor(avgPercent: number | null): string {
-  if (avgPercent == null) return '#e2e8f0';
+  if (avgPercent == null) return 'rgba(255,255,255,0.14)';
   if (avgPercent < 35) return '#86efac';
   if (avgPercent <= 65) return '#fcd34d';
   return '#fca5a5';
@@ -346,7 +347,7 @@ export function PeakHoursChart({ data, loading }: Props) {
                       rx={3}
                       fill={barColor(pct ?? null)}
                       fillOpacity={fo}
-                      stroke={active ? '#6366f1' : 'transparent'}
+                      stroke={active ? colors.cyan : 'transparent'}
                       strokeWidth={active ? 2 : 0}
                     />
                   );
@@ -357,7 +358,7 @@ export function PeakHoursChart({ data, loading }: Props) {
                     y1={4}
                     x2={nowX}
                     y2={chartHeight - 2}
-                    stroke="#6366f1"
+                    stroke={colors.cyan}
                     strokeWidth={2}
                     strokeDasharray="4 4"
                   />
@@ -412,7 +413,7 @@ export function PeakHoursChart({ data, loading }: Props) {
                     <Text
                       style={[
                         styles.detailPercent,
-                        { color: barColor(detailBucket.avgPercent) === '#86efac' ? '#16a34a' : barColor(detailBucket.avgPercent) === '#fcd34d' ? '#92400e' : '#dc2626' },
+                        { color: barColor(detailBucket.avgPercent) === '#86efac' ? colors.success : barColor(detailBucket.avgPercent) === '#fcd34d' ? colors.warning : colors.danger },
                       ]}
                     >
                       ~{detailBucket.avgPercent}% full
@@ -479,18 +480,7 @@ export function PeakHoursChart({ data, loading }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    marginTop: 16,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    gap: 12,
-  },
+  card: { ...cardBase },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -499,12 +489,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
   },
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ecfdf5',
+    backgroundColor: colors.successSoft,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -514,12 +504,12 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 999,
-    backgroundColor: '#16a34a',
+    backgroundColor: colors.success,
   },
   liveBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#15803d',
+    color: colors.success,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -539,7 +529,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   dayRow: {
@@ -551,25 +541,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     alignItems: 'center',
   },
   dayChipActive: {
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.gold,
   },
   dayChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textMuted,
   },
   dayChipTextActive: {
-    color: '#fff',
+    color: colors.onGold,
   },
   todayDot: {
     width: 4,
     height: 4,
     borderRadius: 999,
-    backgroundColor: '#6366f1',
+    backgroundColor: colors.cyan,
     marginTop: 2,
   },
   chartWrap: {
@@ -592,23 +582,23 @@ const styles = StyleSheet.create({
   },
   hourTick: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: colors.textFaint,
   },
   detailPanel: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   detailTime: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
   },
   detailRight: {
     alignItems: 'flex-end',
@@ -619,7 +609,7 @@ const styles = StyleSheet.create({
   },
   detailPeople: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textMuted,
     marginTop: 1,
   },
   statsRow: {
@@ -634,41 +624,41 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   statChipBusy: {
-    backgroundColor: '#fff1f2',
+    backgroundColor: colors.dangerSoft,
   },
   statChipQuiet: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colors.successSoft,
   },
   statChipNeutral: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
   },
   statLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: colors.textFaint,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   statValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
   },
   statSub: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   placeholder: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.textMuted,
     lineHeight: 20,
     fontStyle: 'italic',
   },
   comingSoonHeadline: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
   },
   progressRow: {
     flexDirection: 'row',
@@ -679,35 +669,35 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 999,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#6366f1',
+    backgroundColor: colors.cyan,
     borderRadius: 999,
   },
   progressLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6366f1',
+    color: colors.cyan,
   },
   skeletonLine: {
     height: 14,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 6,
     width: '70%',
   },
   skeletonLineShort: {
     height: 12,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 6,
     width: '45%',
   },
   skeletonChart: {
     height: 132,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 12,
   },
 });

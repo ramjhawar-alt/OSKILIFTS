@@ -504,6 +504,9 @@ export const UserProfileScreen = () => {
 
         {isSelf ? (
           <View style={styles.menu}>
+            <MenuRow label="Workout history" onPress={() => navigation.navigate('Workouts')} />
+            <MenuRow label="Routines" onPress={() => navigation.navigate('Routines')} />
+            <MenuRow label="Exercises and PRs" onPress={() => navigation.navigate('Exercises')} />
             <MenuRow
               label="Follow requests"
               badge={pendingCount}

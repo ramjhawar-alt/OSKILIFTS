@@ -14,6 +14,8 @@ export type RootStackParamList = {
   Comments: { workoutId: string; canOpenProfiles?: boolean };
   Moderation: undefined;
   Metrics: undefined;
+  MeProfile: undefined;
+  RsfHub: undefined;
   FriendsAtRsf: undefined;
   Guidelines: undefined;
   Exercises: undefined;
@@ -36,8 +38,8 @@ export type OnboardingStackParamList = {
 export type TabParamList = {
   HomeTab: undefined;
   FeedTab: undefined;
-  ClassesTab: undefined;
-  WorkoutsTab: undefined;
-  HoopersTab: undefined;
+  LogTab: undefined;
+  RsfTab: undefined;
+  MeTab: undefined;
 };
 

@@ -4,6 +4,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { HomeScreen } from '../screens/HomeScreen';
+import { RsfHubScreen } from '../screens/RsfHubScreen';
+import { AppTabBar } from '../components/AppTabBar';
+import { colors } from '../theme';
 import { ClassesScreen } from '../screens/ClassesScreen';
 import { WorkoutsScreen } from '../screens/WorkoutsScreen';
 import { LogWorkoutScreen } from '../screens/LogWorkoutScreen';
@@ -57,135 +60,92 @@ const navigationTheme = {
   },
 };
 
-// Home Tab Stack
-const HomeStack = () => {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ title: 'OSKILIFTS', headerShown: false }}
-      />
-      <Stack.Screen
-        name="Classes"
-        component={ClassesScreen}
-        options={{ title: 'RSF Classes' }}
-      />
-    </Stack.Navigator>
-  );
+const stackScreenOptions = {
+  headerStyle: { backgroundColor: colors.bg },
+  headerTintColor: colors.text,
+  headerTitleStyle: { fontWeight: '700' as const },
+  headerShadowVisible: false,
+  contentStyle: { backgroundColor: '#f7f9fc' },
 };
 
-// Workouts Tab Stack
-const WorkoutsStack = () => {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="Workouts"
-        component={WorkoutsScreen}
-        options={({ navigation }) => ({
-          title: 'My Workouts',
-          headerRight: () => (
-            <View style={{ flexDirection: 'row' }}>
-              <HeaderLink label="Routines" onPress={() => navigation.navigate('Routines')} />
-              <HeaderLink label="Exercises" onPress={() => navigation.navigate('Exercises')} />
-            </View>
-          ),
-        })}
-      />
-      <Stack.Screen name="Exercises" component={ExercisesScreen} options={{ title: 'Exercises' }} />
-      <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: 'Routines' }} />
-      <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} options={{ title: 'Exercise' }} />
-      <Stack.Screen
-        name="LogWorkout"
-        component={LogWorkoutScreen}
-        options={{ title: 'Log Workout' }}
-      />
-      <Stack.Screen
-        name="WorkoutDetail"
-        component={WorkoutDetailScreen}
-        options={{ title: 'Workout Details' }}
-      />
-      <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: 'Comments' }} />
-    </Stack.Navigator>
-  );
-};
+/**
+ * Every screen you can open from anywhere. Each tab's stack includes the whole set, so a
+ * profile, a workout or the logging screen opens inside whichever tab you are on (and the
+ * back button returns to where you were).
+ */
+const commonScreens = () => (
+  <Stack.Group>
+    <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'Profile' }} />
+    <Stack.Screen name="SearchUsers" component={SearchUsersScreen} options={{ title: 'Find people' }} />
+    <Stack.Screen name="Connections" component={ConnectionsScreen} options={{ title: 'Follow requests' }} />
+    <Stack.Screen
+      name="FollowList"
+      component={FollowListScreen}
+      options={({ route }) => ({ title: route.params.kind === 'followers' ? 'Followers' : 'Following' })}
+    />
+    <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: 'Comments' }} />
+    <Stack.Screen name="Moderation" component={ModerationScreen} options={{ title: 'Moderation' }} />
+    <Stack.Screen name="Metrics" component={MetricsScreen} options={{ title: 'Metrics' }} />
+    <Stack.Screen name="BearDebug" component={BearDebugScreen} options={{ title: 'Bear stages' }} />
+    <Stack.Screen name="FriendsAtRsf" component={FriendsAtRsfScreen} options={{ title: 'At the RSF' }} />
+    <Stack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
+    <Stack.Screen
+      name="Workouts"
+      component={WorkoutsScreen}
+      options={({ navigation }) => ({
+        title: 'Workout history',
+        headerRight: () => (
+          <View style={{ flexDirection: 'row' }}>
+            <HeaderLink label="Routines" onPress={() => navigation.navigate('Routines')} />
+            <HeaderLink label="Exercises" onPress={() => navigation.navigate('Exercises')} />
+          </View>
+        ),
+      })}
+    />
+    <Stack.Screen name="LogWorkout" component={LogWorkoutScreen} options={{ title: 'Log Workout' }} />
+    <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} options={{ title: 'Workout Details' }} />
+    <Stack.Screen name="Exercises" component={ExercisesScreen} options={{ title: 'Exercises' }} />
+    <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: 'Routines' }} />
+    <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} options={{ title: 'Exercise' }} />
+    <Stack.Screen name="Classes" component={ClassesScreen} options={{ title: 'RSF Classes' }} />
+    <Stack.Screen name="Hoopers" component={HoopersScreen} options={{ title: 'HOOPERS' }} />
+  </Stack.Group>
+);
 
-// Classes Tab Stack
-const ClassesStack = () => {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="Classes"
-        component={ClassesScreen}
-        options={{ title: 'RSF Classes' }}
-      />
-    </Stack.Navigator>
-  );
-};
+const HomeStack = () => (
+  <Stack.Navigator screenOptions={stackScreenOptions}>
+    <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'OSKILIFTS', headerShown: false }} />
+    {commonScreens()}
+  </Stack.Navigator>
+);
 
-// Hoopers Tab Stack
-const HoopersStack = () => {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="Hoopers"
-        component={HoopersScreen}
-        options={{ title: 'HOOPERS' }}
-      />
-      <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'Profile' }} />
-      <Stack.Screen
-        name="FollowList"
-        component={FollowListScreen}
-        options={({ route }) => ({
-          title: route.params.kind === 'followers' ? 'Followers' : 'Following',
-        })}
-      />
-      <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: 'Comments' }} />
-    </Stack.Navigator>
-  );
-};
+const FeedStack = () => (
+  <Stack.Navigator screenOptions={stackScreenOptions}>
+    <Stack.Screen
+      name="Feed"
+      component={FeedScreen}
+      options={({ navigation }) => ({
+        title: 'Feed',
+        headerRight: () => <HeaderLink label="Find people" onPress={() => navigation.navigate('SearchUsers')} />,
+      })}
+    />
+    {commonScreens()}
+  </Stack.Navigator>
+);
 
-// Feed Tab Stack
-const FeedHeaderLeft = ({ onPress }: { onPress: () => void }) => {
-  const { pendingCount, adminOpenCount } = useRequests();
-  return <HeaderLink label="Me" badge={pendingCount + adminOpenCount} onPress={onPress} />;
-};
+const RsfStack = () => (
+  <Stack.Navigator screenOptions={stackScreenOptions}>
+    <Stack.Screen name="RsfHub" component={RsfHubScreen} options={{ title: 'RSF', headerShown: false }} />
+    {commonScreens()}
+  </Stack.Navigator>
+);
 
-const FeedStack = () => {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="Feed"
-        component={FeedScreen}
-        options={({ navigation }) => ({
-          title: 'Feed',
-          headerLeft: () => (
-            <FeedHeaderLeft onPress={() => navigation.navigate('UserProfile', {})} />
-          ),
-          headerRight: () => (
-            <HeaderLink label="Find people" onPress={() => navigation.navigate('SearchUsers')} />
-          ),
-        })}
-      />
-      <Stack.Screen name="SearchUsers" component={SearchUsersScreen} options={{ title: 'Find people' }} />
-      <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: 'Profile' }} />
-      <Stack.Screen name="Connections" component={ConnectionsScreen} options={{ title: 'Follow requests' }} />
-      <Stack.Screen
-        name="FollowList"
-        component={FollowListScreen}
-        options={({ route }) => ({
-          title: route.params.kind === 'followers' ? 'Followers' : 'Following',
-        })}
-      />
-      <Stack.Screen name="Comments" component={CommentsScreen} options={{ title: 'Comments' }} />
-      <Stack.Screen name="Moderation" component={ModerationScreen} options={{ title: 'Moderation' }} />
-      <Stack.Screen name="Metrics" component={MetricsScreen} options={{ title: 'Metrics' }} />
-      <Stack.Screen name="BearDebug" component={BearDebugScreen} options={{ title: 'Bear stages' }} />
-      <Stack.Screen name="FriendsAtRsf" component={FriendsAtRsfScreen} options={{ title: 'At the RSF' }} />
-      <Stack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
-    </Stack.Navigator>
-  );
-};
+const MeStack = () => (
+  <Stack.Navigator screenOptions={stackScreenOptions}>
+    <Stack.Screen name="MeProfile" component={UserProfileScreen} options={{ title: 'Me' }} />
+    {commonScreens()}
+  </Stack.Navigator>
+);
 
 const AuthNavigator = () => (
   <AuthStack.Navigator screenOptions={{ headerShown: false }}>
@@ -223,62 +183,25 @@ const ProfileErrorScreen = ({ message }: { message: string }) => {
 };
 
 const LoadingView = () => (
-  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-    <ActivityIndicator size="large" color="#1d4ed8" />
+  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
+    <ActivityIndicator size="large" color={colors.gold} />
   </View>
 );
 
+const NoScreen = () => null;
+
 const TabsWithBadge = () => {
-  const { pendingCount } = useRequests();
+  const { pendingCount, adminOpenCount } = useRequests();
   return (
     <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: '#64748b',
-        headerShown: false,
-      }}
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <AppTabBar {...props} badges={{ MeTab: pendingCount + adminOpenCount }} />}
     >
-      <Tab.Screen
-        name="HomeTab"
-        component={HomeStack}
-        options={{
-          title: 'Home',
-          tabBarIcon: () => null,
-        }}
-      />
-      <Tab.Screen
-        name="FeedTab"
-        component={FeedStack}
-        options={{
-          title: 'Feed',
-          tabBarIcon: () => null,
-          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
-        }}
-      />
-      <Tab.Screen
-        name="WorkoutsTab"
-        component={WorkoutsStack}
-        options={{
-          title: 'Workouts',
-          tabBarIcon: () => null,
-        }}
-      />
-      <Tab.Screen
-        name="ClassesTab"
-        component={ClassesStack}
-        options={{
-          title: 'Classes',
-          tabBarIcon: () => null,
-        }}
-      />
-      <Tab.Screen
-        name="HoopersTab"
-        component={HoopersStack}
-        options={{
-          title: 'HOOPERS',
-          tabBarIcon: () => null,
-        }}
-      />
+      <Tab.Screen name="HomeTab" component={HomeStack} options={{ title: 'Today' }} />
+      <Tab.Screen name="FeedTab" component={FeedStack} options={{ title: 'Feed' }} />
+      <Tab.Screen name="LogTab" component={NoScreen} options={{ title: 'Log' }} />
+      <Tab.Screen name="RsfTab" component={RsfStack} options={{ title: 'RSF' }} />
+      <Tab.Screen name="MeTab" component={MeStack} options={{ title: 'Me' }} />
     </Tab.Navigator>
   );
 };

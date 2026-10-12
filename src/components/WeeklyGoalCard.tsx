@@ -11,6 +11,7 @@ import {
 } from '../domain/weeklyGoal';
 import { getWeeklyGoal, setWeeklyGoal } from '../services/weeklyGoalService';
 import { showMessage } from '../utils/alert';
+import { cardBase, colors } from '../theme';
 
 const DAY_OPTIONS = Array.from({ length: MAX_GOAL_DAYS - MIN_GOAL_DAYS + 1 }, (_, i) => MIN_GOAL_DAYS + i);
 
@@ -72,7 +73,7 @@ export const WeeklyGoalCard = ({ workoutDates }: { workoutDates: string[] }) => 
           </TouchableOpacity>
         ))}
       </View>
-      {busy ? <ActivityIndicator color="#2563eb" /> : null}
+      {busy ? <ActivityIndicator color={colors.gold} /> : null}
       {goal !== null ? (
         <TouchableOpacity onPress={() => choose(null)} disabled={busy} accessibilityRole="button">
           <Text style={styles.link}>Remove my goal</Text>
@@ -140,32 +141,21 @@ export const WeeklyGoalCard = ({ workoutDates }: { workoutDates: string[] }) => 
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    gap: 10,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 6,
-  },
+  card: { ...cardBase },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  hint: { fontSize: 14, color: '#64748b' },
-  link: { color: '#2563eb', fontSize: 14, fontWeight: '600' },
-  primary: { backgroundColor: '#003262', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  primaryText: { color: '#FDB515', fontSize: 16, fontWeight: '700' },
-  big: { fontSize: 32, fontWeight: '800', color: '#003262' },
-  bigOf: { fontSize: 15, fontWeight: '600', color: '#64748b' },
-  track: { height: 12, borderRadius: 6, backgroundColor: '#e2e8f0', overflow: 'hidden' },
-  fill: { height: 12, borderRadius: 6, backgroundColor: '#2563eb' },
-  fillDone: { backgroundColor: '#16a34a' },
-  message: { fontSize: 14, color: '#475569' },
-  messageDone: { color: '#16a34a', fontWeight: '700' },
-  streak: { fontSize: 14, fontWeight: '700', color: '#b45309' },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  hint: { fontSize: 14, color: colors.textMuted },
+  link: { color: colors.cyan, fontSize: 14, fontWeight: '600' },
+  primary: { backgroundColor: colors.goldSoft, borderWidth: 1, borderColor: colors.gold, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  primaryText: { color: colors.gold, fontSize: 16, fontWeight: '700' },
+  big: { fontSize: 32, fontWeight: '800', color: colors.gold },
+  bigOf: { fontSize: 15, fontWeight: '600', color: colors.textMuted },
+  track: { height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  fill: { height: 12, borderRadius: 6, backgroundColor: colors.cyan },
+  fillDone: { backgroundColor: colors.success },
+  message: { fontSize: 14, color: colors.textMuted },
+  messageDone: { color: colors.success, fontWeight: '700' },
+  streak: { fontSize: 14, fontWeight: '700', color: colors.gold },
   picker: { gap: 10 },
   chips: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   chip: {
@@ -174,11 +164,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
-  chipActive: { backgroundColor: '#003262', borderColor: '#003262' },
-  chipText: { fontSize: 16, fontWeight: '700', color: '#475569' },
-  chipTextActive: { color: '#FDB515' },
+  chipActive: { backgroundColor: colors.gold, borderColor: colors.gold },
+  chipText: { fontSize: 16, fontWeight: '700', color: colors.textMuted },
+  chipTextActive: { color: colors.onGold },
 });
