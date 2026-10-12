@@ -15,6 +15,13 @@ const DESCRIPTION = 'Log workouts, follow friends, see how busy the RSF is, and 
 const tags = [
   `<meta name="description" content="${DESCRIPTION}" />`,
   '<meta name="theme-color" content="#003262" />',
+  // "Add to Home Screen": an app-style icon and name, opening without Safari's bars
+  '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />',
+  '<link rel="manifest" href="/manifest.webmanifest" />',
+  '<meta name="apple-mobile-web-app-capable" content="yes" />',
+  '<meta name="mobile-web-app-capable" content="yes" />',
+  '<meta name="apple-mobile-web-app-title" content="OSKILIFTS" />',
+  '<meta name="apple-mobile-web-app-status-bar-style" content="default" />',
   '<meta property="og:type" content="website" />',
   '<meta property="og:site_name" content="OSKILIFTS" />',
   `<meta property="og:title" content="${TITLE}" />`,
@@ -35,4 +42,4 @@ if (html.includes('property="og:title"')) {
 }
 html = html.replace('<title>OSKILIFTS</title>', `<title>OSKILIFTS</title>\n    ${tags}`);
 fs.writeFileSync(target, html);
-console.log('[inject-seo] Added description and link-preview tags to index.html');
+console.log('[inject-seo] Added description, link-preview and home-screen tags to index.html');
