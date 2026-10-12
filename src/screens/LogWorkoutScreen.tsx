@@ -431,7 +431,7 @@ export const LogWorkoutScreen = () => {
     return (
       <ScreenContainer>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={colors.gold} />
         </View>
       </ScreenContainer>
     );

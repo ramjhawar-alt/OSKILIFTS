@@ -23,6 +23,7 @@ import {
 import type { RootStackParamList } from '../types/navigation';
 import type { ConnectionUser, Relationship } from '../types/social';
 import { confirmAction, showMessage } from '../utils/alert';
+import { colors } from '../theme';
 
 type FollowListNavigationProp = NativeStackNavigationProp<RootStackParamList, 'FollowList'>;
 
@@ -136,7 +137,7 @@ export const FollowListScreen = () => {
   if (loading) {
     return (
       <ScreenContainer>
-        <ActivityIndicator style={styles.spinner} size="large" color="#2563eb" />
+        <ActivityIndicator style={styles.spinner} size="large" color={colors.gold} />
       </ScreenContainer>
     );
   }
@@ -182,7 +183,7 @@ export const FollowListScreen = () => {
           </Text>
         }
         ListFooterComponent={
-          loadingMore ? <ActivityIndicator style={styles.footer} color="#2563eb" /> : null
+          loadingMore ? <ActivityIndicator style={styles.footer} color={colors.gold} /> : null
         }
       />
     </ScreenContainer>
@@ -192,22 +193,22 @@ export const FollowListScreen = () => {
 const styles = StyleSheet.create({
   spinner: { marginTop: 48 },
   footer: { marginVertical: 16 },
-  error: { color: '#dc2626', fontSize: 14, marginBottom: 12 },
-  empty: { color: '#64748b', fontSize: 15, textAlign: 'center', marginTop: 32 },
+  error: { color: colors.danger, fontSize: 14, marginBottom: 12 },
+  empty: { color: colors.textMuted, fontSize: 15, textAlign: 'center', marginTop: 32 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   person: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   text: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '600', color: '#0f172a' },
-  username: { fontSize: 13, color: '#64748b' },
+  name: { fontSize: 16, fontWeight: '600', color: colors.text },
+  username: { fontSize: 13, color: colors.textMuted },
 });

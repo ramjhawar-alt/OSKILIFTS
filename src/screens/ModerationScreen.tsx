@@ -26,6 +26,7 @@ import {
 import { listReports, resolveReport } from '../services/moderationService';
 import type { RootStackParamList } from '../types/navigation';
 import { confirmAction, showMessage } from '../utils/alert';
+import { colors } from '../theme';
 
 type ModerationNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Moderation'>;
 type Tab = 'open' | 'resolved';
@@ -116,7 +117,7 @@ export const ModerationScreen = () => {
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {loading ? (
-        <ActivityIndicator style={styles.spinner} size="large" color="#2563eb" />
+        <ActivityIndicator style={styles.spinner} size="large" color={colors.gold} />
       ) : (
         <FlatList
           data={reports}
@@ -199,7 +200,7 @@ export const ModerationScreen = () => {
                     >
                       <Text style={styles.buttonText}>Mark reviewed</Text>
                     </TouchableOpacity>
-                    {busy ? <ActivityIndicator color="#2563eb" /> : null}
+                    {busy ? <ActivityIndicator color={colors.gold} /> : null}
                   </View>
                 ) : (
                   <Text style={styles.status}>Outcome: {item.status}</Text>
@@ -215,46 +216,46 @@ export const ModerationScreen = () => {
 
 const styles = StyleSheet.create({
   spinner: { marginTop: 48 },
-  error: { color: '#dc2626', fontSize: 14, marginBottom: 12 },
-  empty: { color: '#64748b', fontSize: 15, textAlign: 'center', marginTop: 32 },
-  segments: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 10, padding: 4, marginBottom: 16 },
+  error: { color: colors.danger, fontSize: 14, marginBottom: 12 },
+  empty: { color: colors.textMuted, fontSize: 15, textAlign: 'center', marginTop: 32 },
+  segments: { flexDirection: 'row', backgroundColor: colors.surfaceHi, borderRadius: 10, padding: 4, marginBottom: 16 },
   segment: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
-  segmentActive: { backgroundColor: '#fff' },
-  segmentText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-  segmentTextActive: { color: '#2563eb' },
+  segmentActive: { backgroundColor: colors.surface },
+  segmentText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
+  segmentTextActive: { color: colors.cyan },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     gap: 8,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  pill: { backgroundColor: '#e0e7ff', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
-  pillText: { color: '#3730a3', fontSize: 12, fontWeight: '700' },
-  reason: { flex: 1, fontSize: 15, fontWeight: '700', color: '#0f172a' },
-  age: { fontSize: 12, color: '#94a3b8' },
-  who: { fontSize: 13, color: '#334155' },
-  whoLabel: { color: '#64748b', fontWeight: '600' },
-  link: { color: '#2563eb', fontWeight: '600' },
-  warn: { fontSize: 12, color: '#b45309', fontWeight: '600' },
-  quote: { backgroundColor: '#f8fafc', borderRadius: 8, padding: 10, gap: 4 },
-  quoteText: { fontSize: 14, color: '#1e293b' },
-  details: { fontSize: 13, color: '#475569' },
-  gone: { fontSize: 13, color: '#64748b', fontStyle: 'italic' },
+  pill: { backgroundColor: colors.goldSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  pillText: { color: colors.cyan, fontSize: 12, fontWeight: '700' },
+  reason: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
+  age: { fontSize: 12, color: colors.textFaint },
+  who: { fontSize: 13, color: colors.text },
+  whoLabel: { color: colors.textMuted, fontWeight: '600' },
+  link: { color: colors.cyan, fontWeight: '600' },
+  warn: { fontSize: 12, color: colors.gold, fontWeight: '600' },
+  quote: { backgroundColor: colors.surfaceHi, borderRadius: 8, padding: 10, gap: 4 },
+  quoteText: { fontSize: 14, color: colors.text },
+  details: { fontSize: 13, color: colors.textMuted },
+  gone: { fontSize: 13, color: colors.textMuted, fontStyle: 'italic' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 4 },
   button: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-  buttonText: { color: '#334155', fontSize: 14, fontWeight: '600' },
-  danger: { backgroundColor: '#fee2e2', borderColor: '#fecaca' },
-  dangerText: { color: '#b91c1c', fontSize: 14, fontWeight: '700' },
-  status: { fontSize: 13, color: '#64748b', fontWeight: '600' },
+  buttonText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  danger: { backgroundColor: colors.dangerSoft, borderColor: colors.danger },
+  dangerText: { color: colors.danger, fontSize: 14, fontWeight: '700' },
+  status: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
 });

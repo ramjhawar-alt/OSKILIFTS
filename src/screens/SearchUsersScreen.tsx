@@ -11,6 +11,7 @@ import { followUser, searchProfiles, unfollowUser } from '../services/socialServ
 import type { RootStackParamList } from '../types/navigation';
 import type { Relationship, SearchResult } from '../types/social';
 import { confirmAction, showMessage } from '../utils/alert';
+import { colors } from '../theme';
 
 type SearchNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SearchUsers'>;
 
@@ -131,7 +132,7 @@ export const SearchUsersScreen = () => {
         )}
         ListEmptyComponent={
           searching ? (
-            <ActivityIndicator style={styles.spinner} color="#2563eb" />
+            <ActivityIndicator style={styles.spinner} color={colors.gold} />
           ) : (
             <Text style={styles.hint}>
               {trimmed.length < 2
@@ -152,18 +153,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   person: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   text: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '600', color: '#0f172a' },
-  username: { fontSize: 13, color: '#64748b' },
-  hint: { color: '#64748b', fontSize: 14, textAlign: 'center', marginTop: 24 },
+  name: { fontSize: 16, fontWeight: '600', color: colors.text },
+  username: { fontSize: 13, color: colors.textMuted },
+  hint: { color: colors.textMuted, fontSize: 14, textAlign: 'center', marginTop: 24 },
   spinner: { marginTop: 24 },
-  error: { color: '#dc2626', fontSize: 14, marginTop: 8 },
+  error: { color: colors.danger, fontSize: 14, marginTop: 8 },
 });

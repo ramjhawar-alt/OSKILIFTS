@@ -20,6 +20,7 @@ import {
   getBearStage,
   getBearStageName,
 } from '../services/bearStreakService';
+import { colors } from '../theme';
 
 const DEBUG_STREAK_KEY = '@oskilifts:debugStreak';
 const DEBUG_TOTAL_WORKOUTS_KEY = '@oskilifts:debugTotalWorkouts';
@@ -241,12 +242,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.textMuted,
   },
   previewSection: {
     marginBottom: 32,
@@ -254,19 +255,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 16,
   },
   previewInfo: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.textMuted,
     marginBottom: 12,
     textAlign: 'center',
     fontWeight: '600',
   },
   controlSection: {
     marginBottom: 32,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 12,
     padding: 16,
   },
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
   streakInput: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#003262',
+    color: colors.gold,
     textAlign: 'center',
     minWidth: 80,
     borderBottomWidth: 2,
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
   },
   streakLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginTop: 4,
@@ -319,9 +320,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   quickButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -329,7 +330,7 @@ const styles = StyleSheet.create({
   quickButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#003262',
+    color: colors.gold,
   },
   stageButtons: {
     flexDirection: 'row',
@@ -340,9 +341,9 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
     margin: 4,
@@ -354,7 +355,7 @@ const styles = StyleSheet.create({
   stageButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textMuted,
   },
   stageButtonTextActive: {
     color: '#ffffff',
@@ -363,12 +364,12 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   stageCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
   stageCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.text,
     flex: 1,
   },
   useButton: {
@@ -399,19 +400,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modeRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  modeButton: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center', backgroundColor: '#fff' },
+  modeButton: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', backgroundColor: colors.surface },
   modeButtonOn: { backgroundColor: '#003262', borderColor: '#003262' },
-  modeButtonText: { fontSize: 13, fontWeight: '700', color: '#475569' },
+  modeButtonText: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
   modeButtonTextOn: { color: '#FDB515' },
   stageArtBox: { width: '100%', height: 220 },
   stageArtContainer: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     minHeight: 200,
   },
 });

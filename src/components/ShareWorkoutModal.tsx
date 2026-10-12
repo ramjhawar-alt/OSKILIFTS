@@ -15,6 +15,7 @@ import { SHARE_CARD_HEIGHT, SHARE_CARD_WIDTH, type ShareCardModel } from '../dom
 import { captureShareCard } from '../services/captureShareCard';
 import { shareImage } from '../services/shareImage';
 import { showMessage } from '../utils/alert';
+import { colors } from '../theme';
 
 const PREVIEW_WIDTH = 270;
 
@@ -89,7 +90,7 @@ export const ShareWorkoutModal = ({
             ) : failed ? (
               <Text style={styles.failed}>Couldn’t create the image. Please try again.</Text>
             ) : (
-              <ActivityIndicator color="#2563eb" />
+              <ActivityIndicator color={colors.gold} />
             )}
           </View>
 
@@ -128,34 +129,34 @@ const styles = StyleSheet.create({
   sheet: {
     width: '100%',
     maxWidth: 380,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
     gap: 12,
   },
-  heading: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  heading: { fontSize: 18, fontWeight: '700', color: colors.text },
   preview: {
     width: PREVIEW_WIDTH,
     height: (PREVIEW_WIDTH * SHARE_CARD_HEIGHT) / SHARE_CARD_WIDTH,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     alignItems: 'center',
     justifyContent: 'center',
   },
   previewImage: { width: '100%', height: '100%' },
-  failed: { color: '#dc2626', fontSize: 14, textAlign: 'center', padding: 16 },
+  failed: { color: colors.danger, fontSize: 14, textAlign: 'center', padding: 16 },
   primary: {
     alignSelf: 'stretch',
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  primaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  primaryText: { color: colors.onGold, fontSize: 16, fontWeight: '700' },
   disabled: { opacity: 0.5 },
   secondary: { paddingVertical: 8 },
-  secondaryText: { color: '#64748b', fontSize: 15, fontWeight: '600' },
+  secondaryText: { color: colors.textMuted, fontSize: 15, fontWeight: '600' },
   offscreen: { position: 'absolute', left: -20000, top: 0 },
 });

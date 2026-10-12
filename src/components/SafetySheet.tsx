@@ -18,6 +18,7 @@ import {
   type ReportReason,
 } from '../services/socialService';
 import { confirmAction } from '../utils/alert';
+import { colors } from '../theme';
 
 export type SafetyTarget =
   | { kind: 'workout'; workoutId: string; userId: string; username: string | null }
@@ -183,7 +184,7 @@ export const SafetySheet = ({
                   disabled={!reason || busy}
                 >
                   {busy ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={colors.onGold} />
                   ) : (
                     <Text style={styles.submitText}>Send report</Text>
                   )}
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   sheet: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 20,
     maxHeight: '90%',
@@ -229,28 +230,28 @@ const styles = StyleSheet.create({
     maxWidth: 440,
     alignSelf: 'center',
   },
-  title: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginBottom: 12 },
-  body: { fontSize: 15, color: '#475569', marginBottom: 16, lineHeight: 22 },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  body: { fontSize: 15, color: colors.textMuted, marginBottom: 16, lineHeight: 22 },
   row: {
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     marginBottom: 8,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
   },
-  rowSelected: { borderColor: '#2563eb', backgroundColor: '#eff6ff' },
-  rowText: { fontSize: 16, color: '#0f172a', fontWeight: '500' },
-  destructive: { color: '#dc2626' },
+  rowSelected: { borderColor: colors.gold, backgroundColor: colors.surfaceHi },
+  rowText: { fontSize: 16, color: colors.text, fontWeight: '500' },
+  destructive: { color: colors.danger },
   input: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     minHeight: 80,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.text,
     marginTop: 4,
     textAlignVertical: 'top',
   },
@@ -260,22 +261,22 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: '#94a3b8',
+    borderColor: colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  boxChecked: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  check: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  checkText: { fontSize: 15, color: '#334155' },
-  error: { color: '#dc2626', fontSize: 14, marginBottom: 8 },
+  boxChecked: { backgroundColor: colors.gold, borderColor: colors.gold },
+  check: { color: colors.onGold, fontSize: 14, fontWeight: '800' },
+  checkText: { fontSize: 15, color: colors.text },
+  error: { color: colors.danger, fontSize: 14, marginBottom: 8 },
   submit: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
   },
   submitDisabled: { opacity: 0.5 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  submitText: { color: colors.onGold, fontSize: 16, fontWeight: '700' },
   cancel: { paddingVertical: 12, alignItems: 'center' },
-  cancelText: { color: '#64748b', fontSize: 15, fontWeight: '600' },
+  cancelText: { color: colors.textMuted, fontSize: 15, fontWeight: '600' },
 });

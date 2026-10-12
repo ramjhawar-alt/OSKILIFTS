@@ -7,6 +7,7 @@ import { useWeightUnit } from '../contexts/ProfileContext';
 import { commentCountLabel } from '../domain/comments';
 import type { FeedItem } from '../types/social';
 import { formatExerciseEntry, getDateFromISOString } from '../utils/workoutFormat';
+import { colors } from '../theme';
 
 const COLLAPSED_COUNT = 3;
 
@@ -130,7 +131,7 @@ export const FeedWorkoutCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -144,17 +145,17 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   author: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   authorText: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
-  meta: { fontSize: 13, color: '#64748b' },
-  more: { fontSize: 18, color: '#64748b', paddingHorizontal: 8 },
+  name: { fontSize: 16, fontWeight: '700', color: colors.text },
+  meta: { fontSize: 13, color: colors.textMuted },
+  more: { fontSize: 18, color: colors.textMuted, paddingHorizontal: 8 },
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
-  badgeText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  badgeText: { color: colors.onGold, fontSize: 13, fontWeight: '600' },
   exerciseRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -162,18 +163,18 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   exerciseTitle: { flex: 1, gap: 4 },
-  exerciseName: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
-  exerciseDetail: { fontSize: 14, color: '#475569' },
-  link: { color: '#2563eb', fontSize: 14, fontWeight: '600' },
+  exerciseName: { fontSize: 15, fontWeight: '600', color: colors.text },
+  exerciseDetail: { fontSize: 14, color: colors.textMuted },
+  link: { color: colors.cyan, fontSize: 14, fontWeight: '600' },
   notes: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 8,
     padding: 10,
     fontSize: 14,
-    color: '#334155',
+    color: colors.text,
   },
   reactions: { flexDirection: 'row', gap: 20 },
   likeRow: { paddingTop: 4, alignSelf: 'flex-start' },
-  likeText: { fontSize: 16, color: '#64748b', fontWeight: '600' },
-  liked: { color: '#dc2626' },
+  likeText: { fontSize: 16, color: colors.textMuted, fontWeight: '600' },
+  liked: { color: colors.danger },
 });

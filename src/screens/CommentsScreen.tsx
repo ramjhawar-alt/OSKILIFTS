@@ -33,6 +33,7 @@ import {
 import type { RootStackParamList } from '../types/navigation';
 import type { WorkoutComment } from '../types/social';
 import { confirmAction } from '../utils/alert';
+import { colors } from '../theme';
 
 type CommentsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Comments'>;
 
@@ -145,7 +146,7 @@ export const CommentsScreen = () => {
   if (loading) {
     return (
       <ScreenContainer>
-        <ActivityIndicator style={styles.spinner} size="large" color="#2563eb" />
+        <ActivityIndicator style={styles.spinner} size="large" color={colors.gold} />
       </ScreenContainer>
     );
   }
@@ -222,7 +223,7 @@ export const CommentsScreen = () => {
           }}
           ListEmptyComponent={<Text style={styles.empty}>No comments yet. Say something nice.</Text>}
           ListFooterComponent={
-            loadingMore ? <ActivityIndicator style={styles.footer} color="#2563eb" /> : null
+            loadingMore ? <ActivityIndicator style={styles.footer} color={colors.gold} /> : null
           }
         />
 
@@ -243,7 +244,7 @@ export const CommentsScreen = () => {
             disabled={!canSend}
             accessibilityRole="button"
           >
-            {posting ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendText}>Post</Text>}
+            {posting ? <ActivityIndicator color={colors.onGold} /> : <Text style={styles.sendText}>Post</Text>}
           </TouchableOpacity>
         </View>
         {remaining !== null ? (
@@ -266,54 +267,54 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   spinner: { marginTop: 48 },
   footer: { marginVertical: 16 },
-  error: { color: '#dc2626', fontSize: 14, marginBottom: 8 },
-  empty: { color: '#64748b', fontSize: 15, textAlign: 'center', marginTop: 32 },
+  error: { color: colors.danger, fontSize: 14, marginBottom: 8 },
+  empty: { color: colors.textMuted, fontSize: 15, textAlign: 'center', marginTop: 32 },
   comment: {
     flexDirection: 'row',
     gap: 10,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
   commentBody: { flex: 1, gap: 2 },
   commentHeader: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  author: { fontSize: 15, fontWeight: '700', color: '#0f172a', flexShrink: 1 },
-  time: { fontSize: 12, color: '#94a3b8', flexShrink: 0 },
-  text: { fontSize: 15, color: '#1e293b', lineHeight: 21 },
+  author: { fontSize: 15, fontWeight: '700', color: colors.text, flexShrink: 1 },
+  time: { fontSize: 12, color: colors.textFaint, flexShrink: 0 },
+  text: { fontSize: 15, color: colors.text, lineHeight: 21 },
   actions: { flexDirection: 'row', gap: 16, marginTop: 2 },
-  action: { fontSize: 13, color: '#64748b', fontWeight: '600' },
+  action: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 8,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.border,
   },
   input: {
     flex: 1,
     minHeight: 44,
     maxHeight: 120,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.text,
   },
   send: {
     minWidth: 64,
     height: 44,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,
   },
   sendDisabled: { opacity: 0.45 },
-  sendText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  counter: { fontSize: 12, color: '#64748b', textAlign: 'right', marginTop: 4 },
-  counterOver: { color: '#dc2626' },
+  sendText: { color: colors.onGold, fontSize: 15, fontWeight: '700' },
+  counter: { fontSize: 12, color: colors.textMuted, textAlign: 'right', marginTop: 4 },
+  counterOver: { color: colors.danger },
 });

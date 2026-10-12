@@ -1,6 +1,7 @@
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 import type { Relationship } from '../types/social';
+import { colors } from '../theme';
 
 const LABELS: Record<Exclude<Relationship, 'self'>, string> = {
   none: 'Follow',
@@ -39,7 +40,7 @@ export const RelationshipButton = ({
       accessibilityRole="button"
     >
       {busy ? (
-        <ActivityIndicator size="small" color={primary ? '#fff' : '#2563eb'} />
+        <ActivityIndicator size="small" color={primary ? colors.onGold : '#2563eb'} />
       ) : (
         <Text style={[styles.text, primary ? styles.primaryText : styles.secondaryText]}>
           {label}
@@ -58,9 +59,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primary: { backgroundColor: '#2563eb' },
-  secondary: { backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0' },
+  primary: { backgroundColor: colors.gold },
+  secondary: { backgroundColor: colors.surfaceHi, borderWidth: 1, borderColor: colors.border },
   text: { fontSize: 14, fontWeight: '600' },
-  primaryText: { color: '#fff' },
-  secondaryText: { color: '#2563eb' },
+  primaryText: { color: colors.onGold },
+  secondaryText: { color: colors.cyan },
 });

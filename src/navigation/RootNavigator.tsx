@@ -1,6 +1,6 @@
 import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
@@ -54,10 +54,14 @@ const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
 
 const navigationTheme = {
-  ...DefaultTheme,
+  ...DarkTheme,
   colors: {
-    ...DefaultTheme.colors,
-    background: '#f7f9fc',
+    ...DarkTheme.colors,
+    background: colors.bg,
+    card: colors.bg,
+    text: colors.text,
+    border: colors.border,
+    primary: colors.gold,
   },
 };
 
@@ -66,7 +70,7 @@ const stackScreenOptions = {
   headerTintColor: colors.text,
   headerTitleStyle: { fontWeight: '700' as const },
   headerShadowVisible: false,
-  contentStyle: { backgroundColor: '#f7f9fc' },
+  contentStyle: { backgroundColor: colors.bg },
 };
 
 /**
@@ -235,11 +239,9 @@ export const RootNavigator = () => {
     content = <MainTabs />;
   }
 
-  // Light icons over the dark app; dark icons over the (still light) sign-in and onboarding screens.
-  const signedIn = Boolean(session) && !initializing && !profileLoading && Boolean(profile) && isProfileComplete(profile!);
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-      <StatusBar style={signedIn ? 'light' : 'dark'} />
+      <StatusBar style="light" />
       {content}
     </NavigationContainer>
   );

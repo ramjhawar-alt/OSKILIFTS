@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { barHeights, percent, sumOf, trend, type AdminMetrics, type DailyPoint } from '../domain/metrics';
 import { getAdminMetrics } from '../services/metricsService';
+import { colors } from '../theme';
 
 const RANGES = [7, 30, 90] as const;
 const TREND_COLORS = { up: '#16a34a', down: '#dc2626', flat: '#64748b', new: '#16a34a' } as const;
@@ -107,7 +108,7 @@ export const MetricsScreen = () => {
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {loading ? (
-        <ActivityIndicator style={styles.spinner} size="large" color="#2563eb" />
+        <ActivityIndicator style={styles.spinner} size="large" color={colors.gold} />
       ) : metrics ? (
         <ScrollView
           contentContainerStyle={styles.content}
@@ -150,9 +151,9 @@ export const MetricsScreen = () => {
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Per day</Text>
-            <Bars title="Sign-ups" points={metrics.daily} pick={(p) => p.signups} color="#2563eb" />
-            <Bars title="Workouts logged" points={metrics.daily} pick={(p) => p.workouts} color="#16a34a" />
-            <Bars title="People who trained" points={metrics.daily} pick={(p) => p.active} color="#b45309" />
+            <Bars title="Sign-ups" points={metrics.daily} pick={(p) => p.signups} color={colors.gold} />
+            <Bars title="Workouts logged" points={metrics.daily} pick={(p) => p.workouts} color={colors.success} />
+            <Bars title="People who trained" points={metrics.daily} pick={(p) => p.active} color={colors.gold} />
           </View>
 
           <View style={styles.card}>
@@ -198,37 +199,37 @@ export const MetricsScreen = () => {
 
 const styles = StyleSheet.create({
   spinner: { marginTop: 48 },
-  error: { color: '#dc2626', fontSize: 14, marginBottom: 12 },
+  error: { color: colors.danger, fontSize: 14, marginBottom: 12 },
   content: { paddingBottom: 40, gap: 12 },
-  segments: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 10, padding: 4, marginBottom: 12 },
+  segments: { flexDirection: 'row', backgroundColor: colors.surfaceHi, borderRadius: 10, padding: 4, marginBottom: 12 },
   segment: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
-  segmentActive: { backgroundColor: '#fff' },
-  segmentText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-  segmentTextActive: { color: '#2563eb' },
-  card: { backgroundColor: '#fff', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#e2e8f0', gap: 12 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
+  segmentActive: { backgroundColor: colors.surface },
+  segmentText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
+  segmentTextActive: { color: colors.cyan },
+  card: { backgroundColor: colors.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.border, gap: 12 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
   statRow: { flexDirection: 'row', gap: 12 },
   stat: { flex: 1, gap: 2 },
-  statValue: { fontSize: 28, fontWeight: '800', color: '#003262' },
-  statLabel: { fontSize: 12, color: '#64748b', fontWeight: '600' },
-  statNote: { fontSize: 12, color: '#64748b' },
-  note: { fontSize: 12, color: '#94a3b8' },
+  statValue: { fontSize: 28, fontWeight: '800', color: colors.gold },
+  statLabel: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
+  statNote: { fontSize: 12, color: colors.textMuted },
+  note: { fontSize: 12, color: colors.textFaint },
   funnelRow: { gap: 4 },
   funnelText: { flexDirection: 'row', justifyContent: 'space-between' },
-  funnelLabel: { fontSize: 14, color: '#334155', flex: 1, paddingRight: 8 },
-  funnelCount: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
-  funnelPct: { fontSize: 12, fontWeight: '600', color: '#64748b' },
-  funnelTrack: { height: 8, borderRadius: 4, backgroundColor: '#e2e8f0', overflow: 'hidden' },
-  funnelFill: { height: 8, borderRadius: 4, backgroundColor: '#2563eb' },
+  funnelLabel: { fontSize: 14, color: colors.text, flex: 1, paddingRight: 8 },
+  funnelCount: { fontSize: 14, fontWeight: '700', color: colors.text },
+  funnelPct: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  funnelTrack: { height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  funnelFill: { height: 8, borderRadius: 4, backgroundColor: colors.gold },
   chart: { gap: 6 },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  chartTitle: { fontSize: 13, fontWeight: '700', color: '#334155' },
-  chartTotal: { fontSize: 12, color: '#64748b' },
+  chartTitle: { fontSize: 13, fontWeight: '700', color: colors.text },
+  chartTotal: { fontSize: 12, color: colors.textMuted },
   bars: { flexDirection: 'row', alignItems: 'flex-end', height: 64, gap: 2 },
   barSlot: { flex: 1, justifyContent: 'flex-end' },
   bar: { width: '100%', borderRadius: 2 },
   axis: { flexDirection: 'row', justifyContent: 'space-between' },
-  axisText: { fontSize: 10, color: '#94a3b8' },
+  axisText: { fontSize: 10, color: colors.textFaint },
   top: { gap: 4 },
-  topRow: { fontSize: 14, color: '#0f172a', fontWeight: '600' },
+  topRow: { fontSize: 14, color: colors.text, fontWeight: '600' },
 });

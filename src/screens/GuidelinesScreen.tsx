@@ -2,6 +2,7 @@ import { Linking, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { ScreenContainer } from '../components/ScreenContainer';
 import { PRIVACY_URL, SUPPORT_EMAIL, TERMS_URL } from '../config/legal';
+import { colors } from '../theme';
 
 const RULES = [
   'Be respectful. No harassment, bullying, threats, hate speech or discrimination.',
@@ -52,9 +53,9 @@ export const GuidelinesScreen = () => (
 
 const styles = StyleSheet.create({
   content: { paddingBottom: 48, gap: 12 },
-  title: { fontSize: 28, fontWeight: '700', color: '#0f172a' },
-  heading: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginTop: 8 },
-  body: { fontSize: 15, color: '#475569', lineHeight: 22 },
-  rule: { fontSize: 15, color: '#0f172a', lineHeight: 22 },
-  link: { color: '#2563eb', fontWeight: '600' },
+  title: { fontSize: 28, fontWeight: '700', color: colors.text },
+  heading: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 8 },
+  body: { fontSize: 15, color: colors.textMuted, lineHeight: 22 },
+  rule: { fontSize: 15, color: colors.text, lineHeight: 22 },
+  link: { color: colors.cyan, fontWeight: '600' },
 });

@@ -13,6 +13,7 @@ import { formatWeight } from '../domain/units';
 import { getHistory } from '../services/historyCache';
 import type { RootStackParamList } from '../types/navigation';
 import { getDateFromDateString } from '../utils/workoutFormat';
+import { colors } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Exercises'>;
 
@@ -77,7 +78,7 @@ export const ExercisesScreen = () => {
   if (loading) {
     return (
       <ScreenContainer>
-        <ActivityIndicator style={styles.spinner} size="large" color="#2563eb" />
+        <ActivityIndicator style={styles.spinner} size="large" color={colors.gold} />
       </ScreenContainer>
     );
   }
@@ -119,22 +120,22 @@ export const ExercisesScreen = () => {
 const styles = StyleSheet.create({
   spinner: { marginTop: 48 },
   list: { marginTop: 12 },
-  error: { color: '#dc2626', fontSize: 14, marginTop: 8 },
-  empty: { color: '#64748b', fontSize: 15, textAlign: 'center', marginTop: 32 },
+  error: { color: colors.danger, fontSize: 14, marginTop: 8 },
+  empty: { color: colors.textMuted, fontSize: 15, textAlign: 'center', marginTop: 32 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     gap: 12,
   },
   rowText: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '600', color: '#0f172a' },
-  meta: { fontSize: 13, color: '#64748b', marginTop: 2 },
-  best: { fontSize: 15, fontWeight: '700', color: '#003262' },
+  name: { fontSize: 16, fontWeight: '600', color: colors.text },
+  meta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  best: { fontSize: 15, fontWeight: '700', color: colors.gold },
 });

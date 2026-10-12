@@ -25,6 +25,7 @@ import {
 } from '../services/socialService';
 import type { RootStackParamList } from '../types/navigation';
 import type { FeedItem } from '../types/social';
+import { colors } from '../theme';
 
 type FeedNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Feed'>;
 
@@ -173,7 +174,7 @@ export const FeedScreen = () => {
       {segments}
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={colors.gold} />
         </View>
       ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -203,7 +204,7 @@ export const FeedScreen = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={loadingMore ? <ActivityIndicator color="#2563eb" /> : null}
+        ListFooterComponent={loadingMore ? <ActivityIndicator color={colors.gold} /> : null}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>
@@ -236,36 +237,36 @@ export const FeedScreen = () => {
 const styles = StyleSheet.create({
   segments: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 10,
     padding: 4,
     marginBottom: 12,
   },
   segment: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
-  segmentActive: { backgroundColor: '#fff' },
-  segmentText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-  segmentTextActive: { color: '#2563eb' },
+  segmentActive: { backgroundColor: colors.surface },
+  segmentText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
+  segmentTextActive: { color: colors.cyan },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingBottom: 32, flexGrow: 1 },
-  error: { color: '#dc2626', fontSize: 14, marginBottom: 12 },
+  error: { color: colors.danger, fontSize: 14, marginBottom: 12 },
   empty: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     borderRadius: 8,
     padding: 24,
     alignItems: 'center',
     gap: 8,
   },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  emptyText: { fontSize: 14, color: '#64748b', textAlign: 'center' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  emptyText: { fontSize: 14, color: colors.textMuted, textAlign: 'center' },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 20,
     marginTop: 8,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: colors.onGold, fontSize: 16, fontWeight: '600' },
 });

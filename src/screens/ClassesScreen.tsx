@@ -11,6 +11,7 @@ import {
 import { ScreenContainer } from '../components/ScreenContainer';
 import { fetchClassSchedule } from '../services/api';
 import type { ClassDay, ClassScheduleResponse } from '../types/api';
+import { colors } from '../theme';
 
 const ALL_FILTER = 'All';
 
@@ -164,7 +165,7 @@ export const ClassesScreen = () => {
 
       {loading ? (
         <View style={styles.stateContainer}>
-          <ActivityIndicator size="large" color="#111827" />
+          <ActivityIndicator size="large" color={colors.gold} />
         </View>
       ) : error ? (
         <View style={styles.stateContainer}>
@@ -211,11 +212,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   subtitle: {
     fontSize: 16,
-    color: '#475569',
+    color: colors.textMuted,
     marginBottom: 16,
   },
   filterRow: {
@@ -229,19 +230,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#CBD5F5',
-    backgroundColor: '#fff',
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
   },
   filterChipActive: {
-    backgroundColor: '#1d4ed8',
-    borderColor: '#1d4ed8',
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
   },
   filterChipText: {
-    color: '#1e293b',
+    color: colors.text,
     fontWeight: '600',
   },
   filterChipTextActive: {
-    color: '#fff',
+    color: colors.onGold,
   },
   list: {
     flex: 1,
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   dayCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 16,
     shadowColor: '#0f172a',
@@ -264,11 +265,11 @@ const styles = StyleSheet.create({
   dayLabel: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
   },
   sessionCard: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
     gap: 4,
@@ -282,23 +283,23 @@ const styles = StyleSheet.create({
   sessionName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
     flex: 1,
   },
   sessionTime: {
     fontSize: 14,
-    color: '#475569',
+    color: colors.textMuted,
   },
   sessionMeta: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.textMuted,
   },
   sessionDescription: {
     fontSize: 13,
-    color: '#475569',
+    color: colors.textMuted,
   },
   cancelled: {
-    color: '#dc2626',
+    color: colors.danger,
     fontWeight: '700',
     fontSize: 12,
     textTransform: 'uppercase',
@@ -310,13 +311,13 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   errorText: {
-    color: '#dc2626',
+    color: colors.danger,
     fontSize: 16,
     textAlign: 'center',
   },
   emptyText: {
     fontSize: 16,
-    color: '#475569',
+    color: colors.textMuted,
     textAlign: 'center',
   },
 });

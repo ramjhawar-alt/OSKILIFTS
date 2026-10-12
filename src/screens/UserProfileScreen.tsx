@@ -42,6 +42,7 @@ import type { FeedItem, ProfileSummary } from '../types/social';
 import { getEmailPrefs, setWeeklyDigest } from '../services/emailPrefsService';
 import { markInviteShared, shareInvite } from '../services/inviteService';
 import { confirmAction, showMessage } from '../utils/alert';
+import { colors } from '../theme';
 
 type ProfileNavigationProp = NativeStackNavigationProp<RootStackParamList, 'UserProfile'>;
 
@@ -264,7 +265,7 @@ export const UserProfileScreen = () => {
   if (loading) {
     return (
       <ScreenContainer>
-        <ActivityIndicator style={styles.spinner} size="large" color="#2563eb" />
+        <ActivityIndicator style={styles.spinner} size="large" color={colors.gold} />
       </ScreenContainer>
     );
   }
@@ -409,7 +410,7 @@ export const UserProfileScreen = () => {
             {hasMoreWorkouts ? (
               <TouchableOpacity style={styles.moreButton} onPress={loadMoreWorkouts} disabled={loadingMoreWorkouts}>
                 {loadingMoreWorkouts ? (
-                  <ActivityIndicator color="#2563eb" />
+                  <ActivityIndicator color={colors.gold} />
                 ) : (
                   <Text style={styles.moreButtonText}>Show more</Text>
                 )}
@@ -601,10 +602,10 @@ const MenuRow = ({
 const styles = StyleSheet.create({
   spinner: { marginTop: 48 },
   content: { paddingBottom: 48, gap: 16 },
-  empty: { color: '#64748b', fontSize: 15, textAlign: 'center', marginTop: 32 },
-  error: { color: '#dc2626', fontSize: 14 },
+  empty: { color: colors.textMuted, fontSize: 15, textAlign: 'center', marginTop: 32 },
+  error: { color: colors.danger, fontSize: 14 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
@@ -615,17 +616,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  name: { fontSize: 22, fontWeight: '700', color: '#0f172a', marginTop: 4 },
-  username: { fontSize: 15, color: '#64748b' },
+  name: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 4 },
+  username: { fontSize: 15, color: colors.textMuted },
   badges: { flexDirection: 'row', gap: 8 },
   badge2: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
   badge2Text: { fontSize: 12, fontWeight: '700' },
-  badgePublic: { backgroundColor: '#dcfce7' },
-  badgePublicText: { color: '#15803d' },
-  badgePrivate: { backgroundColor: '#f1f5f9' },
-  badgePrivateText: { color: '#475569' },
-  badgeFriends: { backgroundColor: '#fef3c7' },
-  badgeFriendsText: { color: '#92400e' },
+  badgePublic: { backgroundColor: colors.successSoft },
+  badgePublicText: { color: colors.success },
+  badgePrivate: { backgroundColor: colors.surfaceHi },
+  badgePrivateText: { color: colors.textMuted },
+  badgeFriends: { backgroundColor: colors.goldSoft },
+  badgeFriendsText: { color: colors.gold },
   visibilityText: { flex: 1, paddingRight: 12 },
   recapToggle: {
     minWidth: 64,
@@ -633,78 +634,78 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 18,
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
-  recapToggleOn: { backgroundColor: '#16a34a', borderColor: '#16a34a' },
-  recapToggleText: { fontSize: 14, fontWeight: '700', color: '#475569' },
-  recapToggleTextOn: { color: '#fff' },
+  recapToggleOn: { backgroundColor: colors.success, borderColor: colors.success },
+  recapToggleText: { fontSize: 14, fontWeight: '700', color: colors.textMuted },
+  recapToggleTextOn: { color: colors.onGold },
   workoutsSection: { gap: 4 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginBottom: 8 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 8 },
   moreButton: { alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 20 },
-  moreButtonText: { color: '#2563eb', fontSize: 15, fontWeight: '600' },
+  moreButtonText: { color: colors.cyan, fontSize: 15, fontWeight: '600' },
   stats: { flexDirection: 'row', gap: 24, marginVertical: 12 },
   stat: { alignItems: 'center' },
-  statValue: { fontSize: 20, fontWeight: '700', color: '#003262' },
-  statLabel: { fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 },
+  statValue: { fontSize: 20, fontWeight: '700', color: colors.gold },
+  statLabel: { fontSize: 12, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
   respondRow: { flexDirection: 'row', gap: 8, alignSelf: 'stretch' },
   accept: {
     flex: 1,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
   },
-  acceptText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+  acceptText: { color: colors.onGold, fontWeight: '600', fontSize: 15 },
   decline: {
     flex: 1,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
-  declineText: { color: '#475569', fontWeight: '600', fontSize: 15 },
+  declineText: { color: colors.textMuted, fontWeight: '600', fontSize: 15 },
   notice: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 16,
     gap: 4,
   },
-  noticeTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
-  noticeText: { fontSize: 14, color: '#64748b' },
+  noticeTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  noticeText: { fontSize: 14, color: colors.textMuted },
   reportLink: { alignSelf: 'center', paddingVertical: 8 },
-  reportLinkText: { color: '#64748b', fontSize: 14, fontWeight: '600' },
+  reportLinkText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   unitsRow: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  unitsHint: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  unitsHint: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   unitsToggle: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 10,
     padding: 3,
   },
   unitsOption: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8 },
-  unitsOptionActive: { backgroundColor: '#fff' },
-  unitsText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-  unitsTextActive: { color: '#2563eb' },
+  unitsOptionActive: { backgroundColor: colors.surface },
+  unitsText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
+  unitsTextActive: { color: colors.cyan },
   menu: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   menuRow: {
@@ -714,17 +715,17 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
-  menuLabel: { fontSize: 16, color: '#0f172a', fontWeight: '500' },
-  menuDestructive: { color: '#dc2626' },
+  menuLabel: { fontSize: 16, color: colors.text, fontWeight: '500' },
+  menuDestructive: { color: colors.danger },
   badge: {
-    backgroundColor: '#dc2626',
+    backgroundColor: colors.danger,
     borderRadius: 10,
     minWidth: 20,
     paddingHorizontal: 6,
     paddingVertical: 2,
     alignItems: 'center',
   },
-  badgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  badgeText: { color: colors.text, fontSize: 12, fontWeight: '700' },
 });

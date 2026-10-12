@@ -24,6 +24,7 @@ import {
 import { confirmDiscardDraftIfAny } from '../services/startWorkout';
 import type { RootStackParamList } from '../types/navigation';
 import { confirmAction, showMessage } from '../utils/alert';
+import { colors } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Routines'>;
 
@@ -100,7 +101,7 @@ export const RoutinesScreen = () => {
   if (loading) {
     return (
       <ScreenContainer>
-        <ActivityIndicator style={styles.spinner} size="large" color="#2563eb" />
+        <ActivityIndicator style={styles.spinner} size="large" color={colors.gold} />
       </ScreenContainer>
     );
   }
@@ -172,36 +173,36 @@ export const RoutinesScreen = () => {
 
 const styles = StyleSheet.create({
   spinner: { marginTop: 48 },
-  error: { color: '#dc2626', fontSize: 14, marginBottom: 12 },
+  error: { color: colors.danger, fontSize: 14, marginBottom: 12 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     flexDirection: 'row',
     gap: 12,
   },
   cardText: { flex: 1, gap: 2 },
-  name: { fontSize: 17, fontWeight: '700', color: '#0f172a' },
-  summary: { fontSize: 14, color: '#475569' },
-  meta: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
+  name: { fontSize: 17, fontWeight: '700', color: colors.text },
+  summary: { fontSize: 14, color: colors.textMuted },
+  meta: { fontSize: 12, color: colors.textFaint, marginTop: 2 },
   actions: { alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 },
-  start: { backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18 },
-  startText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  start: { backgroundColor: colors.gold, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18 },
+  startText: { color: colors.onGold, fontWeight: '700', fontSize: 14 },
   secondary: { flexDirection: 'row', gap: 12 },
-  link: { color: '#2563eb', fontSize: 13, fontWeight: '600' },
-  delete: { color: '#dc2626', fontSize: 13, fontWeight: '600' },
+  link: { color: colors.cyan, fontSize: 13, fontWeight: '600' },
+  delete: { color: colors.danger, fontSize: 13, fontWeight: '600' },
   empty: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     borderRadius: 8,
     padding: 24,
     gap: 8,
   },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#0f172a', textAlign: 'center' },
-  emptyText: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  emptyText: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
 });

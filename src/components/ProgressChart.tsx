@@ -4,6 +4,7 @@ import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 
 import { buildChartModel } from '../domain/chart';
 import type { ProgressPoint } from '../domain/prs';
+import { colors } from '../theme';
 
 const HEIGHT = 220;
 const FONT = Platform.select({
@@ -52,8 +53,8 @@ export const ProgressChart = ({
           <Svg width={width} height={HEIGHT}>
             {model.yTicks.map((tick) => (
               <React.Fragment key={tick.value}>
-                <Line x1={PADDING.left} x2={width - PADDING.right} y1={tick.y} y2={tick.y} stroke="#e2e8f0" strokeWidth={1} />
-                <SvgText x={PADDING.left - 6} y={tick.y + 4} fontSize={11} fontFamily={FONT} fill="#64748b" textAnchor="end">
+                <Line x1={PADDING.left} x2={width - PADDING.right} y1={tick.y} y2={tick.y} stroke={colors.border} strokeWidth={1} />
+                <SvgText x={PADDING.left - 6} y={tick.y + 4} fontSize={11} fontFamily={FONT} fill={colors.textMuted} textAnchor="end">
                   {formatTick(tick.value)}
                 </SvgText>
               </React.Fragment>
@@ -65,7 +66,7 @@ export const ProgressChart = ({
                 y={HEIGHT - 8}
                 fontSize={11}
                 fontFamily={FONT}
-                fill="#64748b"
+                fill={colors.textMuted}
                 textAnchor={i === 0 && model.xLabels.length > 1 ? 'start' : i === model.xLabels.length - 1 && model.xLabels.length > 1 ? 'end' : 'middle'}
               >
                 {shortDate(label.time)}
@@ -75,7 +76,7 @@ export const ProgressChart = ({
               <Polyline
                 points={model.points.map((p) => `${p.x},${p.y}`).join(' ')}
                 fill="none"
-                stroke="#2563eb"
+                stroke={colors.cyan}
                 strokeWidth={2.5}
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -88,7 +89,7 @@ export const ProgressChart = ({
                 cy={p.y}
                 r={shown === i ? 7 : p.source.isRecord ? 6 : 4.5}
                 fill={p.source.isRecord ? '#f59e0b' : '#2563eb'}
-                stroke="#ffffff"
+                stroke={colors.surface}
                 strokeWidth={2}
               />
             ))}
@@ -132,12 +133,12 @@ const styles = StyleSheet.create({
   tooltip: {
     position: 'absolute',
     width: 112,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 10,
     alignItems: 'center',
   },
-  tooltipValue: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  tooltipDate: { color: '#cbd5e1', fontSize: 11, marginTop: 1 },
+  tooltipValue: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  tooltipDate: { color: colors.textMuted, fontSize: 11, marginTop: 1 },
 });

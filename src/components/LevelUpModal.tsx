@@ -3,6 +3,7 @@ import { AccessibilityInfo, Animated, Easing, Image, Modal, Platform, StyleSheet
 
 import { BEAR_ASPECT, BEAR_IMAGES } from '../config/bearImages';
 import { levelUpCopy } from '../domain/levelUp';
+import { colors } from '../theme';
 
 const BLUE = '#003262';
 const GOLD = '#FDB515';
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 24,
     borderWidth: 4,
     borderColor: GOLD,
@@ -133,9 +134,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  title: { fontSize: 14, fontWeight: '800', letterSpacing: 4, color: '#b45309' },
+  title: { fontSize: 14, fontWeight: '800', letterSpacing: 4, color: colors.gold },
   name: { fontSize: 30, fontWeight: '800', color: BLUE, marginTop: 2 },
-  stage: { fontSize: 13, fontWeight: '700', color: '#64748b', marginBottom: 10 },
+  stage: { fontSize: 13, fontWeight: '700', color: colors.textMuted, marginBottom: 10 },
   picture: {
     width: PICTURE_WIDTH,
     height: PICTURE_WIDTH / BEAR_ASPECT,
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     borderColor: BLUE,
   },
   image: { width: '100%', height: '100%' },
-  next: { fontSize: 13, color: '#475569', textAlign: 'center', marginTop: 10, paddingHorizontal: 6 },
+  next: { fontSize: 13, color: colors.textMuted, textAlign: 'center', marginTop: 10, paddingHorizontal: 6 },
   button: { backgroundColor: BLUE, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 36, marginTop: 14 },
   buttonText: { color: GOLD, fontSize: 16, fontWeight: '800' },
 });

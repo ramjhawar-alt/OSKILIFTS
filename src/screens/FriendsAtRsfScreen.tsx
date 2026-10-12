@@ -7,6 +7,7 @@ import { FriendAtRsfRow } from '../components/FriendAtRsfRow';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useRsfPresence } from '../contexts/RsfPresenceContext';
 import type { RootStackParamList } from '../types/navigation';
+import { colors } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'FriendsAtRsf'>;
 
@@ -71,7 +72,7 @@ export const FriendsAtRsfScreen = () => {
 
 const styles = StyleSheet.create({
   header: { marginBottom: 14 },
-  title: { fontSize: 22, fontWeight: '800', color: '#0f172a' },
-  sub: { fontSize: 14, color: '#64748b', marginTop: 4 },
-  footer: { fontSize: 12, color: '#94a3b8', textAlign: 'center', marginTop: 12, marginBottom: 24, paddingHorizontal: 8 },
+  title: { fontSize: 22, fontWeight: '800', color: colors.text },
+  sub: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
+  footer: { fontSize: 12, color: colors.textFaint, textAlign: 'center', marginTop: 12, marginBottom: 24, paddingHorizontal: 8 },
 });

@@ -16,6 +16,7 @@ import { formatWeight, toDisplayValue } from '../domain/units';
 import { getHistory } from '../services/historyCache';
 import type { RootStackParamList } from '../types/navigation';
 import { getDateFromDateString } from '../utils/workoutFormat';
+import { colors } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'ExerciseDetail'>;
 
@@ -81,7 +82,7 @@ export const ExerciseDetailScreen = () => {
   if (!sessions) {
     return (
       <ScreenContainer>
-        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator style={styles.spinner} size="large" color="#2563eb" />}
+        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator style={styles.spinner} size="large" color={colors.gold} />}
       </ScreenContainer>
     );
   }
@@ -173,25 +174,25 @@ export const ExerciseDetailScreen = () => {
 
 const styles = StyleSheet.create({
   spinner: { marginTop: 48 },
-  error: { color: '#dc2626', fontSize: 14 },
+  error: { color: colors.danger, fontSize: 14 },
   content: { paddingBottom: 48, gap: 16 },
-  title: { fontSize: 26, fontWeight: '700', color: '#0f172a' },
-  empty: { color: '#64748b', fontSize: 15 },
+  title: { fontSize: 26, fontWeight: '700', color: colors.text },
+  empty: { color: colors.textMuted, fontSize: 15 },
   cards: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  card: { flexGrow: 1, flexBasis: '45%', backgroundColor: '#fff', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#e2e8f0' },
-  cardLabel: { fontSize: 12, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 },
-  cardValue: { fontSize: 20, fontWeight: '800', color: '#003262', marginTop: 4 },
-  cardSub: { fontSize: 12, color: '#64748b', marginTop: 2 },
-  chartCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#e2e8f0', gap: 12 },
+  card: { flexGrow: 1, flexBasis: '45%', backgroundColor: colors.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border },
+  cardLabel: { fontSize: 12, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  cardValue: { fontSize: 20, fontWeight: '800', color: colors.gold, marginTop: 4 },
+  cardSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  chartCard: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border, gap: 12 },
   toggleRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
-  segment: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 10, padding: 3 },
+  segment: { flexDirection: 'row', backgroundColor: colors.surfaceHi, borderRadius: 10, padding: 3 },
   segmentItem: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8 },
-  segmentActive: { backgroundColor: '#fff' },
-  segmentText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
-  segmentTextActive: { color: '#2563eb' },
-  chartEmpty: { color: '#64748b', fontSize: 14, textAlign: 'center', paddingVertical: 32 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  historyRow: { backgroundColor: '#fff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', gap: 4 },
-  historyDate: { fontSize: 13, fontWeight: '700', color: '#475569' },
-  historySets: { fontSize: 15, color: '#0f172a' },
+  segmentActive: { backgroundColor: colors.surface },
+  segmentText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
+  segmentTextActive: { color: colors.cyan },
+  chartEmpty: { color: colors.textMuted, fontSize: 14, textAlign: 'center', paddingVertical: 32 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  historyRow: { backgroundColor: colors.surface, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  historyDate: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
+  historySets: { fontSize: 15, color: colors.text },
 });

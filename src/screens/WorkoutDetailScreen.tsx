@@ -30,6 +30,7 @@ import { ShareWorkoutModal } from '../components/ShareWorkoutModal';
 import { useProfile } from '../contexts/ProfileContext';
 import { buildShareCard, type ShareCardModel } from '../domain/shareCard';
 import { calculateWorkoutStreak, getBearStage } from '../services/bearStreakService';
+import { colors } from '../theme';
 
 type WorkoutDetailNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -133,7 +134,7 @@ export const WorkoutDetailScreen = () => {
     return (
       <ScreenContainer>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={colors.gold} />
         </View>
       </ScreenContainer>
     );
@@ -279,29 +280,29 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
-  commentsButtonText: { color: '#334155', fontSize: 16, fontWeight: '600' },
+  commentsButtonText: { color: colors.text, fontSize: 16, fontWeight: '600' },
   shareButton: {
     marginTop: 12,
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#003262',
+    backgroundColor: colors.gold,
   },
-  shareButtonText: { color: '#FDB515', fontSize: 16, fontWeight: '700' },
+  shareButtonText: { color: colors.gold, fontSize: 16, fontWeight: '700' },
   routineButton: {
     marginTop: 12,
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: colors.gold,
   },
-  routineButtonText: { color: '#2563eb', fontSize: 16, fontWeight: '600' },
+  routineButtonText: { color: colors.cyan, fontSize: 16, fontWeight: '600' },
   setList: { gap: 6, marginTop: 4 },
   setLine: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   setLabel: {
@@ -309,8 +310,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 13,
     fontWeight: '700',
-    color: '#475569',
-    backgroundColor: '#f1f5f9',
+    color: colors.textMuted,
+    backgroundColor: colors.surfaceHi,
     borderRadius: 6,
     paddingVertical: 3,
   },
@@ -332,26 +333,26 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.border,
   },
   dateText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 4,
   },
   timeText: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.textMuted,
   },
   dayTypeBadge: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   dayTypeText: {
-    color: '#ffffff',
+    color: colors.onGold,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -361,21 +362,21 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 12,
   },
   exerciseCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   exerciseName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 8,
   },
   exerciseDetails: {
@@ -384,22 +385,22 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.textMuted,
   },
   detailValue: {
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.text,
   },
   notesCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   notesText: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.text,
     lineHeight: 20,
   },
   actions: {
@@ -414,26 +415,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
   },
   editButtonText: {
-    color: '#ffffff',
+    color: colors.onGold,
     fontSize: 16,
     fontWeight: '600',
   },
   deleteButton: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.dangerSoft,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: colors.danger,
   },
   deleteButtonText: {
-    color: '#dc2626',
+    color: colors.danger,
     fontSize: 16,
     fontWeight: '600',
   },
   errorText: {
     fontSize: 16,
-    color: '#dc2626',
+    color: colors.danger,
   },
 });
 

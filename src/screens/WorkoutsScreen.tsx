@@ -23,6 +23,7 @@ import { confirmAction } from '../utils/alert';
 import { listRoutines } from '../services/routineService';
 import { confirmDiscardDraftIfAny } from '../services/startWorkout';
 import type { Routine } from '../domain/routines';
+import { colors } from '../theme';
 
 function formatStartedAgo(startedAt: number): string {
   const minutes = Math.max(0, Math.round((Date.now() - startedAt) / 60000));
@@ -150,7 +151,7 @@ export const WorkoutsScreen = () => {
     return (
       <ScreenContainer>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={colors.gold} />
         </View>
       </ScreenContainer>
     );
@@ -227,15 +228,18 @@ export const WorkoutsScreen = () => {
           onDayPress={handleDateSelect}
           markedDates={markedDates}
           theme={{
-            selectedDayBackgroundColor: '#2563eb',
-            selectedDayTextColor: '#ffffff',
-            todayTextColor: '#2563eb',
-            dayTextColor: '#0f172a',
-            textDisabledColor: '#cbd5e1',
-            dotColor: '#2563eb',
-            selectedDotColor: '#ffffff',
-            arrowColor: '#2563eb',
-            monthTextColor: '#0f172a',
+            calendarBackground: colors.surface,
+            backgroundColor: colors.surface,
+            textSectionTitleColor: colors.textMuted,
+            selectedDayBackgroundColor: colors.gold,
+            selectedDayTextColor: colors.onGold,
+            todayTextColor: colors.gold,
+            dayTextColor: colors.text,
+            textDisabledColor: colors.textFaint,
+            dotColor: colors.gold,
+            selectedDotColor: colors.onGold,
+            arrowColor: colors.gold,
+            monthTextColor: colors.text,
             textDayFontWeight: '500',
             textMonthFontWeight: '700',
             textDayHeaderFontWeight: '600',
@@ -303,25 +307,25 @@ export const WorkoutsScreen = () => {
 const styles = StyleSheet.create({
   routineSection: { marginBottom: 16 },
   routineHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  routineTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
-  routineManage: { fontSize: 14, fontWeight: '600', color: '#2563eb' },
+  routineTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  routineManage: { fontSize: 14, fontWeight: '600', color: colors.cyan },
   routineCard: {
     width: 150,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     gap: 2,
   },
-  routineName: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
-  routineMeta: { fontSize: 12, color: '#64748b' },
-  routineStart: { marginTop: 6, fontSize: 13, fontWeight: '700', color: '#2563eb' },
+  routineName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  routineMeta: { fontSize: 12, color: colors.textMuted },
+  routineStart: { marginTop: 6, fontSize: 13, fontWeight: '700', color: colors.cyan },
   draftCard: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.surfaceHi,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: colors.gold,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
@@ -331,12 +335,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   draftText: { flex: 1 },
-  draftTitle: { fontSize: 16, fontWeight: '700', color: '#1e3a8a' },
-  draftMeta: { fontSize: 13, color: '#475569', marginTop: 2 },
+  draftTitle: { fontSize: 16, fontWeight: '700', color: colors.gold },
+  draftMeta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   draftActions: { alignItems: 'flex-end', gap: 6 },
-  draftResume: { backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
-  draftResumeText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  draftDiscard: { color: '#dc2626', fontSize: 13, fontWeight: '600' },
+  draftResume: { backgroundColor: colors.gold, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
+  draftResumeText: { color: colors.onGold, fontWeight: '700', fontSize: 14 },
+  draftDiscard: { color: colors.danger, fontSize: 13, fontWeight: '600' },
   container: {
     flex: 1,
   },
@@ -354,27 +358,27 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
   },
   bearInfoCard: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: colors.goldSoft,
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
     borderWidth: 2,
-    borderColor: '#FDB515',
+    borderColor: colors.gold,
   },
   bearInfoTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 12,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   bearInfoText: {
     fontSize: 15,
-    color: '#475569',
+    color: colors.textMuted,
     lineHeight: 22,
     textAlign: 'center',
   },
@@ -393,7 +397,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 12,
   },
   emptyState: {
@@ -402,21 +406,21 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.textMuted,
     marginBottom: 16,
   },
   emptyButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   emptyButtonText: {
-    color: '#ffffff',
+    color: colors.onGold,
     fontWeight: '600',
   },
   workoutCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -435,15 +439,15 @@ const styles = StyleSheet.create({
   workoutDayType: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
   },
   workoutTime: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.textMuted,
   },
   workoutExercises: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.textMuted,
   },
 });
 

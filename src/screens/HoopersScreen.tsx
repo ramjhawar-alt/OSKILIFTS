@@ -22,6 +22,7 @@ import {
 } from '../services/hoopersCheckinService';
 import type { RootStackParamList } from '../types/navigation';
 import { showMessage } from '../utils/alert';
+import { colors } from '../theme';
 
 type HoopersNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Hoopers'>;
 
@@ -120,7 +121,7 @@ export const HoopersScreen = () => {
     return (
       <ScreenContainer>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={colors.gold} />
           <Text style={styles.loadingText}>Loading basketball status...</Text>
         </View>
       </ScreenContainer>
@@ -183,7 +184,7 @@ export const HoopersScreen = () => {
                 accessibilityRole="button"
               >
                 {busy ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.onGold} />
                 ) : (
                   <Text style={styles.actionButtonText}>
                     {checkedIn ? 'I’m Done Playing' : 'I’m Playing Basketball'}
@@ -279,7 +280,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#64748b',
+    color: colors.textMuted,
   },
   header: {
     marginBottom: 24,
@@ -287,40 +288,40 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#64748b',
+    color: colors.textMuted,
   },
   errorContainer: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.dangerSoft,
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: colors.danger,
   },
   errorText: {
     fontSize: 14,
-    color: '#dc2626',
+    color: colors.danger,
     marginBottom: 12,
   },
   retryButton: {
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#dc2626',
+    backgroundColor: colors.danger,
     borderRadius: 6,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: colors.onGold,
     fontSize: 14,
     fontWeight: '600',
   },
   statusCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 24,
     marginBottom: 24,
@@ -333,14 +334,14 @@ const styles = StyleSheet.create({
   },
   countLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.textMuted,
     marginBottom: 8,
     fontWeight: '500',
   },
   countValue: {
     fontSize: 64,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 16,
   },
   statusBadge: {
@@ -364,14 +365,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   checkedInBadge: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: colors.successSoft,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
     alignItems: 'center',
   },
   checkedInText: {
-    color: '#16a34a',
+    color: colors.success,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -381,58 +382,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkInButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
   },
   checkOutButton: {
-    backgroundColor: '#64748b',
+    backgroundColor: colors.surfaceHi,
   },
   actionButtonText: {
-    color: '#ffffff',
+    color: colors.onGold,
     fontSize: 18,
     fontWeight: '600',
   },
   listSection: { marginBottom: 24 },
   listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  listTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  toggle: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 10, padding: 3 },
+  listTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  toggle: { flexDirection: 'row', backgroundColor: colors.surfaceHi, borderRadius: 10, padding: 3 },
   toggleOption: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8 },
-  toggleOptionActive: { backgroundColor: '#fff' },
-  toggleText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-  toggleTextActive: { color: '#2563eb' },
+  toggleOptionActive: { backgroundColor: colors.surface },
+  toggleText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
+  toggleTextActive: { color: colors.cyan },
   hooperRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   hooperText: { flex: 1 },
-  hooperName: { fontSize: 16, fontWeight: '600', color: '#0f172a' },
-  hooperMeta: { fontSize: 13, color: '#64748b' },
-  friendPill: { backgroundColor: '#fef3c7', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
-  friendPillText: { color: '#92400e', fontSize: 12, fontWeight: '700' },
-  emptyList: { color: '#64748b', fontSize: 14, textAlign: 'center', paddingVertical: 16 },
-  consent: { fontSize: 13, color: '#64748b', marginBottom: 12, lineHeight: 18 },
+  hooperName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  hooperMeta: { fontSize: 13, color: colors.textMuted },
+  friendPill: { backgroundColor: colors.goldSoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  friendPillText: { color: colors.gold, fontSize: 12, fontWeight: '700' },
+  emptyList: { color: colors.textMuted, fontSize: 14, textAlign: 'center', paddingVertical: 16 },
+  consent: { fontSize: 13, color: colors.textMuted, marginBottom: 12, lineHeight: 18 },
   infoSection: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.text,
     marginBottom: 8,
   },
   infoText: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.textMuted,
     lineHeight: 20,
   },
 });

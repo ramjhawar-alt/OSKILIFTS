@@ -24,6 +24,7 @@ import {
 import type { RootStackParamList } from '../types/navigation';
 import type { BlockedUser, FollowRequest } from '../types/social';
 import { showMessage } from '../utils/alert';
+import { colors } from '../theme';
 
 type ConnectionsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Connections'>;
 type Tab = 'requests' | 'blocked';
@@ -103,7 +104,7 @@ export const ConnectionsScreen = () => {
   if (loading) {
     return (
       <ScreenContainer>
-        <ActivityIndicator style={styles.spinner} size="large" color="#2563eb" />
+        <ActivityIndicator style={styles.spinner} size="large" color={colors.gold} />
       </ScreenContainer>
     );
   }
@@ -213,51 +214,51 @@ export const ConnectionsScreen = () => {
 
 const styles = StyleSheet.create({
   spinner: { marginTop: 48 },
-  error: { color: '#dc2626', fontSize: 14, marginBottom: 12 },
-  empty: { color: '#64748b', fontSize: 15, textAlign: 'center', marginTop: 32 },
+  error: { color: colors.danger, fontSize: 14, marginBottom: 12 },
+  empty: { color: colors.textMuted, fontSize: 15, textAlign: 'center', marginTop: 32 },
   segments: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 10,
     padding: 4,
     marginBottom: 16,
   },
   segment: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
-  segmentActive: { backgroundColor: '#fff' },
-  segmentText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-  segmentTextActive: { color: '#2563eb' },
+  segmentActive: { backgroundColor: colors.surface },
+  segmentText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
+  segmentTextActive: { color: colors.cyan },
   row: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     gap: 10,
   },
   blockedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   person: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
   text: { flexShrink: 1 },
-  name: { fontSize: 16, fontWeight: '600', color: '#0f172a' },
-  username: { fontSize: 13, color: '#64748b' },
+  name: { fontSize: 16, fontWeight: '600', color: colors.text },
+  username: { fontSize: 13, color: colors.textMuted },
   actions: { flexDirection: 'row', gap: 8 },
   accept: {
     flex: 1,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.gold,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
   },
-  acceptText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+  acceptText: { color: colors.onGold, fontWeight: '600', fontSize: 15 },
   decline: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceHi,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     flexGrow: 1,
   },
-  declineText: { color: '#475569', fontWeight: '600', fontSize: 15 },
+  declineText: { color: colors.textMuted, fontWeight: '600', fontSize: 15 },
 });
