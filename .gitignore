@@ -43,3 +43,6 @@ yarn-error.*
 
 # data collection
 /data
+
+# Bear originals are ~1.5 MB each (50 of them): keep them on disk, not in git. make_bears.py reads them from here.
+assets/source/bears/*.png

@@ -24,6 +24,7 @@ import { ConnectionsScreen } from '../screens/ConnectionsScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
 import { CommentsScreen } from '../screens/CommentsScreen';
 import { MetricsScreen } from '../screens/MetricsScreen';
+import { FriendsAtRsfScreen } from '../screens/FriendsAtRsfScreen';
 import { ModerationScreen } from '../screens/ModerationScreen';
 import { ExercisesScreen } from '../screens/ExercisesScreen';
 import { RoutinesScreen } from '../screens/RoutinesScreen';
@@ -180,6 +181,7 @@ const FeedStack = () => {
       <Stack.Screen name="Moderation" component={ModerationScreen} options={{ title: 'Moderation' }} />
       <Stack.Screen name="Metrics" component={MetricsScreen} options={{ title: 'Metrics' }} />
       <Stack.Screen name="BearDebug" component={BearDebugScreen} options={{ title: 'Bear stages' }} />
+      <Stack.Screen name="FriendsAtRsf" component={FriendsAtRsfScreen} options={{ title: 'At the RSF' }} />
       <Stack.Screen name="Guidelines" component={GuidelinesScreen} options={{ title: 'Community Guidelines' }} />
     </Stack.Navigator>
   );

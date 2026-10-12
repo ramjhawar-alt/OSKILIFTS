@@ -14,6 +14,7 @@ export type RootStackParamList = {
   Comments: { workoutId: string; canOpenProfiles?: boolean };
   Moderation: undefined;
   Metrics: undefined;
+  FriendsAtRsf: undefined;
   Guidelines: undefined;
   Exercises: undefined;
   Routines: undefined;

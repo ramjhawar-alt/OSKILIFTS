@@ -103,7 +103,8 @@ begin
   select string_agg(fn, ', ' order by fn) into offenders
   from unnest(array[
     'public.digest_candidates(integer)', 'public.digest_mark_sent(uuid)', 'public.digest_unsubscribe(uuid)',
-    'public.admin_alert_candidates()', 'public.admin_alert_mark_sent()'
+    'public.admin_alert_candidates()', 'public.admin_alert_mark_sent()',
+    'private.shared_bear_stage(uuid)'
   ]) as fn
   where to_regprocedure(fn) is not null
     and (has_function_privilege('authenticated', to_regprocedure(fn), 'execute')

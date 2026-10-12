@@ -2,7 +2,7 @@
 
 One master picture per stage (`<name>_oski.png`: baby, small, young, growing, strong, big,
 huge, massive, legendary, max) plus four press frames per bear, all made in ChatGPT and
-kept here as the originals. `python3 assets/source/make_bears.py` shrinks them into
+kept here as the originals (the PNGs are git-ignored after the first two bears because they are ~1.5 MB each; the shrunk copies in `assets/bears/` are what ship, and the full set lives in the OSKI_LIFTS folder on the owner's machine). `python3 assets/source/make_bears.py` shrinks them into
 `assets/bears/` and writes `src/config/bearImages.ts` (a stage animates only when all four
 frames exist; otherwise it uses the squash fallback).
 
@@ -14,7 +14,7 @@ frames exist; otherwise it uses the squash fallback).
 | `<name>_oski_nose.png` | across the nose and mouth |
 | `<name>_oski_bottom.png` | at the collarbone, under the chin |
 
-Baby and Small Oski are done. Lessons from making them:
+All ten bears are done. Lessons from making them:
 - Describe bar heights by body landmarks, not pixels. The model can't hit coordinates, and
   landmarks scale to each bear's size.
 - Edit the master every time, one image at a time. Editing its own previous output makes the

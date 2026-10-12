@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { OskiBear } from '../components/OskiBear';
 import { AnimatedOskiLifting } from '../components/AnimatedOskiLifting';
+import type { BearMode } from '../domain/rsfFriends';
 import {
   MAX_BEAR_STAGE,
   WORKOUTS_PER_STAGE,
@@ -26,6 +27,8 @@ const DEBUG_TOTAL_WORKOUTS_KEY = '@oskilifts:debugTotalWorkouts';
 export const BearDebugScreen = () => {
   const navigation = useNavigation();
   const [selectedStreak, setSelectedStreak] = useState(0);
+  // Stand-in for "at the RSF" so every animation can be previewed from anywhere.
+  const [mode, setMode] = useState<BearMode>('lift');
   const [selectedStage, setSelectedStage] = useState(1);
   
   const handleUseStage = async (threshold: typeof stageThresholds[0]) => {
@@ -79,7 +82,21 @@ export const BearDebugScreen = () => {
           <Text style={styles.previewInfo}>
             Streak: {selectedStreak} workouts → Stage {currentStage}/10
           </Text>
-          <OskiBear streak={selectedStreak} totalWorkouts={totalWorkouts} />
+          <View style={styles.modeRow}>
+            {(['lift', 'idle'] as const).map((value) => (
+              <TouchableOpacity
+                key={value}
+                style={[styles.modeButton, mode === value && styles.modeButtonOn]}
+                onPress={() => setMode(value)}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.modeButtonText, mode === value && styles.modeButtonTextOn]}>
+                  {value === 'lift' ? 'At the RSF (lifting)' : 'Away (breathing)'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <OskiBear streak={selectedStreak} totalWorkouts={totalWorkouts} modeOverride={mode} />
         </View>
 
         {/* Streak Input */}
@@ -199,7 +216,7 @@ export const BearDebugScreen = () => {
                 </View>
                 <View style={styles.stageArtContainer}>
                   <View style={styles.stageArtBox}>
-                    <AnimatedOskiLifting stage={threshold.stage} />
+                    <AnimatedOskiLifting stage={threshold.stage} mode={mode} />
                   </View>
                 </View>
               </View>
@@ -381,6 +398,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  modeRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  modeButton: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center', backgroundColor: '#fff' },
+  modeButtonOn: { backgroundColor: '#003262', borderColor: '#003262' },
+  modeButtonText: { fontSize: 13, fontWeight: '700', color: '#475569' },
+  modeButtonTextOn: { color: '#FDB515' },
   stageArtBox: { width: '100%', height: 220 },
   stageArtContainer: {
     backgroundColor: '#f8fafc',

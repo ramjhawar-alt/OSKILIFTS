@@ -2,6 +2,8 @@
 
 Tick these off as you go. Claude keeps a copy of this list and will remind you.
 
+- [ ] Run `server/migrations/020_friends_at_rsf_stage.sql` in the Supabase SQL editor (the Friends at the RSF screen shows every friend as Baby Oski until you do), then run `server/tests/security_audit_test.sql`.
+
 ## Soon
 - [ ] **Turn on auto-renew for `oskilifts.com` at Namecheap.** It expires **Nov 27, 2026**; if it lapses the whole site goes down.
 - [ ] **Test the weekly recap email end to end.** Sign up a second account as `ram_jhawar+test@berkeley.edu`, follow your main account from it, turn the recap on in the main account, then GitHub → Actions → "Email jobs" → Run workflow → `weekly-digest`. A recap should arrive in a couple of minutes.

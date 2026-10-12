@@ -7,13 +7,19 @@ import {
   getBearStageName,
 } from '../services/bearStreakService';
 import { AnimatedOskiLifting } from './AnimatedOskiLifting';
+import { useRsfPresence } from '../contexts/RsfPresenceContext';
+import { bearModeFor, type BearMode } from '../domain/rsfFriends';
 
 interface OskiBearProps {
   streak: number;
   totalWorkouts: number;
+  /** Force a mode (the bear preview screen). Normally the bear lifts while you're at the RSF. */
+  modeOverride?: BearMode;
 }
 
-export const OskiBear: React.FC<OskiBearProps> = ({ streak, totalWorkouts }) => {
+export const OskiBear: React.FC<OskiBearProps> = ({ streak, totalWorkouts, modeOverride }) => {
+  const { status, sharing } = useRsfPresence();
+  const mode = modeOverride ?? bearModeFor(status);
   const stage = getBearStage(streak);
   const stageName = getBearStageName(stage);
   const nextStageStreak = getStreakForNextStage(stage);
@@ -30,9 +36,15 @@ export const OskiBear: React.FC<OskiBearProps> = ({ streak, totalWorkouts }) => 
 
       <View style={styles.bearDisplay}>
         <View style={styles.bearWrapper}>
-          <AnimatedOskiLifting stage={stage} />
+          <AnimatedOskiLifting stage={stage} mode={mode} />
         </View>
       </View>
+
+      {mode === 'lift' ? (
+        <Text style={styles.rsfNote}>You’re at the RSF, so Oski is lifting 💪</Text>
+      ) : !sharing && !modeOverride ? (
+        <Text style={styles.rsfNote}>Share when you’re at the RSF (below) and Oski will lift when you do.</Text>
+      ) : null}
 
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
@@ -118,6 +130,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  rsfNote: { fontSize: 12, color: '#475569', textAlign: 'center', marginTop: -6, marginBottom: 4 },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',

@@ -21,6 +21,7 @@ import { NameRoutineModal } from '../components/NameRoutineModal';
 import { RestTimerBar } from '../components/RestTimerBar';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { useAuth } from '../contexts/AuthContext';
+import { RsfLiftingBanner } from '../components/RsfLiftingBanner';
 import { useProfile, useWeightUnit } from '../contexts/ProfileContext';
 import { isValidDateString, localDateString, toStoredWorkoutDate } from '../domain/dates';
 import {
@@ -408,6 +409,7 @@ export const LogWorkoutScreen = () => {
           keyboardDismissMode="on-drag"
           automaticallyAdjustKeyboardInsets
         >
+          <RsfLiftingBanner />
           <View style={styles.section}>
             <Text style={styles.label}>Date</Text>
             <TextInput

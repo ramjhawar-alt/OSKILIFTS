@@ -13,16 +13,19 @@ import {
 import { BEAR_ASPECT, BEAR_IMAGES, BearArt } from '../config/bearImages';
 import { PRESS_REP_MS, PRESS_STEPS } from '../config/oskiAnimation';
 import { barKnots, fadeWindows } from '../domain/pressFrames';
+import type { BearMode } from '../domain/rsfFriends';
 import { getBearStageName } from '../services/bearStreakService';
 
 interface AnimatedOskiLiftingProps {
   stage: number; // 1-10
+  /** 'lift': shoulder-press reps. 'idle': a slow breath. */
+  mode: BearMode;
 }
 
 /**
- * Oski doing a shoulder press, looping. A stage that has press pictures (lockout to bottom)
- * flips through them, so the arms really bend. A stage without them shows its single
- * picture with a slow idle breath (the ground stays put).
+ * Oski for one stage. In 'lift' mode he does shoulder-press reps by flipping through the press
+ * pictures (lockout to bottom), so the arms really bend. In 'idle' mode (or for a stage with no
+ * press pictures) he shows his single picture with a slow breath (the ground stays put).
  */
 const BOB_MS = 3200;
 const BOB_AMOUNT = 0.016; // +/-1.6% of the picture height: a slow breath, not a bounce
@@ -164,10 +167,10 @@ const FlipbookPress: React.FC<{ art: BearArt; frames: number[]; stage: number }>
   );
 };
 
-export const AnimatedOskiLifting: React.FC<AnimatedOskiLiftingProps> = ({ stage }) => {
+export const AnimatedOskiLifting: React.FC<AnimatedOskiLiftingProps> = ({ stage, mode }) => {
   const clamped = Math.min(10, Math.max(1, Math.round(stage) || 1));
   const art = BEAR_IMAGES[clamped];
-  return art.frames && art.frames.length >= 2 ? (
+  return mode === 'lift' && art.frames && art.frames.length >= 2 ? (
     <FlipbookPress art={art} frames={art.frames} stage={clamped} />
   ) : (
     <IdleBob art={art} stage={clamped} />

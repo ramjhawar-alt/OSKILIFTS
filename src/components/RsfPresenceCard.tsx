@@ -1,8 +1,12 @@
 import { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Avatar } from './Avatar';
 import { useRsfPresence, type PresenceStatus } from '../contexts/RsfPresenceContext';
+import { stayLabel } from '../domain/rsfFriends';
+import type { RootStackParamList } from '../types/navigation';
 import { confirmAction, showMessage } from '../utils/alert';
 
 const CONSENT =
@@ -27,6 +31,7 @@ function describe(status: PresenceStatus): string {
 
 /** Opt-in "at the RSF" sharing, plus which friends are there right now. */
 export const RsfPresenceCard = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { sharing, status, friendsAtRsf, enable, disable } = useRsfPresence();
   const [busy, setBusy] = useState(false);
   const now = new Date();
@@ -59,12 +64,22 @@ export const RsfPresenceCard = () => {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Friends at the RSF</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Friends at the RSF</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('FriendsAtRsf')}
+          accessibilityRole="button"
+          accessibilityLabel="See everyone at the RSF"
+        >
+          <Text style={styles.seeAll}>
+            {friendsAtRsf.length > 0 ? `${friendsAtRsf.length} here · See all ›` : 'See all ›'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {friendsAtRsf.length > 0 ? (
         <View style={styles.friends}>
           {friendsAtRsf.map((friend) => {
-            const there = Math.max(1, Math.round((now.getTime() - Date.parse(friend.arrivedAt)) / 60000));
             return (
               <View key={friend.id} style={styles.friendRow}>
                 <Avatar name={friend.displayName} username={friend.username} size={32} />
@@ -73,7 +88,7 @@ export const RsfPresenceCard = () => {
                     {friend.displayName || friend.username}
                   </Text>
                   <Text style={styles.friendMeta} numberOfLines={1}>
-                    @{friend.username} · at the RSF {there < 60 ? `${there} min` : `${Math.floor(there / 60)} hr`}
+                    @{friend.username} · at the RSF {stayLabel(friend.arrivedAt, now.getTime())}
                   </Text>
                 </View>
               </View>
@@ -126,7 +141,9 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 6,
   },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   title: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  seeAll: { fontSize: 13, fontWeight: '700', color: '#2563eb' },
   friends: { gap: 10 },
   friendRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   friendText: { flex: 1 },
