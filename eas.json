@@ -15,6 +15,13 @@
       "env": {
         "EXPO_PUBLIC_OSKILIFTS_API_URL": "https://oskilifts.onrender.com"
       }
+    },
+    "simulator": {
+      "extends": "production",
+      "ios": {
+        "simulator": true
+      },
+      "autoIncrement": false
     }
   },
   "submit": {
